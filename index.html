@@ -38,6 +38,21 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .outcome-loss{color:#ef4444}
 .button-row{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
 .button-row button{flex:1;min-width:200px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;position:sticky;top:0;z-index:20;background:#111;padding:8px 0}
+.tab-button{flex:1;min-width:120px;padding:12px 16px;border-radius:14px;border:none;background:#222;color:white;font-size:16px;font-weight:700;cursor:pointer}
+.tab-button.active{background:#22c55e;color:#111}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.history-card{background:#1f1f1f;border:1px solid #2a2a2a;border-radius:16px;padding:18px;margin-bottom:14px;cursor:pointer;transition:background .2s,border .2s}
+.history-card:hover{background:#272727}
+.history-card-title{font-size:20px;font-weight:700;margin-bottom:8px}
+.history-card-meta{color:#aaa;font-size:14px;margin-bottom:10px}
+.history-detail{background:#1f1f1f;border-radius:16px;padding:18px;margin-top:16px}
+.player-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.player-badge{font-size:14px;color:#ddd;display:inline-flex;align-items:center;gap:4px;background:#161616;padding:4px 8px;border-radius:999px;border:1px solid #2a2a2a}
+.rating-table{width:100%;border-collapse:collapse;margin-top:12px}
+.rating-table th,.rating-table td{padding:10px 12px;border-bottom:1px solid #2a2a2a;text-align:left}
+.rating-table th{color:#ddd;font-weight:700;font-size:14px}
 @media (max-width:700px){
   body{padding:12px}
   .header-title{font-size:34px}
@@ -52,6 +67,13 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 
 <div class="header-title" id="appHeader">Командный Американо</div>
 
+<div class="tabs">
+  <button class="tab-button active" data-tab="tournament" onclick="switchTab('tournament')">Турнир</button>
+  <button class="tab-button" data-tab="history" onclick="switchTab('history')">История</button>
+  <button class="tab-button" data-tab="rating" onclick="switchTab('rating')">Рейтинг</button>
+</div>
+
+<div id="tab-tournament" class="tab-content active">
 <div class="top-grid">
   <div class="form-item">
     <label>Название турнира</label>
@@ -77,30 +99,34 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
   <div class="team">
     <label>Команда 1</label>
     <div class="team-inputs">
-      <input id="team1a" value="Михаил" placeholder="Игрок 1" list="playersList" oninput="saveData()">
-      <input id="team1b" value="Александр С" placeholder="Игрок 2" list="playersList" oninput="saveData()">
+      <input id="team1a" value="Михаил" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team1b" value="Александр С" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
     </div>
+    <div class="player-badges" id="team1badges"></div>
   </div>
   <div class="team">
     <label>Команда 2</label>
     <div class="team-inputs">
-      <input id="team2a" value="Константин" placeholder="Игрок 1" list="playersList" oninput="saveData()">
-      <input id="team2b" value="Виталий" placeholder="Игрок 2" list="playersList" oninput="saveData()">
+      <input id="team2a" value="Константин" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team2b" value="Виталий" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
     </div>
+    <div class="player-badges" id="team2badges"></div>
   </div>
   <div class="team">
     <label>Команда 3</label>
     <div class="team-inputs">
-      <input id="team3a" value="Никита" placeholder="Игрок 1" list="playersList" oninput="saveData()">
-      <input id="team3b" value="Александр Ж" placeholder="Игрок 2" list="playersList" oninput="saveData()">
+      <input id="team3a" value="Никита" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team3b" value="Александр Ж" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
     </div>
+    <div class="player-badges" id="team3badges"></div>
   </div>
   <div class="team">
     <label>Команда 4</label>
     <div class="team-inputs">
-      <input id="team4a" value="Сергей" placeholder="Игрок 1" list="playersList" oninput="saveData()">
-      <input id="team4b" value="Станислав" placeholder="Игрок 2" list="playersList" oninput="saveData()">
+      <input id="team4a" value="Сергей" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team4b" value="Станислав" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
     </div>
+    <div class="player-badges" id="team4badges"></div>
   </div>
 </div>
 
@@ -113,10 +139,25 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 <div id="results"></div>
 
 <div id="post-results-buttons" class="button-row">
-  <button class="secondary" onclick="copyResults()">Скопировать итоги</button>
+  <button class="secondary" onclick="exportFullReport()">Полная версия</button>
   <button class="secondary" onclick="shareResults()">Поделиться результатом</button>
   <button class="secondary" onclick="saveTournament()">Сохранить турнир</button>
   <button class="secondary" onclick="clearTournament()">Новый турнир / очистить</button>
+</div>
+</div>
+
+<div id="tab-history" class="tab-content" style="display:none;">
+  <div class="button-row" style="margin-bottom:16px;">
+    <button class="secondary" onclick="exportHistoryBackup()">Экспорт истории</button>
+    <button class="secondary" onclick="triggerHistoryImport()">Импорт истории</button>
+  </div>
+  <input id="historyImportInput" type="file" accept="application/json" style="display:none" onchange="importHistoryFile(event)">
+  <div id="historyContainer"></div>
+  <div id="historyDetail"></div>
+</div>
+
+<div id="tab-rating" class="tab-content" style="display:none;">
+  <div id="ratingContainer"></div>
 </div>
 
 <script>
@@ -148,10 +189,278 @@ function getCurrentDate(){
   return `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
 }
 
-function updateHeader(){
+function updateHeader(tab='tournament'){
+  const header = document.getElementById('appHeader');
+  if(!header) return;
+  if(tab === 'history'){
+    header.textContent = 'История турниров';
+    return;
+  }
+  if(tab === 'rating'){
+    header.textContent = 'Рейтинг игроков';
+    return;
+  }
   const name = document.getElementById('tournamentName').value || 'Командный Американо';
   const date = document.getElementById('tournamentDate').value || getCurrentDate();
-  document.getElementById('appHeader').textContent = `${name} • ${date}`;
+  header.textContent = `${name} • ${date}`;
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-button').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(content=>{
+    const show = content.id === `tab-${tab}`;
+    content.classList.toggle('active', show);
+    content.style.display = show ? 'block' : 'none';
+  });
+  updateHeader(tab);
+  if(tab === 'history') renderHistory();
+  if(tab === 'rating') renderRating();
+}
+
+function getRatingStats(){
+  const key = 'padelFlowTournamentHistory';
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
+  const stats = {};
+  saved.forEach(tournament=>{
+    const players = tournament.playerStats || [];
+    const seen = new Set();
+    players.forEach(p=>{
+      if(!stats[p.name]) stats[p.name] = {name:p.name, tournaments:0, scored:0, conceded:0, delta:0, wins:0, losses:0, draws:0};
+      if(!seen.has(p.name)){
+        stats[p.name].tournaments++;
+        seen.add(p.name);
+      }
+      stats[p.name].scored += p.scored;
+      stats[p.name].conceded += p.conceded;
+      stats[p.name].delta += p.delta;
+      stats[p.name].wins += p.wins;
+      stats[p.name].losses += p.losses;
+      stats[p.name].draws += p.draws;
+    });
+  });
+  const list = Object.values(stats).sort((a,b)=>{
+    if(b.delta !== a.delta) return b.delta - a.delta;
+    if(b.wins !== a.wins) return b.wins - a.wins;
+    if(b.scored !== a.scored) return b.scored - a.scored;
+    return a.name.localeCompare(b.name,'ru');
+  });
+  return list;
+}
+
+function buildPlayerMedalMap(){
+  const sorted = getRatingStats();
+  const medalMap = {};
+  let rankGroup = 0;
+  let prevKey = null;
+  sorted.forEach((player,index)=>{
+    const key = `${player.delta}|${player.wins}|${player.scored}|${player.losses}|${player.draws}`;
+    if(key !== prevKey){
+      rankGroup++;
+      prevKey = key;
+    }
+    const medal = rankGroup === 1 ? '🥇' : rankGroup === 2 ? '🥈' : rankGroup === 3 ? '🥉' : '';
+    medalMap[player.name] = medal;
+  });
+  return medalMap;
+}
+
+function getPlayerBadge(name){
+  if(!name) return '';
+  const medalMap = buildPlayerMedalMap();
+  return medalMap[name] || '';
+}
+
+function getBadgedPlayer(name){
+  const badge = getPlayerBadge(name);
+  return badge ? `${badge} ${name}` : name;
+}
+
+function getBadgedTeam(team){
+  return String(team || '').split(' · ').map(name => getBadgedPlayer(name)).join(' · ');
+}
+
+function renderTeamInputBadges(){
+  [['team1a','team1b','team1badges'],['team2a','team2b','team2badges'],['team3a','team3b','team3badges'],['team4a','team4b','team4badges']].forEach(([a,b,target])=>{
+    const nameA = normalizePlayerName(document.getElementById(a)?.value);
+    const nameB = normalizePlayerName(document.getElementById(b)?.value);
+    const badges = [nameA,nameB].filter(Boolean).map(name=>{
+      const badge = getPlayerBadge(name);
+      return badge ? `<span class="player-badge">${badge} ${name}</span>` : `<span class="player-badge">${name}</span>`;
+    }).join('');
+    const targetEl = document.getElementById(target);
+    if(targetEl) targetEl.innerHTML = badges;
+  });
+}
+
+function renderHistory(){
+  const key = 'padelFlowTournamentHistory';
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
+  const container = document.getElementById('historyContainer');
+  const detail = document.getElementById('historyDetail');
+  if(!container || !detail) return;
+  if(!saved.length){
+    container.innerHTML = `<div class="history-detail"><strong>Сохраненных турниров пока нет</strong></div>`;
+    detail.innerHTML = '';
+    return;
+  }
+  container.innerHTML = saved.map(item=>{
+    const winner = item.finalPlaces?.[0] || '-';
+    const second = item.finalPlaces?.[1] || '-';
+    const third = item.finalPlaces?.[2] || '-';
+    return `<div class="history-card" onclick="showHistoryDetail('${item.id}')"><div class="history-card-title">${item.name}</div><div class="history-card-meta">${item.date}</div><div>Победитель: <strong>${getBadgedPlayer(winner)}</strong></div><div class="small">🥇 ${getBadgedPlayer(winner)} · 🥈 ${getBadgedPlayer(second)} · 🥉 ${getBadgedPlayer(third)}</div></div>`;
+  }).join('');
+  detail.innerHTML = '';
+}
+
+function showHistoryDetail(id){
+  const key = 'padelFlowTournamentHistory';
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
+  const item = saved.find(t=>t.id === id);
+  const detail = document.getElementById('historyDetail');
+  if(!item || !detail) return;
+  const standings = item.groupStandings.map(s=>`<tr><td>${s.place}</td><td>${getBadgedTeam(s.team)}</td><td>${s.wins}-${s.losses}-${s.draws}</td><td>${s.scored}-${s.conceded}</td><td>${s.delta>0?'+':''}${s.delta}</td></tr>`).join('');
+  const playoffLines = item.dayText ? item.dayText.split('\n').filter(line=>line.startsWith('Полуфинал')||line.startsWith('Матч')||line.startsWith('Финал')||line.startsWith('🏆 Плей-офф')).join('<br>') : '';
+  detail.innerHTML = `
+    <div class="history-detail">
+      <div class="history-card-title">${item.name}</div>
+      <div class="history-card-meta">${item.date}</div>
+      <div style="margin:12px 0;font-weight:700">Итоговые места</div>
+      <div class="small">🥇 ${getBadgedPlayer(item.finalPlaces?.[0]||'-')}<br>🥈 ${getBadgedPlayer(item.finalPlaces?.[1]||'-')}<br>🥉 ${getBadgedPlayer(item.finalPlaces?.[2]||'-')}<br>4️⃣ ${getBadgedPlayer(item.finalPlaces?.[3]||'-')}</div>
+      <div style="margin:16px 0;font-weight:700">Итоги группового этапа</div>
+      <div>${item.groupStandings.map(s=>`<div class="small">${s.place}. ${getBadgedTeam(s.team)} — ${s.wins}-${s.losses}-${s.draws} • ${s.scored}-${s.conceded} • ${s.delta>0?'+':''}${s.delta}</div>`).join('')}</div>
+      <div style="margin:16px 0;font-weight:700">Плей-офф</div>
+      <div class="small">${item.dayText.split('\n').filter(line=>line.startsWith('Полуфинал')||line.startsWith('Матч')||line.startsWith('Финал')||line.startsWith('🏆 Плей-офф')).join('<br>')}</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
+        <button class="secondary" onclick="copyHistoryReport('${item.id}')" style="flex:1;min-width:180px">Скопировать отчет</button>
+        <button class="secondary" onclick="deleteHistoryTournament('${item.id}')" style="flex:1;min-width:180px;background:#ef4444">Удалить турнир</button>
+      </div>
+    </div>
+  `;
+}
+
+function copyHistoryReport(id){
+  const key = 'padelFlowTournamentHistory';
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
+  const item = saved.find(t=>t.id === id);
+  if(!item) return;
+  navigator.clipboard.writeText(item.dayText).then(()=>alert('Готово! Отчет скопирован'));
+}
+
+function deleteHistoryTournament(id){
+  if(!confirm('Удалить турнир?')) return;
+  const key = 'padelFlowTournamentHistory';
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
+  saved = saved.filter(t=>t.id !== id);
+  localStorage.setItem(key, JSON.stringify(saved));
+  renderHistory();
+  document.getElementById('historyDetail').innerHTML = '';
+}
+
+function exportHistoryBackup(){
+  const key = 'padelFlowTournamentHistory';
+  const data = localStorage.getItem(key) || '[]';
+  const blob = new Blob([data], {type: 'application/json;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'padelflow-backup.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function triggerHistoryImport(){
+  const input = document.getElementById('historyImportInput');
+  if(input) input.click();
+}
+
+function importHistoryFile(event){
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+  if(!confirm('Заменить текущую историю турниров?')){
+    event.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const text = e.target.result;
+      const parsed = JSON.parse(text);
+      if(!Array.isArray(parsed)) throw new Error('Invalid format');
+      localStorage.setItem('padelFlowTournamentHistory', JSON.stringify(parsed));
+      renderHistory();
+      renderRating();
+      alert('История успешно восстановлена');
+    } catch(err){
+      alert('Ошибка импорта файла');
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.onerror = function(){
+    alert('Ошибка импорта файла');
+    event.target.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function computeEloRatings(){
+  // Placeholder for future ELO-style rating support.
+  return getRatingStats();
+}
+
+function getPlayerSeriesStats(){
+  // Placeholder for future series/streak computations.
+  return [];
+}
+
+function renderRating(){
+  const key = 'padelFlowTournamentHistory';
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
+  const container = document.getElementById('ratingContainer');
+  if(!container) return;
+  if(!saved.length){
+    container.innerHTML = `<div class="history-detail"><strong>Рейтинг пока пуст</strong></div>`;
+    return;
+  }
+  const stats = {};
+  saved.forEach(tournament=>{
+    const players = tournament.playerStats || [];
+    const seen = new Set();
+    players.forEach(p=>{
+      if(!stats[p.name]) stats[p.name] = {name:p.name, tournaments:0, scored:0, conceded:0, delta:0, wins:0, losses:0, draws:0};
+      if(!seen.has(p.name)){
+        stats[p.name].tournaments++;
+        seen.add(p.name);
+      }
+      stats[p.name].scored += p.scored;
+      stats[p.name].conceded += p.conceded;
+      stats[p.name].delta += p.delta;
+      stats[p.name].wins += p.wins;
+      stats[p.name].losses += p.losses;
+      stats[p.name].draws += p.draws;
+    });
+  });
+  const list = Object.values(stats).sort((a,b)=>{
+    if(b.delta !== a.delta) return b.delta - a.delta;
+    if(b.wins !== a.wins) return b.wins - a.wins;
+    if(b.scored !== a.scored) return b.scored - a.scored;
+    return a.name.localeCompare(b.name,'ru');
+  });
+  const rows = list.map(p=>{
+    const played = p.wins + p.losses + p.draws;
+    const rate = played ? Math.round((p.wins/played)*100) : 0;
+    const badge = getPlayerBadge(p.name);
+    return `<tr><td>${badge ? badge + ' ' : ''}${p.name}</td><td>${p.tournaments}</td><td>${p.scored}-${p.conceded}</td><td>${p.delta>0?'+':''}${p.delta}</td><td>${p.wins}-${p.losses}-${p.draws}</td><td>${rate}%</td></tr>`;
+  }).join('');
+  container.innerHTML = `<div class="tourney-container"><div class="tourney-scroll"><table class="rating-table"><thead><tr><th>Игрок</th><th>Турниры</th><th>Очки</th><th>Разница</th><th>В-П-Н</th><th>Winrate</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 
 function normalizePlayerName(name){
@@ -645,6 +954,7 @@ function loadData(){
   team4b.value = data.team4b || "Станислав";
 
   updateHeader();
+  renderTeamInputBadges();
 }
 
 function loadScores(){
@@ -676,7 +986,7 @@ function buildGroupStageText(){
     round.forEach((m,i)=>{
       const a = document.getElementById(`a-${r}-${i}`);
       const b = document.getElementById(`b-${r}-${i}`);
-      text += `${data.teams[m[0]]} ${a?.value || '-'}:${b?.value || '-'} ${data.teams[m[1]]}\n`;
+      text += `${getBadgedTeam(data.teams[m[0]])} ${a?.value || '-'}:${b?.value || '-'} ${getBadgedTeam(data.teams[m[1]])}\n`;
     });
     text += "\n";
   });
@@ -685,7 +995,7 @@ function buildGroupStageText(){
   const medals = ["🥇","🥈","🥉","4️⃣"];
   data.sorted.forEach((item,index)=>{
     const s = item[1];
-    text += `${medals[index]} ${index+1} место — ${item[0]}\n`;
+    text += `${medals[index]} ${index+1} место — ${getBadgedTeam(item[0])}\n`;
     text += `Очки: ${s.scored}-${s.conceded}\n`;
     text += `Разница: ${s.delta>0?"+":""}${s.delta}\n`;
     text += `В-П-Н: ${s.wins}-${s.losses}-${s.draws}\n\n`;
@@ -705,8 +1015,8 @@ function buildDayText(){
     const sf2b = document.getElementById('playoff-b-sf2');
 
     text += `🏆 Плей-офф\n\n`;
-    text += `Полуфинал 1\n${roundsStats[0]} ${sf1a.value}:${sf1b.value} ${roundsStats[3]}\n\n`;
-    text += `Полуфинал 2\n${roundsStats[1]} ${sf2a.value}:${sf2b.value} ${roundsStats[2]}\n\n`;
+    text += `Полуфинал 1\n${getBadgedTeam(roundsStats[0])} ${sf1a.value}:${sf1b.value} ${getBadgedTeam(roundsStats[3])}\n\n`;
+    text += `Полуфинал 2\n${getBadgedTeam(roundsStats[1])} ${sf2a.value}:${sf2b.value} ${getBadgedTeam(roundsStats[2])}\n\n`;
 
     const fa = document.getElementById('playoff-a-final');
     const fb = document.getElementById('playoff-b-final');
@@ -714,11 +1024,11 @@ function buildDayText(){
     const tb = document.getElementById('playoff-b-3rd');
 
     if(ta && tb && ta.value !== "" && tb.value !== ""){
-      text += `🥉 Матч за 3 место\n${finalData.sf1Loser} ${ta.value}:${tb.value} ${finalData.sf2Loser}\n\n`;
+      text += `🥉 Матч за 3 место\n${getBadgedPlayer(finalData.sf1Loser)} ${ta.value}:${tb.value} ${getBadgedPlayer(finalData.sf2Loser)}\n\n`;
     }
 
     if(fa && fb && fa.value !== "" && fb.value !== ""){
-      text += `🏆 Финал\n${finalData.sf1Winner} ${fa.value}:${fb.value} ${finalData.sf2Winner}\n\n`;
+      text += `🏆 Финал\n${getBadgedPlayer(finalData.sf1Winner)} ${fa.value}:${fb.value} ${getBadgedPlayer(finalData.sf2Winner)}\n\n`;
     }
 
     const finalPlaces = getFinalPlaces();
@@ -744,15 +1054,74 @@ function shareGroupStage(){
   else copyGroupStage();
 }
 
-function copyResults(){
+function exportFullReport(){
   const text = buildDayText();
-  navigator.clipboard.writeText(text).then(()=>alert("Готово! Результаты скопированы"));
+  navigator.clipboard.writeText(text).then(()=>alert("Готово! Полная версия скопирована"));
+}
+
+function buildCompactShareText(){
+  const data = computeGroupStats();
+  const name = tournamentName.value || 'Командный Американо';
+  const date = tournamentDate.value || getCurrentDate();
+  let text = `🎾 ${name} • ${date}\n\n`;
+  text += `🏆 Итоги группового этапа\n\n`;
+
+  const medals = ["🥇","🥈","🥉","4️⃣"];
+  data.sorted.forEach((item,index)=>{
+    const team = item[0];
+    const s = item[1];
+    const delta = s.delta === 0 ? '±0' : (s.delta > 0 ? `+${s.delta}` : `${s.delta}`);
+    text += `${medals[index]} ${team}\n`;
+    text += `${s.wins}-${s.losses}-${s.draws} • ${delta} • ${s.scored}:${s.conceded}\n\n`;
+  });
+
+  const playoffFinalists = getPlayoffFinalists();
+  if(playoffFinalists){
+    const sf1a = document.getElementById('playoff-a-sf1');
+    const sf1b = document.getElementById('playoff-b-sf1');
+    const sf2a = document.getElementById('playoff-a-sf2');
+    const sf2b = document.getElementById('playoff-b-sf2');
+    text += `🏆 Плей-офф\n\n`;
+    text += `Полуфиналы\n`;
+    text += `${getBadgedTeam(roundsStats[0])} ${sf1a.value}:${sf1b.value} ${getBadgedTeam(roundsStats[3])}\n`;
+    text += `${getBadgedTeam(roundsStats[1])} ${sf2a.value}:${sf2b.value} ${getBadgedTeam(roundsStats[2])}\n\n`;
+
+    const ta = document.getElementById('playoff-a-3rd');
+    const tb = document.getElementById('playoff-b-3rd');
+    if(ta && tb && ta.value !== '' && tb.value !== ''){
+      text += `Матч за 3 место\n`;
+      text += `${getBadgedPlayer(playoffFinalists.sf1Loser)} ${ta.value}:${tb.value} ${getBadgedPlayer(playoffFinalists.sf2Loser)}\n\n`;
+    }
+
+    const fa = document.getElementById('playoff-a-final');
+    const fb = document.getElementById('playoff-b-final');
+    if(fa && fb && fa.value !== '' && fb.value !== ''){
+      text += `Финал\n`;
+      text += `${getBadgedPlayer(playoffFinalists.sf1Winner)} ${fa.value}:${fb.value} ${getBadgedPlayer(playoffFinalists.sf2Winner)}\n\n`;
+    }
+
+    const finalPlaces = getFinalPlaces();
+    if(finalPlaces.length === 4){
+      text += `🏅 Итог турнира\n\n`;
+      text += `🥇 ${finalPlaces[0]}\n`;
+      text += `🥈 ${finalPlaces[1]}\n`;
+      text += `🥉 ${finalPlaces[2]}\n`;
+      text += `4️⃣ ${finalPlaces[3]}\n`;
+    }
+  }
+
+  return text;
 }
 
 function shareResults(){
-  const text = buildDayText();
-  if(navigator.share) navigator.share({text}).catch(()=>copyResults());
-  else copyResults();
+  const text = buildCompactShareText();
+  if(navigator.share){
+    navigator.share({text}).catch(()=>{
+      navigator.clipboard.writeText(text).then(()=>alert('Готово! Результаты скопированы'));
+    });
+  } else {
+    navigator.clipboard.writeText(text).then(()=>alert('Готово! Результаты скопированы'));
+  }
 }
 
 function getPersonalStats(){
@@ -831,9 +1200,20 @@ function clearTournament(){
   }
 }
 
+function computeEloRatings(){
+  // Placeholder for future ELO-style rating support.
+  return getRatingStats();
+}
+
+function getPlayerSeriesStats(){
+  // Placeholder for future series/streak computations.
+  return [];
+}
+
 loadPlayersList();
 loadData();
 generateMatches();
+renderTeamInputBadges();
 </script>
 </body>
 </html>
