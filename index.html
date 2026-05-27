@@ -217,10 +217,95 @@ function switchTab(tab){
   if(tab === 'rating') renderRating();
 }
 
+function getLocalHistory(){
+  try {
+    const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    return Array.isArray(saved) ? saved : [];
+  } catch(e){
+    return [];
+  }
+}
+
+function getHistoryDataSync(){
+  const local = getLocalHistory();
+  return currentHistory && currentHistory.length ? currentHistory : local;
+}
+
+function findHistoryItem(id){
+  return getHistoryDataSync().find(item => item.id === id);
+}
+
+async function loadTournamentHistory(){
+  const localHistory = getLocalHistory();
+  if(typeof supabase === 'undefined'){
+    currentHistory = localHistory;
+    return localHistory;
+  }
+
+  try {
+    const { data, error } = await supabase.from('tournaments').select('id, created_at, name, date, data').order('created_at', { ascending: false });
+    if(error) throw error;
+
+    const cloudHistory = Array.isArray(data) ? data.map(row => {
+      const item = row.data || {};
+      if(!item.id) item.id = String(row.id || Date.now());
+      return {
+        ...item,
+        name: row.name || item.name || '',
+        date: row.date || item.date || '',
+        savedAt: item.savedAt || new Date(row.created_at).toISOString()
+      };
+    }) : [];
+
+    const knownIds = new Set(cloudHistory.map(item => String(item.id)));
+    const merged = [...cloudHistory];
+    localHistory.forEach(item => {
+      if(item.id && !knownIds.has(String(item.id))) merged.unshift(item);
+    });
+    currentHistory = merged;
+    return merged;
+  } catch(err){
+    currentHistory = localHistory;
+    return localHistory;
+  }
+}
+
+async function saveTournamentToCloud(tournament){
+  if(typeof supabase === 'undefined'){
+    return { ok: false, error: 'Supabase unavailable' };
+  }
+  try {
+    const { error } = await supabase.from('tournaments').insert([{ name: tournament.name, date: tournament.date, data: tournament }]);
+    return error ? { ok: false, error } : { ok: true };
+  } catch(err){
+    return { ok: false, error: err };
+  }
+}
+
+async function syncLocalToCloud(){
+  const localHistory = getLocalHistory();
+  if(typeof supabase === 'undefined' || !navigator.onLine || !localHistory.length){
+    return { synced: 0 };
+  }
+
+  try {
+    const { data, error } = await supabase.from('tournaments').select('data');
+    if(error) throw error;
+    const remoteIds = new Set((Array.isArray(data) ? data : []).map(row => String(row.data?.id)).filter(Boolean));
+    const toSync = localHistory.filter(item => item.id && !remoteIds.has(String(item.id)));
+    if(!toSync.length) return { synced: 0 };
+    const inserts = toSync.map(item => ({ name: item.name, date: item.date, data: item }));
+    const { error: insertError } = await supabase.from('tournaments').insert(inserts);
+    if(insertError) throw insertError;
+    return { synced: inserts.length };
+  } catch(err){
+    console.warn('syncLocalToCloud error', err);
+    return { synced: 0, error: err };
+  }
+}
+
 function getRatingStats(){
-  const key = 'padelFlowTournamentHistory';
-  let saved = [];
-  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
+  const saved = getHistoryDataSync();
   const stats = {};
   saved.forEach(tournament=>{
     const players = tournament.playerStats || [];
@@ -293,10 +378,8 @@ function renderTeamInputBadges(){
   });
 }
 
-function renderHistory(){
-  const key = 'padelFlowTournamentHistory';
-  let saved = [];
-  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
+async function renderHistory(){
+  const saved = await loadTournamentHistory();
   const container = document.getElementById('historyContainer');
   const detail = document.getElementById('historyDetail');
   if(!container || !detail) return;
@@ -342,23 +425,25 @@ function showHistoryDetail(id){
 }
 
 function copyHistoryReport(id){
-  const key = 'padelFlowTournamentHistory';
-  let saved = [];
-  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
-  const item = saved.find(t=>t.id === id);
+  const item = findHistoryItem(id);
   if(!item) return;
   navigator.clipboard.writeText(item.dayText).then(()=>alert('Готово! Отчет скопирован'));
 }
 
 function deleteHistoryTournament(id){
   if(!confirm('Удалить турнир?')) return;
-  const key = 'padelFlowTournamentHistory';
-  let saved = [];
-  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
-  saved = saved.filter(t=>t.id !== id);
-  localStorage.setItem(key, JSON.stringify(saved));
+  const localSaved = getLocalHistory();
+  const found = localSaved.some(t=>t.id === id);
+  if(!found){
+    alert('Турнир доступен только из облака и не может быть удален локально.');
+    return;
+  }
+  const filtered = localSaved.filter(t=>t.id !== id);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered));
+  currentHistory = currentHistory.filter(t => t.id !== id);
   renderHistory();
-  document.getElementById('historyDetail').innerHTML = '';
+  const detail = document.getElementById('historyDetail');
+  if(detail) detail.innerHTML = '';
 }
 
 function exportHistoryBackup(){
@@ -1183,14 +1268,21 @@ function buildTournamentHistoryEntry(){
   };
 }
 
-function saveTournament(){
+async function saveTournament(){
   savePlayersFromFields();
-  const key = 'padelFlowTournamentHistory';
-  let saved = [];
-  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
-  saved.push(buildTournamentHistoryEntry());
-  localStorage.setItem(key, JSON.stringify(saved));
-  alert('Готово! Турнир сохранен');
+  const entry = buildTournamentHistoryEntry();
+  const saved = getLocalHistory();
+  saved.push(entry);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(saved));
+  currentHistory = [entry, ...currentHistory.filter(item => item.id !== entry.id)];
+
+  const cloudResult = await saveTournamentToCloud(entry);
+  if(cloudResult.ok){
+    alert('Готово! Турнир сохранен локально и в облако');
+  } else {
+    console.warn('Supabase save failed', cloudResult.error);
+    alert('Турнир сохранен локально. Облачная синхронизация будет выполнена позднее.');
+  }
 }
 
 function clearTournament(){
