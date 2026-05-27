@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PadelFlow</title>
+
+<style>
+body{margin:0;padding:16px;background:#111;color:white;font-family:Arial,sans-serif}
+input{width:100%;box-sizing:border-box;padding:14px;margin:6px 0;border:none;border-radius:12px;font-size:18px}
+button{width:100%;padding:16px;margin:12px 0;border:none;border-radius:14px;background:#22c55e;color:white;font-size:20px}
+.secondary{background:#333}
+.match,.result-card{background:#1f1f1f;padding:16px;border-radius:16px;margin-bottom:16px}
+.court{color:#999;margin-bottom:10px}
+.teams{font-size:20px;font-weight:bold;margin-bottom:14px}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.place{font-size:24px;font-weight:bold;margin-bottom:10px}
+.delta{font-size:28px;font-weight:bold;color:#22c55e;margin-top:10px}
+.small{color:#aaa;font-size:15px}
+.header-title{font-size:42px;font-weight:bold;line-height:1.1;margin-bottom:24px}
+label{display:block;margin-top:10px;color:#aaa}
+</style>
+</head>
+
+<body>
+
+<div class="header-title">Командный<br>Американо</div>
+
+<label>Корт 1</label>
+<input id="court1" value="2" oninput="saveData()">
+
+<label>Корт 2</label>
+<input id="court2" value="6" oninput="saveData()">
+
+<label>Команда 1</label>
+<input id="team1" value="Михаил / Александр С" oninput="saveData()">
+
+<label>Команда 2</label>
+<input id="team2" value="Константин / Виталий" oninput="saveData()">
+
+<label>Команда 3</label>
+<input id="team3" value="Никита / Александр Ж" oninput="saveData()">
+
+<label>Команда 4</label>
+<input id="team4" value="Сергей / Станислав" oninput="saveData()">
+
+<button onclick="generateMatches()">Создать расписание</button>
+
+<div id="matches"></div>
+
+<button onclick="calculateResults()">Посчитать результаты</button>
+<button class="secondary" onclick="copyResults()">Скопировать итоги</button>
+<button class="secondary" onclick="shareResults()">Поделиться</button>
+<button class="secondary" onclick="clearTournament()">Новый турнир / очистить</button>
+
+<div id="results"></div>
+
+<script>
+const rounds=[
+[[0,3,1],[1,2,2]],
+[[0,1,1],[2,3,2]],
+[[0,2,1],[1,3,2]],
+[[3,0,1],[2,1,2]],
+[[1,0,1],[3,2,2]],
+[[2,0,1],[3,1,2]]
+];
+
+let lastResultsText="";
+
+function getTeams(){
+return [team1.value,team2.value,team3.value,team4.value];
+}
+
+function getCourtName(n){
+return n===1 ? "Корт №"+court1.value : "Корт №"+court2.value;
+}
+
+function autoFill(r,i,side){
+const a=document.getElementById(`a-${r}-${i}`);
+const b=document.getElementById(`b-${r}-${i}`);
+
+let av=parseInt(a.value);
+let bv=parseInt(b.value);
+
+if(side==="a" && !isNaN(av) && av>=0 && av<=32)b.value=32-av;
+if(side==="b" && !isNaN(bv) && bv>=0 && bv<=32)a.value=32-bv;
+
+saveData();
+}
+
+function generateMatches(){
+const teams=getTeams();
+let html="";
+
+rounds.forEach((round,r)=>{
+html+=`<h2 style="text-align:center;">Раунд ${r+1}</h2>`;
+
+round.forEach((m,i)=>{
+html+=`
+<div class="match">
+<div class="court">${getCourtName(m[2])}</div>
+<div class="teams">${teams[m[0]]} 🆚 ${teams[m[1]]}</div>
+<div class="score">
+<input type="number" id="a-${r}-${i}" placeholder="0" min="0" max="32" oninput="autoFill(${r},${i},'a')">
+<input type="number" id="b-${r}-${i}" placeholder="0" min="0" max="32" oninput="autoFill(${r},${i},'b')">
+</div>
+</div>`;
+});
+});
+
+matches.innerHTML=html;
+loadScores();
+saveData();
+}
+
+function calculateResults(){
+const teams=getTeams();
+let stats={};
+
+teams.forEach(t=>{
+stats[t]={scored:0,conceded:0,delta:0,wins:0,draws:0,losses:0};
+});
+
+rounds.forEach((round,r)=>{
+round.forEach((m,i)=>{
+const aInput=document.getElementById(`a-${r}-${i}`);
+const bInput=document.getElementById(`b-${r}-${i}`);
+
+if(!aInput || !bInput || aInput.value==="" || bInput.value==="")return;
+
+const a=Number(aInput.value);
+const b=Number(bInput.value);
+
+const A=teams[m[0]];
+const B=teams[m[1]];
+
+stats[A].scored+=a;
+stats[A].conceded+=b;
+stats[B].scored+=b;
+stats[B].conceded+=a;
+
+if(a>b){stats[A].wins++;stats[B].losses++;}
+else if(a<b){stats[B].wins++;stats[A].losses++;}
+else{stats[A].draws++;stats[B].draws++;}
+});
+});
+
+Object.keys(stats).forEach(t=>{
+stats[t].delta=stats[t].scored-stats[t].conceded;
+});
+
+const sorted=Object.entries(stats).sort((a,b)=>b[1].delta-a[1].delta);
+const medals=["🥇","🥈","🥉","4️⃣"];
+
+let html=`<h2 style="text-align:center;">📊 Итоги по дельте</h2>`;
+let text=`🎾 Итоги Командного Американо\n\n`;
+
+sorted.forEach((item,index)=>{
+const s=item[1];
+
+html+=`
+<div class="result-card">
+<div class="place">${medals[index]} ${index+1} место</div>
+<div><strong>${item[0]}</strong></div>
+<div>Забито: ${s.scored}</div>
+<div>Пропущено: ${s.conceded}</div>
+<div class="small">В-П-Н: ${s.wins}-${s.losses}-${s.draws}</div>
+<div class="delta">Дельта: ${s.delta>0?"+":""}${s.delta}</div>
+</div>`;
+
+text+=`${medals[index]} ${index+1} место — ${item[0]}\n`;
+text+=`Дельта: ${s.delta>0?"+":""}${s.delta} | Забито: ${s.scored} | Пропущено: ${s.conceded} | В-П-Н: ${s.wins}-${s.losses}-${s.draws}\n\n`;
+});
+
+results.innerHTML=html;
+lastResultsText=text;
+saveData();
+}
+
+function saveData(){
+let data={
+court1:court1.value,
+court2:court2.value,
+teams:getTeams(),
+scores:{}
+};
+
+rounds.forEach((round,r)=>{
+round.forEach((m,i)=>{
+const a=document.getElementById(`a-${r}-${i}`);
+const b=document.getElementById(`b-${r}-${i}`);
+if(a && b){
+data.scores[`a-${r}-${i}`]=a.value;
+data.scores[`b-${r}-${i}`]=b.value;
+}
+});
+});
+
+localStorage.setItem("padelAmericanoData",JSON.stringify(data));
+}
+
+function loadData(){
+const saved=localStorage.getItem("padelAmericanoData");
+if(!saved)return;
+
+const data=JSON.parse(saved);
+
+court1.value=data.court1 || "2";
+court2.value=data.court2 || "6";
+
+if(data.teams){
+team1.value=data.teams[0] || "";
+team2.value=data.teams[1] || "";
+team3.value=data.teams[2] || "";
+team4.value=data.teams[3] || "";
+}
+
+generateMatches();
+}
+
+function loadScores(){
+const saved=localStorage.getItem("padelAmericanoData");
+if(!saved)return;
+
+const data=JSON.parse(saved);
+if(!data.scores)return;
+
+Object.keys(data.scores).forEach(id=>{
+const el=document.getElementById(id);
+if(el)el.value=data.scores[id];
+});
+}
+
+function copyResults(){
+if(!lastResultsText)calculateResults();
+
+navigator.clipboard.writeText(lastResultsText).then(()=>{
+alert("Итоги скопированы 👍 Можно вставлять в Telegram");
+});
+}
+
+function shareResults(){
+if(!lastResultsText)calculateResults();
+
+if(navigator.share){
+navigator.share({
+text:lastResultsText
+});
+}else{
+copyResults();
+}
+}
+
+function clearTournament(){
+if(confirm("Очистить турнир?")){
+localStorage.removeItem("padelAmericanoData");
+location.reload();
+}
+}
+
+loadData();
+if(!localStorage.getItem("padelAmericanoData"))generateMatches();
+</script>
+
+</body>
+</html>
