@@ -4,263 +4,836 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PadelFlow</title>
-
 <style>
 body{margin:0;padding:16px;background:#111;color:white;font-family:Arial,sans-serif}
 input{width:100%;box-sizing:border-box;padding:14px;margin:6px 0;border:none;border-radius:12px;font-size:18px}
-button{width:100%;padding:16px;margin:12px 0;border:none;border-radius:14px;background:#22c55e;color:white;font-size:20px}
+button{width:100%;padding:16px;margin:12px 0;border:none;border-radius:14px;background:#22c55e;color:white;font-size:18px;font-weight:700}
 .secondary{background:#333}
-.match,.result-card{background:#1f1f1f;padding:16px;border-radius:16px;margin-bottom:16px}
-.court{color:#999;margin-bottom:10px}
-.teams{font-size:20px;font-weight:bold;margin-bottom:14px}
-.score{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.place{font-size:24px;font-weight:bold;margin-bottom:10px}
-.delta{font-size:28px;font-weight:bold;color:#22c55e;margin-top:10px}
-.small{color:#aaa;font-size:15px}
 .header-title{font-size:42px;font-weight:bold;line-height:1.1;margin-bottom:24px}
-label{display:block;margin-top:10px;color:#aaa}
+label{display:block;margin-top:10px;color:#aaa;font-size:14px}
+.top-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;align-items:start}
+.form-item label{margin:0 0 8px}
+.teams-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px}
+.team label{margin:0 0 8px}
+.team-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.match,.result-card{background:#1f1f1f;padding:16px;border-radius:16px;margin-bottom:16px}
+.court{color:#999;margin-bottom:10px;text-transform:uppercase;font-size:13px}
+.teams{font-size:18px;font-weight:bold;margin-bottom:14px}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.small{color:#aaa;font-size:15px}
+.delta-value{font-weight:700}
+.delta-pos{color:#22c55e}
+.delta-neg{color:#ef4444}
+.delta-zero{color:#ccc}
+.tourney-container{background:#1a1a1a;padding:12px;border-radius:12px;margin-bottom:16px}
+.tourney-scroll{overflow:auto}
+.tourney-table{width:100%;border-collapse:collapse;min-width:900px}
+.tourney-table th,.tourney-table td{padding:8px 10px;border-bottom:1px solid #2a2a2a;text-align:center}
+.tourney-table th{font-weight:700;color:#ddd;font-size:14px}
+.cell-result{display:flex;flex-direction:column;align-items:center}
+.cell-result .points{font-weight:700;font-size:16px}
+.cell-result .outcome{font-size:13px;margin-top:4px}
+.outcome-win{color:#22c55e}
+.outcome-draw{color:#9ca3af}
+.outcome-loss{color:#ef4444}
+.button-row{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
+.button-row button{flex:1;min-width:200px}
+@media (max-width:700px){
+  body{padding:12px}
+  .header-title{font-size:34px}
+  .top-grid,.teams-grid,.team-inputs{grid-template-columns:1fr}
+  .score{gap:8px}
+  input{font-size:16px}
+  button{font-size:16px}
+}
 </style>
 </head>
-
 <body>
 
-<div class="header-title">Командный<br>Американо</div>
+<div class="header-title" id="appHeader">Командный Американо</div>
 
-<label>Корт 1</label>
-<input id="court1" value="2" oninput="saveData()">
+<div class="top-grid">
+  <div class="form-item">
+    <label>Название турнира</label>
+    <input id="tournamentName" value="Командный Американо" oninput="updateHeader(); saveData()">
+  </div>
+  <div class="form-item">
+    <label>Дата турнира</label>
+    <input id="tournamentDate" value="" oninput="updateHeader(); saveData()">
+  </div>
+  <div class="form-item">
+    <label>Корт 1</label>
+    <input id="court1" value="2" oninput="saveData()">
+  </div>
+  <div class="form-item">
+    <label>Корт 2</label>
+    <input id="court2" value="6" oninput="saveData()">
+  </div>
+</div>
 
-<label>Корт 2</label>
-<input id="court2" value="6" oninput="saveData()">
+<datalist id="playersList"></datalist>
 
-<label>Команда 1</label>
-<input id="team1" value="Михаил / Александр С" oninput="saveData()">
-
-<label>Команда 2</label>
-<input id="team2" value="Константин / Виталий" oninput="saveData()">
-
-<label>Команда 3</label>
-<input id="team3" value="Никита / Александр Ж" oninput="saveData()">
-
-<label>Команда 4</label>
-<input id="team4" value="Сергей / Станислав" oninput="saveData()">
+<div class="teams-grid">
+  <div class="team">
+    <label>Команда 1</label>
+    <div class="team-inputs">
+      <input id="team1a" value="Михаил" placeholder="Игрок 1" list="playersList" oninput="saveData()">
+      <input id="team1b" value="Александр С" placeholder="Игрок 2" list="playersList" oninput="saveData()">
+    </div>
+  </div>
+  <div class="team">
+    <label>Команда 2</label>
+    <div class="team-inputs">
+      <input id="team2a" value="Константин" placeholder="Игрок 1" list="playersList" oninput="saveData()">
+      <input id="team2b" value="Виталий" placeholder="Игрок 2" list="playersList" oninput="saveData()">
+    </div>
+  </div>
+  <div class="team">
+    <label>Команда 3</label>
+    <div class="team-inputs">
+      <input id="team3a" value="Никита" placeholder="Игрок 1" list="playersList" oninput="saveData()">
+      <input id="team3b" value="Александр Ж" placeholder="Игрок 2" list="playersList" oninput="saveData()">
+    </div>
+  </div>
+  <div class="team">
+    <label>Команда 4</label>
+    <div class="team-inputs">
+      <input id="team4a" value="Сергей" placeholder="Игрок 1" list="playersList" oninput="saveData()">
+      <input id="team4b" value="Станислав" placeholder="Игрок 2" list="playersList" oninput="saveData()">
+    </div>
+  </div>
+</div>
 
 <button onclick="generateMatches()">Создать расписание</button>
 
 <div id="matches"></div>
 
 <button onclick="calculateResults()">Посчитать результаты</button>
-<button class="secondary" onclick="copyResults()">Скопировать итоги</button>
-<button class="secondary" onclick="shareResults()">Поделиться</button>
-<button class="secondary" onclick="clearTournament()">Новый турнир / очистить</button>
 
 <div id="results"></div>
 
+<div id="post-results-buttons" class="button-row">
+  <button class="secondary" onclick="copyResults()">Скопировать итоги</button>
+  <button class="secondary" onclick="shareResults()">Поделиться результатом</button>
+  <button class="secondary" onclick="saveTournament()">Сохранить турнир</button>
+  <button class="secondary" onclick="clearTournament()">Новый турнир / очистить</button>
+</div>
+
 <script>
-const rounds=[
-[[0,3,1],[1,2,2]],
-[[0,1,1],[2,3,2]],
-[[0,2,1],[1,3,2]],
-[[3,0,1],[2,1,2]],
-[[1,0,1],[3,2,2]],
-[[2,0,1],[3,1,2]]
+const rounds = [
+  [[0,3,1],[1,2,2]],
+  [[0,1,1],[2,3,2]],
+  [[0,2,1],[1,3,2]],
+  [[3,0,1],[2,1,2]],
+  [[1,0,1],[3,2,2]],
+  [[2,0,1],[3,1,2]]
 ];
 
-let lastResultsText="";
+let lastResultsText = "";
+let roundsStats = [];
+let lastStats = null;
+const defaultPlayers = [
+  'Владимиров Никита',
+  'Жаткин Александр',
+  'Vitaliy M',
+  'Курятников Константин',
+  'Михаил Авагян',
+  'Сотников Александр',
+  'Боев Сергей',
+  'Гейер Станислав'
+];
+
+function getCurrentDate(){
+  const now = new Date();
+  return `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+}
+
+function updateHeader(){
+  const name = document.getElementById('tournamentName').value || 'Командный Американо';
+  const date = document.getElementById('tournamentDate').value || getCurrentDate();
+  document.getElementById('appHeader').textContent = `${name} • ${date}`;
+}
+
+function normalizePlayerName(name){
+  return String(name || '').trim().replace(/\s+/g,' ');
+}
 
 function getTeams(){
-return [team1.value,team2.value,team3.value,team4.value];
+  const formatTeam = (a,b)=>{
+    const parts = [normalizePlayerName(a), normalizePlayerName(b)].filter(Boolean);
+    return parts.join(' · ');
+  };
+  return [
+    formatTeam(team1a.value, team1b.value),
+    formatTeam(team2a.value, team2b.value),
+    formatTeam(team3a.value, team3b.value),
+    formatTeam(team4a.value, team4b.value)
+  ];
+}
+
+function getPlayersByIndex(idx){
+  const pairs = [
+    [team1a.value, team1b.value],
+    [team2a.value, team2b.value],
+    [team3a.value, team3b.value],
+    [team4a.value, team4b.value]
+  ];
+  return pairs[idx].map(normalizePlayerName).filter(Boolean);
 }
 
 function getCourtName(n){
-return n===1 ? "Корт №"+court1.value : "Корт №"+court2.value;
+  return n === 1 ? "Корт №" + court1.value : "Корт №" + court2.value;
+}
+
+function loadPlayersList(){
+  let players = [];
+  try { players = JSON.parse(localStorage.getItem('playersList') || '[]'); } catch(e){ players = []; }
+  if(!Array.isArray(players) || players.length === 0) players = defaultPlayers.slice();
+
+  const clean = [];
+  players.forEach(p=>{
+    const name = normalizePlayerName(p);
+    if(name && !clean.some(x=>x.toLowerCase()===name.toLowerCase())) clean.push(name);
+  });
+
+  localStorage.setItem('playersList', JSON.stringify(clean));
+  const list = document.getElementById('playersList');
+  list.innerHTML = clean.map(p=>`<option value="${p}">`).join('');
+}
+
+function savePlayersFromFields(){
+  let players = [];
+  try { players = JSON.parse(localStorage.getItem('playersList') || '[]'); } catch(e){ players = []; }
+  ['team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b'].forEach(id=>{
+    const el = document.getElementById(id);
+    const name = normalizePlayerName(el ? el.value : '');
+    if(name && !players.some(p=>String(p).toLowerCase()===name.toLowerCase())) players.push(name);
+  });
+  localStorage.setItem('playersList', JSON.stringify(players));
+  loadPlayersList();
 }
 
 function autoFill(r,i,side){
-const a=document.getElementById(`a-${r}-${i}`);
-const b=document.getElementById(`b-${r}-${i}`);
+  const a = document.getElementById(`a-${r}-${i}`);
+  const b = document.getElementById(`b-${r}-${i}`);
+  if(!a || !b) return;
 
-let av=parseInt(a.value);
-let bv=parseInt(b.value);
+  const av = parseInt(a.value);
+  const bv = parseInt(b.value);
 
-if(side==="a" && !isNaN(av) && av>=0 && av<=32)b.value=32-av;
-if(side==="b" && !isNaN(bv) && bv>=0 && bv<=32)a.value=32-bv;
+  if(side === "a" && !isNaN(av) && av >= 0 && av <= 32) b.value = 32 - av;
+  if(side === "b" && !isNaN(bv) && bv >= 0 && bv <= 32) a.value = 32 - bv;
 
-saveData();
+  saveData();
+}
+
+function autoFillPlayoff(side,id){
+  const a = document.getElementById(`playoff-a-${id}`);
+  const b = document.getElementById(`playoff-b-${id}`);
+  if(!a || !b) return;
+
+  const av = parseInt(a.value);
+  const bv = parseInt(b.value);
+
+  if(side === "a" && !isNaN(av) && av >= 0 && av <= 27) b.value = 27 - av;
+  if(side === "b" && !isNaN(bv) && bv >= 0 && bv <= 27) a.value = 27 - bv;
+
+  saveData();
+  tryRenderFinals();
+  tryRenderTournamentTable();
 }
 
 function generateMatches(){
-const teams=getTeams();
-let html="";
+  const teams = getTeams();
+  let html = "";
 
-rounds.forEach((round,r)=>{
-html+=`<h2 style="text-align:center;">Раунд ${r+1}</h2>`;
+  rounds.forEach((round,r)=>{
+    html += `<h2 style="text-align:center;">Раунд ${r+1}</h2>`;
+    round.forEach((m,i)=>{
+      html += `
+      <div class="match">
+        <div class="court">${getCourtName(m[2])}</div>
+        <div class="teams">${teams[m[0]]} 🆚 ${teams[m[1]]}</div>
+        <div class="score">
+          <input type="number" id="a-${r}-${i}" placeholder="0" min="0" max="32" oninput="autoFill(${r},${i},'a')">
+          <input type="number" id="b-${r}-${i}" placeholder="0" min="0" max="32" oninput="autoFill(${r},${i},'b')">
+        </div>
+      </div>`;
+    });
+  });
 
-round.forEach((m,i)=>{
-html+=`
-<div class="match">
-<div class="court">${getCourtName(m[2])}</div>
-<div class="teams">${teams[m[0]]} 🆚 ${teams[m[1]]}</div>
-<div class="score">
-<input type="number" id="a-${r}-${i}" placeholder="0" min="0" max="32" oninput="autoFill(${r},${i},'a')">
-<input type="number" id="b-${r}-${i}" placeholder="0" min="0" max="32" oninput="autoFill(${r},${i},'b')">
-</div>
-</div>`;
-});
-});
+  document.getElementById('matches').innerHTML = html;
+  loadScores();
+  saveData();
+}
 
-matches.innerHTML=html;
-loadScores();
-saveData();
+function computeGroupStats(){
+  const teams = getTeams();
+  const stats = {};
+
+  teams.forEach(t=>{
+    stats[t] = {
+      scored:0,
+      conceded:0,
+      delta:0,
+      wins:0,
+      draws:0,
+      losses:0,
+      rounds:Array(rounds.length).fill(null).map(()=>({scored:'', outcome:''}))
+    };
+  });
+
+  rounds.forEach((round,r)=>{
+    round.forEach((m,i)=>{
+      const aInput = document.getElementById(`a-${r}-${i}`);
+      const bInput = document.getElementById(`b-${r}-${i}`);
+      if(!aInput || !bInput || aInput.value === "" || bInput.value === "") return;
+
+      const a = Number(aInput.value);
+      const b = Number(bInput.value);
+      const A = teams[m[0]];
+      const B = teams[m[1]];
+
+      stats[A].scored += a;
+      stats[A].conceded += b;
+      stats[B].scored += b;
+      stats[B].conceded += a;
+
+      stats[A].rounds[r].scored = a;
+      stats[B].rounds[r].scored = b;
+
+      if(a > b){
+        stats[A].wins++;
+        stats[B].losses++;
+        stats[A].rounds[r].outcome = 'П';
+        stats[B].rounds[r].outcome = 'Пр';
+      } else if(a < b){
+        stats[B].wins++;
+        stats[A].losses++;
+        stats[B].rounds[r].outcome = 'П';
+        stats[A].rounds[r].outcome = 'Пр';
+      } else {
+        stats[A].draws++;
+        stats[B].draws++;
+        stats[A].rounds[r].outcome = 'Н';
+        stats[B].rounds[r].outcome = 'Н';
+      }
+    });
+  });
+
+  Object.keys(stats).forEach(t=>stats[t].delta = stats[t].scored - stats[t].conceded);
+
+  const sorted = Object.entries(stats).sort((a,b)=>{
+    if(b[1].delta !== a[1].delta) return b[1].delta - a[1].delta;
+    if(b[1].scored !== a[1].scored) return b[1].scored - a[1].scored;
+    return b[1].wins - a[1].wins;
+  });
+
+  return {teams, stats, sorted};
+}
+
+function allGroupRoundsFilled(){
+  let filled = true;
+  rounds.forEach((round,r)=>{
+    round.forEach((m,i)=>{
+      const a = document.getElementById(`a-${r}-${i}`);
+      const b = document.getElementById(`b-${r}-${i}`);
+      if(!a || !b || a.value === "" || b.value === "") filled = false;
+    });
+  });
+  return filled;
+}
+
+function deltaClass(delta){
+  if(delta > 0) return 'delta-pos';
+  if(delta < 0) return 'delta-neg';
+  return 'delta-zero';
 }
 
 function calculateResults(){
-const teams=getTeams();
-let stats={};
+  const data = computeGroupStats();
+  lastStats = data;
+  roundsStats = data.sorted.map(x=>x[0]);
 
-teams.forEach(t=>{
-stats[t]={scored:0,conceded:0,delta:0,wins:0,draws:0,losses:0};
+ let html = `
+<h2 style="text-align:center;">📊 Итоги группового этапа</h2>
+
+<div class="tourney-container">
+  <div class="tourney-scroll">
+    <table class="tourney-table">
+      <thead>
+        <tr>
+          <th>Место</th>
+          <th>Команда</th>
+          <th>В-П-Н</th>
+          <th>Очки</th>
+          <th>Разница</th>
+        </tr>
+      </thead>
+      <tbody>
+`;
+
+const medals = ["🥇","🥈","🥉","4️⃣"];
+
+data.sorted.forEach((item,index)=>{
+  const name = item[0];
+  const s = item[1];
+  const deltaClass = s.delta > 0 ? "delta-pos" : (s.delta < 0 ? "delta-neg" : "delta-zero");
+  const deltaText = s.delta > 0 ? "+" + s.delta : s.delta;
+
+  html += `
+    <tr>
+      <td><strong>${medals[index]} ${index+1}</strong></td>
+      <td style="text-align:left;"><strong>${name}</strong></td>
+      <td>${s.wins}-${s.losses}-${s.draws}</td>
+      <td>${s.scored}-${s.conceded}</td>
+      <td><span class="${deltaClass}"><strong>${deltaText}</strong></span></td>
+    </tr>
+  `;
 });
 
-rounds.forEach((round,r)=>{
-round.forEach((m,i)=>{
-const aInput=document.getElementById(`a-${r}-${i}`);
-const bInput=document.getElementById(`b-${r}-${i}`);
+html += `
+      </tbody>
+    </table>
+  </div>
+</div>
+`;
 
-if(!aInput || !bInput || aInput.value==="" || bInput.value==="")return;
+  if(allGroupRoundsFilled()){
+    html += showPlayoff();
+  }
 
-const a=Number(aInput.value);
-const b=Number(bInput.value);
+  document.getElementById('results').innerHTML = html;
+  loadPlayoffScores();
+  tryRenderFinals();
+  tryRenderTournamentTable();
+  lastResultsText = buildDayText();
+  saveData();
+}
 
-const A=teams[m[0]];
-const B=teams[m[1]];
+function showPlayoff(){
+  if(!roundsStats || roundsStats.length < 4) return "";
+  return `
+  <h2 style="text-align:center;">🏆 Плей-офф</h2>
+  <div class="match">
+    <div class="court">Полуфинал 1</div>
+    <div class="teams">${roundsStats[0]} 🆚 ${roundsStats[3]}</div>
+    <div class="score">
+      <input type="number" id="playoff-a-sf1" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('a','sf1')">
+      <input type="number" id="playoff-b-sf1" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('b','sf1')">
+    </div>
+  </div>
+  <div class="match">
+    <div class="court">Полуфинал 2</div>
+    <div class="teams">${roundsStats[1]} 🆚 ${roundsStats[2]}</div>
+    <div class="score">
+      <input type="number" id="playoff-a-sf2" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('a','sf2')">
+      <input type="number" id="playoff-b-sf2" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('b','sf2')">
+    </div>
+  </div>
+  <div id="playoff-finals"></div>
+  <div id="tournament-table"></div>
+  `;
+}
 
-stats[A].scored+=a;
-stats[A].conceded+=b;
-stats[B].scored+=b;
-stats[B].conceded+=a;
+function getPlayoffFinalists(){
+  if(!roundsStats || roundsStats.length < 4) return null;
+  const sf1a = document.getElementById('playoff-a-sf1');
+  const sf1b = document.getElementById('playoff-b-sf1');
+  const sf2a = document.getElementById('playoff-a-sf2');
+  const sf2b = document.getElementById('playoff-b-sf2');
+  if(!sf1a || !sf1b || !sf2a || !sf2b) return null;
+  if(sf1a.value === "" || sf1b.value === "" || sf2a.value === "" || sf2b.value === "") return null;
 
-if(a>b){stats[A].wins++;stats[B].losses++;}
-else if(a<b){stats[B].wins++;stats[A].losses++;}
-else{stats[A].draws++;stats[B].draws++;}
-});
-});
+  const place1 = roundsStats[0];
+  const place2 = roundsStats[1];
+  const place3 = roundsStats[2];
+  const place4 = roundsStats[3];
 
-Object.keys(stats).forEach(t=>{
-stats[t].delta=stats[t].scored-stats[t].conceded;
-});
+  const sf1Winner = Number(sf1a.value) > Number(sf1b.value) ? place1 : place4;
+  const sf1Loser = sf1Winner === place1 ? place4 : place1;
+  const sf2Winner = Number(sf2a.value) > Number(sf2b.value) ? place2 : place3;
+  const sf2Loser = sf2Winner === place2 ? place3 : place2;
 
-const sorted=Object.entries(stats).sort((a,b)=>b[1].delta-a[1].delta);
-const medals=["🥇","🥈","🥉","4️⃣"];
+  return {sf1Winner, sf1Loser, sf2Winner, sf2Loser};
+}
 
-let html=`<h2 style="text-align:center;">📊 Итоги по дельте</h2>`;
-let text=`🎾 Итоги Командного Американо\n\n`;
+function tryRenderFinals(){
+  const finalData = getPlayoffFinalists();
+  const container = document.getElementById('playoff-finals');
+  if(!container || !finalData) return;
 
-sorted.forEach((item,index)=>{
-const s=item[1];
+  container.innerHTML = `
+  <h3 style="text-align:center;margin-top:16px;">🏆 Финал</h3>
+  <div class="match">
+    <div class="court">Финал</div>
+    <div class="teams">${finalData.sf1Winner} 🆚 ${finalData.sf2Winner}</div>
+    <div class="score">
+      <input type="number" id="playoff-a-final" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('a','final')">
+      <input type="number" id="playoff-b-final" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('b','final')">
+    </div>
+  </div>
+  <h3 style="text-align:center;margin-top:8px;">🥉 Матч за 3 место</h3>
+  <div class="match">
+    <div class="court">За 3 место</div>
+    <div class="teams">${finalData.sf1Loser} 🆚 ${finalData.sf2Loser}</div>
+    <div class="score">
+      <input type="number" id="playoff-a-3rd" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('a','3rd')">
+      <input type="number" id="playoff-b-3rd" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('b','3rd')">
+    </div>
+  </div>`;
 
-html+=`
-<div class="result-card">
-<div class="place">${medals[index]} ${index+1} место</div>
-<div><strong>${item[0]}</strong></div>
-<div>Забито: ${s.scored}</div>
-<div>Пропущено: ${s.conceded}</div>
-<div class="small">В-П-Н: ${s.wins}-${s.losses}-${s.draws}</div>
-<div class="delta">Дельта: ${s.delta>0?"+":""}${s.delta}</div>
-</div>`;
+  loadPlayoffScores();
+}
 
-text+=`${medals[index]} ${index+1} место — ${item[0]}\n`;
-text+=`Дельта: ${s.delta>0?"+":""}${s.delta} | Забито: ${s.scored} | Пропущено: ${s.conceded} | В-П-Н: ${s.wins}-${s.losses}-${s.draws}\n\n`;
-});
+function playoffsCompleted(){
+  const ids = ['playoff-a-sf1','playoff-b-sf1','playoff-a-sf2','playoff-b-sf2','playoff-a-final','playoff-b-final','playoff-a-3rd','playoff-b-3rd'];
+  return ids.every(id=>{
+    const el = document.getElementById(id);
+    return el && el.value !== "";
+  });
+}
 
-results.innerHTML=html;
-lastResultsText=text;
-saveData();
+function getFinalPlaces(){
+  const finalData = getPlayoffFinalists();
+  if(!finalData) return [];
+  const fa = document.getElementById('playoff-a-final');
+  const fb = document.getElementById('playoff-b-final');
+  const ta = document.getElementById('playoff-a-3rd');
+  const tb = document.getElementById('playoff-b-3rd');
+  if(!fa || !fb || !ta || !tb || fa.value === "" || fb.value === "" || ta.value === "" || tb.value === "") return [];
+
+  const finalWinner = Number(fa.value) > Number(fb.value) ? finalData.sf1Winner : finalData.sf2Winner;
+  const finalLoser = finalWinner === finalData.sf1Winner ? finalData.sf2Winner : finalData.sf1Winner;
+  const thirdWinner = Number(ta.value) > Number(tb.value) ? finalData.sf1Loser : finalData.sf2Loser;
+  const fourth = thirdWinner === finalData.sf1Loser ? finalData.sf2Loser : finalData.sf1Loser;
+
+  return [finalWinner, finalLoser, thirdWinner, fourth];
+}
+
+function tryRenderTournamentTable(){
+  if(!playoffsCompleted() || !lastStats) return;
+  const container = document.getElementById('tournament-table');
+  if(!container) return;
+
+  const data = lastStats;
+  const sorted = data.sorted;
+  const medals = ["🥇","🥈","🥉","4️⃣"];
+  const finalPlaces = getFinalPlaces();
+
+  let html = `<h2 style="text-align:center;margin-top:18px;">📋 Таблица турнира</h2>`;
+  html += `<div class="tourney-container"><div class="tourney-scroll"><table class="tourney-table"><thead><tr>`;
+  html += `<th>Место</th><th>Команда</th>`;
+  for(let r=0;r<rounds.length;r++) html += `<th>Р${r+1}</th>`;
+  html += `<th>ПФ</th><th>Ф/3М</th><th>Очки</th><th>Разница</th><th>В-П-Н</th>`;
+  html += `</tr></thead><tbody>`;
+
+  finalPlaces.forEach((team,index)=>{
+    const s = data.stats[team];
+    html += `<tr>`;
+    html += `<td style="font-weight:700">${medals[index]} ${index+1}</td>`;
+    html += `<td style="text-align:left;padding-left:12px"><strong>${team}</strong></td>`;
+
+    for(let r=0;r<rounds.length;r++){
+      const pr = s.rounds[r];
+      if(pr && pr.scored !== ''){
+        const cls = pr.outcome === 'П' ? 'outcome-win' : (pr.outcome === 'Н' ? 'outcome-draw' : 'outcome-loss');
+        html += `<td><div class="cell-result"><div class="points">${pr.scored}</div><div class="outcome ${cls}">${pr.outcome}</div></div></td>`;
+      } else {
+        html += `<td>-</td>`;
+      }
+    }
+
+    html += `<td>${getPlayoffScoreForTeam(team,'semi')}</td>`;
+    html += `<td>${getPlayoffScoreForTeam(team,'final')}</td>`;
+    html += `<td>${s.scored}-${s.conceded}</td>`;
+    html += `<td><span class="delta-value ${deltaClass(s.delta)}">${s.delta>0?'+':''}${s.delta}</span></td>`;
+    html += `<td>${s.wins}-${s.losses}-${s.draws}</td>`;
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table></div></div>`;
+  
+  container.innerHTML = html;
+  lastResultsText = buildDayText();
+  saveData();
+}
+
+function getPlayoffScoreForTeam(team,type){
+  if(!roundsStats || roundsStats.length < 4) return '-';
+  const finalData = getPlayoffFinalists();
+  const sf1a = document.getElementById('playoff-a-sf1');
+  const sf1b = document.getElementById('playoff-b-sf1');
+  const sf2a = document.getElementById('playoff-a-sf2');
+  const sf2b = document.getElementById('playoff-b-sf2');
+  const fa = document.getElementById('playoff-a-final');
+  const fb = document.getElementById('playoff-b-final');
+  const ta = document.getElementById('playoff-a-3rd');
+  const tb = document.getElementById('playoff-b-3rd');
+
+  if(type === 'semi'){
+    if(team === roundsStats[0] || team === roundsStats[3]) return `${sf1a?.value || ''}-${sf1b?.value || ''}`;
+    if(team === roundsStats[1] || team === roundsStats[2]) return `${sf2a?.value || ''}-${sf2b?.value || ''}`;
+    return '-';
+  }
+
+  if(!finalData) return '-';
+  if(team === finalData.sf1Winner || team === finalData.sf2Winner) return `${fa?.value || ''}-${fb?.value || ''}`;
+  if(team === finalData.sf1Loser || team === finalData.sf2Loser) return `${ta?.value || ''}-${tb?.value || ''}`;
+  return '-';
 }
 
 function saveData(){
-let data={
-court1:court1.value,
-court2:court2.value,
-teams:getTeams(),
-scores:{}
-};
+  const data = {
+    name: tournamentName.value || 'Командный Американо',
+    date: tournamentDate.value || getCurrentDate(),
+    court1: court1.value,
+    court2: court2.value,
+    team1a: team1a.value,
+    team1b: team1b.value,
+    team2a: team2a.value,
+    team2b: team2b.value,
+    team3a: team3a.value,
+    team3b: team3b.value,
+    team4a: team4a.value,
+    team4b: team4b.value,
+    scores:{}
+  };
 
-rounds.forEach((round,r)=>{
-round.forEach((m,i)=>{
-const a=document.getElementById(`a-${r}-${i}`);
-const b=document.getElementById(`b-${r}-${i}`);
-if(a && b){
-data.scores[`a-${r}-${i}`]=a.value;
-data.scores[`b-${r}-${i}`]=b.value;
-}
-});
-});
+  rounds.forEach((round,r)=>{
+    round.forEach((m,i)=>{
+      const a = document.getElementById(`a-${r}-${i}`);
+      const b = document.getElementById(`b-${r}-${i}`);
+      if(a) data.scores[`a-${r}-${i}`] = a.value;
+      if(b) data.scores[`b-${r}-${i}`] = b.value;
+    });
+  });
 
-localStorage.setItem("padelAmericanoData",JSON.stringify(data));
+  ["sf1","sf2","final","3rd"].forEach(stage=>{
+    const a = document.getElementById(`playoff-a-${stage}`);
+    const b = document.getElementById(`playoff-b-${stage}`);
+    if(a) data.scores[`playoff-a-${stage}`] = a.value;
+    if(b) data.scores[`playoff-b-${stage}`] = b.value;
+  });
+
+  localStorage.setItem("padelAmericanoData", JSON.stringify(data));
 }
 
 function loadData(){
-const saved=localStorage.getItem("padelAmericanoData");
-if(!saved)return;
+  const saved = localStorage.getItem("padelAmericanoData");
+  if(!saved){
+    tournamentDate.value = getCurrentDate();
+    updateHeader();
+    return;
+  }
 
-const data=JSON.parse(saved);
+  let data = {};
+  try { data = JSON.parse(saved); } catch(e){ data = {}; }
 
-court1.value=data.court1 || "2";
-court2.value=data.court2 || "6";
+  court1.value = data.court1 || "2";
+  court2.value = data.court2 || "6";
+  tournamentName.value = data.name || "Командный Американо";
+  tournamentDate.value = data.date || getCurrentDate();
 
-if(data.teams){
-team1.value=data.teams[0] || "";
-team2.value=data.teams[1] || "";
-team3.value=data.teams[2] || "";
-team4.value=data.teams[3] || "";
-}
+  team1a.value = data.team1a || "Михаил";
+  team1b.value = data.team1b || "Александр С";
+  team2a.value = data.team2a || "Константин";
+  team2b.value = data.team2b || "Виталий";
+  team3a.value = data.team3a || "Никита";
+  team3b.value = data.team3b || "Александр Ж";
+  team4a.value = data.team4a || "Сергей";
+  team4b.value = data.team4b || "Станислав";
 
-generateMatches();
+  updateHeader();
 }
 
 function loadScores(){
-const saved=localStorage.getItem("padelAmericanoData");
-if(!saved)return;
+  const saved = localStorage.getItem("padelAmericanoData");
+  if(!saved) return;
+  let data = {};
+  try { data = JSON.parse(saved); } catch(e){ data = {}; }
+  if(!data.scores) return;
 
-const data=JSON.parse(saved);
-if(!data.scores)return;
+  Object.keys(data.scores).forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = data.scores[id];
+  });
+}
 
-Object.keys(data.scores).forEach(id=>{
-const el=document.getElementById(id);
-if(el)el.value=data.scores[id];
-});
+function loadPlayoffScores(){
+  loadScores();
+}
+
+function buildGroupStageText(){
+  const data = computeGroupStats();
+  const name = tournamentName.value || 'Командный Американо';
+  const date = tournamentDate.value || getCurrentDate();
+  let text = `🎾 ${name} • ${date}\n\n`;
+  text += "📊 Групповой этап\n\n";
+
+  rounds.forEach((round,r)=>{
+    text += `Раунд ${r+1}\n`;
+    round.forEach((m,i)=>{
+      const a = document.getElementById(`a-${r}-${i}`);
+      const b = document.getElementById(`b-${r}-${i}`);
+      text += `${data.teams[m[0]]} ${a?.value || '-'}:${b?.value || '-'} ${data.teams[m[1]]}\n`;
+    });
+    text += "\n";
+  });
+
+  text += `🏆 Итоги группового этапа\n\n`;
+  const medals = ["🥇","🥈","🥉","4️⃣"];
+  data.sorted.forEach((item,index)=>{
+    const s = item[1];
+    text += `${medals[index]} ${index+1} место — ${item[0]}\n`;
+    text += `Очки: ${s.scored}-${s.conceded}\n`;
+    text += `Разница: ${s.delta>0?"+":""}${s.delta}\n`;
+    text += `В-П-Н: ${s.wins}-${s.losses}-${s.draws}\n\n`;
+  });
+
+  return text;
+}
+
+function buildDayText(){
+  let text = buildGroupStageText();
+
+  const finalData = getPlayoffFinalists();
+  if(finalData){
+    const sf1a = document.getElementById('playoff-a-sf1');
+    const sf1b = document.getElementById('playoff-b-sf1');
+    const sf2a = document.getElementById('playoff-a-sf2');
+    const sf2b = document.getElementById('playoff-b-sf2');
+
+    text += `🏆 Плей-офф\n\n`;
+    text += `Полуфинал 1\n${roundsStats[0]} ${sf1a.value}:${sf1b.value} ${roundsStats[3]}\n\n`;
+    text += `Полуфинал 2\n${roundsStats[1]} ${sf2a.value}:${sf2b.value} ${roundsStats[2]}\n\n`;
+
+    const fa = document.getElementById('playoff-a-final');
+    const fb = document.getElementById('playoff-b-final');
+    const ta = document.getElementById('playoff-a-3rd');
+    const tb = document.getElementById('playoff-b-3rd');
+
+    if(ta && tb && ta.value !== "" && tb.value !== ""){
+      text += `🥉 Матч за 3 место\n${finalData.sf1Loser} ${ta.value}:${tb.value} ${finalData.sf2Loser}\n\n`;
+    }
+
+    if(fa && fb && fa.value !== "" && fb.value !== ""){
+      text += `🏆 Финал\n${finalData.sf1Winner} ${fa.value}:${fb.value} ${finalData.sf2Winner}\n\n`;
+    }
+
+    const finalPlaces = getFinalPlaces();
+    if(finalPlaces.length === 4){
+      text += `🏅 Итоговые места\n\n`;
+      text += `🥇 ${finalPlaces[0]}\n`;
+      text += `🥈 ${finalPlaces[1]}\n`;
+      text += `🥉 ${finalPlaces[2]}\n`;
+      text += `4️⃣ ${finalPlaces[3]}\n`;
+    }
+  }
+
+  return text;
+}
+
+function copyGroupStage(){
+  navigator.clipboard.writeText(buildGroupStageText()).then(()=>alert("Готово! Результаты скопированы"));
+}
+
+function shareGroupStage(){
+  const text = buildGroupStageText();
+  if(navigator.share) navigator.share({text}).catch(()=>copyGroupStage());
+  else copyGroupStage();
 }
 
 function copyResults(){
-if(!lastResultsText)calculateResults();
-
-navigator.clipboard.writeText(lastResultsText).then(()=>{
-alert("Итоги скопированы 👍 Можно вставлять в Telegram");
-});
+  const text = buildDayText();
+  navigator.clipboard.writeText(text).then(()=>alert("Готово! Результаты скопированы"));
 }
 
 function shareResults(){
-if(!lastResultsText)calculateResults();
-
-if(navigator.share){
-navigator.share({
-text:lastResultsText
-});
-}else{
-copyResults();
+  const text = buildDayText();
+  if(navigator.share) navigator.share({text}).catch(()=>copyResults());
+  else copyResults();
 }
+
+function getPersonalStats(){
+  const playerStats = {};
+  function ensure(name){
+    if(!playerStats[name]) playerStats[name] = {name, scored:0, conceded:0, delta:0, wins:0, losses:0, draws:0};
+    return playerStats[name];
+  }
+
+  rounds.forEach((round,r)=>{
+    round.forEach((m,i)=>{
+      const aEl = document.getElementById(`a-${r}-${i}`);
+      const bEl = document.getElementById(`b-${r}-${i}`);
+      if(!aEl || !bEl || aEl.value === "" || bEl.value === "") return;
+      const a = Number(aEl.value);
+      const b = Number(bEl.value);
+
+      const playersA = getPlayersByIndex(m[0]);
+      const playersB = getPlayersByIndex(m[1]);
+
+      playersA.forEach(p=>{
+        const s = ensure(p);
+        s.scored += a; s.conceded += b;
+        if(a > b) s.wins++; else if(a < b) s.losses++; else s.draws++;
+      });
+      playersB.forEach(p=>{
+        const s = ensure(p);
+        s.scored += b; s.conceded += a;
+        if(b > a) s.wins++; else if(b < a) s.losses++; else s.draws++;
+      });
+    });
+  });
+
+  Object.values(playerStats).forEach(s=>s.delta = s.scored - s.conceded);
+  return Object.values(playerStats).sort((a,b)=>{
+    if(b.delta !== a.delta) return b.delta - a.delta;
+    if(b.scored !== a.scored) return b.scored - a.scored;
+    return b.wins - a.wins;
+  });
+}
+
+function buildTournamentHistoryEntry(){
+  const groupData = computeGroupStats();
+  return {
+    id:String(Date.now()),
+    name:tournamentName.value || 'Командный Американо',
+    date:tournamentDate.value || getCurrentDate(),
+    savedAt:new Date().toISOString(),
+    teams:getTeams(),
+    groupText:buildGroupStageText(),
+    dayText:buildDayText(),
+    groupStandings:groupData.sorted.map((item,index)=>({
+      place:index+1,
+      team:item[0],
+      ...item[1]
+    })),
+    finalPlaces:getFinalPlaces(),
+    playerStats:getPersonalStats()
+  };
+}
+
+function saveTournament(){
+  savePlayersFromFields();
+  const key = 'padelFlowTournamentHistory';
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
+  saved.push(buildTournamentHistoryEntry());
+  localStorage.setItem(key, JSON.stringify(saved));
+  alert('Готово! Турнир сохранен');
 }
 
 function clearTournament(){
-if(confirm("Очистить турнир?")){
-localStorage.removeItem("padelAmericanoData");
-location.reload();
-}
+  if(confirm("Очистить турнир?")){
+    localStorage.removeItem("padelAmericanoData");
+    location.reload();
+  }
 }
 
+loadPlayersList();
 loadData();
-if(!localStorage.getItem("padelAmericanoData"))generateMatches();
+generateMatches();
 </script>
-
 </body>
 </html>
