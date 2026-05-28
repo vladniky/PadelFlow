@@ -118,7 +118,7 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
 <div class="settings-grid">
   <div class="form-item">
     <label>Название турнира</label>
-    <input id="tournamentName" value="" placeholder="Командный Американо" oninput="updateHeader(); saveData()">
+    <input id="tournamentName" value="" placeholder="Американо" oninput="updateHeader(); saveData()">
   </div>
   <div class="form-item">
     <label>Дата турнира</label>
@@ -419,7 +419,7 @@ function formatDateForDisplay(value){
 
 function getTournamentNameValue(){
   const value = document.getElementById('tournamentName')?.value?.trim();
-  return value || 'Командный Американо';
+  return value || 'Американо';
 }
 
 function getTournamentDateValue(){
@@ -1680,7 +1680,7 @@ function saveData(){
     const t4b = document.getElementById('team4b');
     
     const data = {
-      name: tn?.value || 'Командный Американо',
+      name: tn?.value || 'Американо',
       date: td?.value || '',
       pairCount: pc?.value || String(DEFAULT_PAIR_COUNT),
       courtCount: cc?.value || String(DEFAULT_COURT_COUNT),
