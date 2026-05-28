@@ -56,6 +56,7 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .tab-content.active{display:block}
 .history-card{background:#1f1f1f;border:1px solid #2a2a2a;border-radius:16px;padding:18px;margin-bottom:14px;cursor:pointer;transition:background .2s,border .2s}
 .history-card:hover{background:#272727}
+.history-card-open{border-color:#b7ff2a;box-shadow:0 0 0 1px rgba(183,255,42,.45)}
 .history-card-title{font-size:20px;font-weight:700;margin-bottom:8px}
 .history-card-meta{color:#aaa;font-size:14px;margin-bottom:10px}
 .history-detail{background:#1f1f1f;border-radius:16px;padding:18px;margin-top:16px}
@@ -476,8 +477,40 @@ function renderTeamInputBadges(){
   });
 }
 
+function parseHistoryDateValue(value){
+  const raw = String(value || '').trim();
+  if(!raw) return 0;
+
+  if(/^\d{4}-\d{2}-\d{2}/.test(raw)){
+    const time = new Date(raw).getTime();
+    return Number.isNaN(time) ? 0 : time;
+  }
+
+  const match = raw.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if(match){
+    const time = new Date(`${match[3]}-${match[2]}-${match[1]}T00:00:00`).getTime();
+    return Number.isNaN(time) ? 0 : time;
+  }
+
+  const fallback = new Date(raw).getTime();
+  return Number.isNaN(fallback) ? 0 : fallback;
+}
+
+function getHistorySortTime(item){
+  return parseHistoryDateValue(item?.date) || parseHistoryDateValue(item?.savedAt) || parseHistoryDateValue(item?._createdAt) || 0;
+}
+
+function sortHistoryOldToNew(list){
+  return [...list].sort((a,b)=>{
+    const timeA = getHistorySortTime(a);
+    const timeB = getHistorySortTime(b);
+    if(timeA !== timeB) return timeA - timeB;
+    return String(a?.name || '').localeCompare(String(b?.name || ''), 'ru');
+  });
+}
+
 async function renderHistory(){
-  const saved = await loadTournamentHistory();
+  const saved = sortHistoryOldToNew(await loadTournamentHistory());
   const container = document.getElementById('historyContainer');
   const detail = document.getElementById('historyDetail');
   if(!container || !detail) return;
@@ -487,12 +520,23 @@ async function renderHistory(){
     detail.innerHTML = '';
     return;
   }
+
   container.innerHTML = saved.map(item=>{
     const winner = item.finalPlaces?.[0] || '-';
     const second = item.finalPlaces?.[1] || '-';
     const third = item.finalPlaces?.[2] || '-';
-    return `<div class="history-card" onclick="toggleHistoryDetail('${item.id}')"><div class="history-card-title">${item.name}</div><div class="history-card-meta">${item.date}</div><div>Победитель: <strong>${getBadgedPlayer(winner)}</strong></div><div class="small">🥇 ${getBadgedPlayer(winner)} · 🥈 ${getBadgedPlayer(second)} · 🥉 ${getBadgedPlayer(third)}</div></div>`;
+    const isOpen = String(openedHistoryId) === String(item.id);
+    return `
+      <div class="history-card ${isOpen ? 'history-card-open' : ''}" onclick="toggleHistoryDetail('${item.id}')">
+        <div class="history-card-title">${escapeHtml(item.name)}</div>
+        <div class="history-card-meta">${escapeHtml(item.date)}</div>
+        <div>Победитель: <strong>${escapeHtml(getBadgedPlayer(winner))}</strong></div>
+        <div class="small">🥇 ${escapeHtml(getBadgedPlayer(winner))} · 🥈 ${escapeHtml(getBadgedPlayer(second))} · 🥉 ${escapeHtml(getBadgedPlayer(third))}</div>
+      </div>
+      ${isOpen ? buildHistoryDetailHtml(item) : ''}
+    `;
   }).join('');
+
   detail.innerHTML = '';
 }
 
@@ -504,14 +548,8 @@ function extractPlayoffBlock(dayText){
 }
 
 function toggleHistoryDetail(id){
-  const detail = document.getElementById('historyDetail');
-  if(openedHistoryId === id){
-    openedHistoryId = null;
-    if(detail) detail.innerHTML = '';
-    return;
-  }
-  openedHistoryId = id;
-  showHistoryDetail(id);
+  openedHistoryId = String(openedHistoryId) === String(id) ? null : id;
+  renderHistory();
 }
 
 
@@ -566,11 +604,7 @@ function buildHistoryGroupPlacesHtml(item){
 }
 
 
-function showHistoryDetail(id){
-  const item = findHistoryItem(id);
-  const detail = document.getElementById('historyDetail');
-  if(!item || !detail) return;
-
+function buildHistoryDetailHtml(item){
   const finalPlaces = Array.isArray(item.finalPlaces) ? item.finalPlaces : [];
   const finalHtml = finalPlaces.length === 4
     ? `<div class="small">🥇 ${escapeHtml(getBadgedPlayer(finalPlaces[0]||'-'))}<br>🥈 ${escapeHtml(getBadgedPlayer(finalPlaces[1]||'-'))}<br>🥉 ${escapeHtml(getBadgedPlayer(finalPlaces[2]||'-'))}<br>4️⃣ ${escapeHtml(getBadgedPlayer(finalPlaces[3]||'-'))}</div>`
@@ -585,8 +619,8 @@ function showHistoryDetail(id){
     ? playoffText.split('\n').map(line=>escapeHtml(line)).join('<br>')
     : 'Плей-офф не игрался или не был сохранен.';
 
-  detail.innerHTML = `
-    <div class="history-detail">
+  return `
+    <div class="history-detail" id="history-detail-${escapeHtml(item.id)}">
       <div class="history-card-title">${escapeHtml(item.name)}</div>
       <div class="history-card-meta">${escapeHtml(item.date)}</div>
 
@@ -612,6 +646,11 @@ function showHistoryDetail(id){
       </div>
     </div>
   `;
+}
+
+function showHistoryDetail(id){
+  openedHistoryId = id;
+  renderHistory();
 }
 
 function copyHistoryReport(id){
