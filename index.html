@@ -122,11 +122,38 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
     <input id="tournamentDate" type="date" value="" oninput="updateHeader(); saveData()">
   </div>
   <div class="form-item">
+    <label>Количество пар</label>
+    <select id="pairCount" onchange="onPairCountChange(); saveData()">
+      <option value="2">2 пары / 4 игрока</option>
+      <option value="3">3 пары / 6 игроков</option>
+      <option value="4" selected>4 пары / 8 игроков</option>
+    </select>
+  </div>
+  <div class="form-item">
     <label>Количество кругов</label>
     <select id="roundCount" onchange="saveData()">
-      <option value="1">1 круг / 3 раунда</option>
-      <option value="2" selected>2 круга / 6 раундов</option>
-      <option value="3">3 круга / 9 раундов</option>
+      <option value="1">1 круг</option>
+      <option value="2" selected>2 круга</option>
+      <option value="3">3 круга</option>
+    </select>
+  </div>
+  <div class="form-item">
+    <label>Играем до</label>
+    <select id="roundLimit" onchange="onRoundLimitChange(); saveData()">
+      <option value="21">21</option>
+      <option value="24">24</option>
+      <option value="27">27</option>
+      <option value="32" selected>32</option>
+      <option value="custom">Свой</option>
+    </select>
+    <input id="roundLimitCustom" type="number" min="1" placeholder="Свое число" value="32" style="display:none;margin-top:6px;" oninput="saveData()">
+  </div>
+  <div class="form-item">
+    <label>Количество кортов</label>
+    <select id="courtCount" onchange="onCourtCountChange(); saveData()">
+      <option value="1">1 корт</option>
+      <option value="2" selected>2 корта</option>
+      <option value="3">3 корта</option>
     </select>
   </div>
   <div class="form-item">
@@ -137,38 +164,42 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
     <label>Корт 2</label>
     <input id="court2" value="" placeholder="6" oninput="saveData()">
   </div>
+  <div class="form-item" id="court3Container" style="display:none;">
+    <label>Корт 3</label>
+    <input id="court3" value="" placeholder="8" oninput="saveData()">
+  </div>
 </div>
 
 <datalist id="playersList"></datalist>
 <div id="playerAutocompleteMenu" class="autocomplete-menu"></div>
 
 <div class="teams-grid">
-  <div class="team">
-    <label>Команда 1</label>
+  <div class="team" id="team1">
+    <label>Пара 1</label>
     <div class="team-inputs">
       <input id="team1a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
       <input id="team1b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
     </div>
     <div class="player-badges" id="team1badges"></div>
   </div>
-  <div class="team">
-    <label>Команда 2</label>
+  <div class="team" id="team2">
+    <label>Пара 2</label>
     <div class="team-inputs">
       <input id="team2a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
       <input id="team2b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
     </div>
     <div class="player-badges" id="team2badges"></div>
   </div>
-  <div class="team">
-    <label>Команда 3</label>
+  <div class="team" id="team3">
+    <label>Пара 3</label>
     <div class="team-inputs">
       <input id="team3a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
       <input id="team3b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
     </div>
     <div class="player-badges" id="team3badges"></div>
   </div>
-  <div class="team">
-    <label>Команда 4</label>
+  <div class="team" id="team4">
+    <label>Пара 4</label>
     <div class="team-inputs">
       <input id="team4a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
       <input id="team4b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
@@ -223,21 +254,122 @@ const roundTemplates = [
 
 let rounds = [];
 
+const DEFAULT_PAIR_COUNT = 4;
+const DEFAULT_COURT_COUNT = 2;
+const DEFAULT_ROUND_LIMIT = 32;
+const ROUND_LIMIT_OPTIONS = [21,24,27,32];
+
+function getPairCount(){
+  const el = document.getElementById('pairCount');
+  const value = parseInt(el?.value || String(DEFAULT_PAIR_COUNT), 10);
+  return [2,3,4].includes(value) ? value : DEFAULT_PAIR_COUNT;
+}
+
+function getCourtCount(){
+  const el = document.getElementById('courtCount');
+  const value = parseInt(el?.value || String(DEFAULT_COURT_COUNT), 10);
+  return [1,2,3].includes(value) ? value : DEFAULT_COURT_COUNT;
+}
+
+function getRoundLimitMode(){
+  const el = document.getElementById('roundLimit');
+  return el?.value || String(DEFAULT_ROUND_LIMIT);
+}
+
+function getRoundLimit(){
+  const mode = getRoundLimitMode();
+  if(mode === 'custom'){
+    const custom = document.getElementById('roundLimitCustom');
+    const customValue = parseInt(custom?.value || '', 10);
+    return customValue > 0 ? customValue : DEFAULT_ROUND_LIMIT;
+  }
+  const value = parseInt(mode, 10);
+  return ROUND_LIMIT_OPTIONS.includes(value) ? value : DEFAULT_ROUND_LIMIT;
+}
+
 function getRoundCount(){
   const el = document.getElementById('roundCount');
   const value = parseInt(el?.value || '2', 10);
   return [1,2,3].includes(value) ? value : 2;
 }
 
-function buildRoundsByCount(count){
-  if(count === 1) return roundTemplates.slice(0,3);
-  if(count === 3) return roundTemplates.concat(roundTemplates.slice(0,3));
-  return roundTemplates.slice(0,6);
+function buildRoundsByCount(pairCount, roundCount, courtCount){
+  const rounds = [];
+  if(pairCount === 2){
+    const base = [[0,1]];
+    for(let roundIndex = 0; roundIndex < roundCount; roundIndex++){
+      rounds.push(base.map((m,i) => [m[0], m[1], (roundIndex * base.length + i) % courtCount + 1]));
+    }
+    return rounds;
+  }
+
+  if(pairCount === 3){
+    const base = [[0,1],[0,2],[1,2]];
+    for(let roundIndex = 0; roundIndex < roundCount; roundIndex++){
+      rounds.push(base.map((m,i) => [m[0], m[1], (roundIndex * base.length + i) % courtCount + 1]));
+    }
+    return rounds;
+  }
+
+  const maxRounds = roundCount === 1 ? 3 : roundCount === 3 ? 9 : 6;
+  const selected = roundTemplates.slice(0, maxRounds);
+  return selected.map((round, roundIndex) =>
+    round.map((match, matchIndex) => [match[0], match[1], (roundIndex * round.length + matchIndex) % courtCount + 1])
+  );
 }
 
 function refreshRounds(){
-  rounds = buildRoundsByCount(getRoundCount());
+  rounds = buildRoundsByCount(getPairCount(), getRoundCount(), getCourtCount());
   return rounds;
+}
+
+function onRoundLimitChange(){
+  const mode = getRoundLimitMode();
+  const customInput = document.getElementById('roundLimitCustom');
+  if(customInput){
+    customInput.style.display = mode === 'custom' ? 'block' : 'none';
+    if(mode !== 'custom' && !customInput.value){
+      customInput.value = DEFAULT_ROUND_LIMIT;
+    }
+  }
+}
+
+function updatePairInputs(){
+  const count = getPairCount();
+  for(let idx = 1; idx <= 4; idx++){
+    const teamBlock = document.getElementById(`team${idx}`);
+    if(teamBlock){
+      teamBlock.style.display = idx <= count ? 'block' : 'none';
+    }
+  }
+}
+
+function updateCourtFields(){
+  const count = getCourtCount();
+  for(let idx = 1; idx <= 3; idx++){
+    const courtBlock = document.getElementById(`court${idx}Container`);
+    if(courtBlock){
+      courtBlock.style.display = idx <= count ? 'block' : 'none';
+    }
+  }
+}
+
+function onPairCountChange(){
+  updatePairInputs();
+  refreshRounds();
+  const matchesContainer = document.getElementById('matches');
+  if(matchesContainer && matchesContainer.innerHTML.trim()){
+    generateMatches();
+  }
+}
+
+function onCourtCountChange(){
+  updateCourtFields();
+  refreshRounds();
+  const matchesContainer = document.getElementById('matches');
+  if(matchesContainer && matchesContainer.innerHTML.trim()){
+    generateMatches();
+  }
 }
 
 let lastResultsText = "";
@@ -568,18 +700,21 @@ function getRoundsForHistory(item){
 }
 
 function getHistoryTeams(item){
-  if(Array.isArray(item?.teams) && item.teams.length >= 4) return item.teams;
+  const pairCount = Number(item?.pairCount || 4);
+  if(Array.isArray(item?.teams) && item.teams.length >= 2){
+    return item.teams.slice(0, Math.min(item.teams.length, pairCount));
+  }
   const data = item?.editData || {};
-  const formatTeam = (a,b)=>{
+  const formatTeam = (a,b, index)=>{
     const parts = [stripPlayerBadge(a || ''), stripPlayerBadge(b || '')].filter(Boolean);
-    return parts.length ? parts.join(' · ') : 'Команда';
+    return parts.length ? parts.join(' · ') : `Пара ${index}`;
   };
   return [
-    formatTeam(data.team1a, data.team1b),
-    formatTeam(data.team2a, data.team2b),
-    formatTeam(data.team3a, data.team3b),
-    formatTeam(data.team4a, data.team4b)
-  ];
+    formatTeam(data.team1a, data.team1b, 1),
+    formatTeam(data.team2a, data.team2b, 2),
+    formatTeam(data.team3a, data.team3b, 3),
+    formatTeam(data.team4a, data.team4b, 4)
+  ].slice(0, pairCount);
 }
 
 function buildHistoryMatchesHtml(item){
@@ -592,7 +727,7 @@ function buildHistoryMatchesHtml(item){
     const lines = round.map((m,i)=>{
       const a = scores[`a-${r}-${i}`] ?? '-';
       const b = scores[`b-${r}-${i}`] ?? '-';
-      return `<div class="small">${escapeHtml(teams[m[0]] || 'Команда')} ${escapeHtml(a)}:${escapeHtml(b)} ${escapeHtml(teams[m[1]] || 'Команда')}</div>`;
+      return `<div class="small">${escapeHtml(teams[m[0]] || 'Пара')} ${escapeHtml(a)}:${escapeHtml(b)} ${escapeHtml(teams[m[1]] || 'Пара')}</div>`;
     }).join('');
     return `<div style="margin:10px 0 4px;font-weight:700">Раунд ${r+1}</div>${lines}`;
   }).join('');
@@ -886,21 +1021,23 @@ function normalizePlayerName(name){
 
 function getTeams(){
   try {
-    const formatTeam = (a,b)=>{
+    const formatTeam = (a,b, index)=>{
       const partA = stripPlayerBadge(a || '');
       const partB = stripPlayerBadge(b || '');
       const parts = [partA, partB].filter(Boolean);
-      return parts.length > 0 ? parts.join(' · ') : 'Команда';
+      return parts.length > 0 ? parts.join(' · ') : `Пара ${index}`;
     };
-    return [
-      formatTeam(team1a?.value, team1b?.value),
-      formatTeam(team2a?.value, team2b?.value),
-      formatTeam(team3a?.value, team3b?.value),
-      formatTeam(team4a?.value, team4b?.value)
+    const allTeams = [
+      formatTeam(team1a?.value, team1b?.value, 1),
+      formatTeam(team2a?.value, team2b?.value, 2),
+      formatTeam(team3a?.value, team3b?.value, 3),
+      formatTeam(team4a?.value, team4b?.value, 4)
     ];
+    return allTeams.slice(0, getPairCount());
   } catch(e){
     console.error('getTeams error:', e);
-    return ['Команда 1', 'Команда 2', 'Команда 3', 'Команда 4'];
+    const defaultCount = getPairCount();
+    return Array.from({length: defaultCount}, (_, i) => `Пара ${i+1}`);
   }
 }
 
@@ -912,6 +1049,7 @@ function getPlayersByIndex(idx){
       [team3a?.value, team3b?.value],
       [team4a?.value, team4b?.value]
     ];
+    if(idx < 0 || idx >= getPairCount()) return [];
     if(!pairs[idx]) return [];
     return pairs[idx].map(stripPlayerBadge).filter(Boolean);
   } catch(e){
@@ -922,13 +1060,12 @@ function getPlayersByIndex(idx){
 
 function getCourtName(n){
   try {
-    const c1 = document.getElementById('court1');
-    const c2 = document.getElementById('court2');
-    const val = n === 1 ? (c1?.value || '') : (c2?.value || '');
-    return val ? "Корт №" + String(val) : (n === 1 ? "Корт 1" : "Корт 2");
+    const court = document.getElementById(`court${n}`);
+    const value = court?.value || '';
+    return value ? `Корт №${value}` : `Корт ${n}`;
   } catch(e){
     console.warn('getCourtName error:', e);
-    return n === 1 ? "Корт 1" : "Корт 2";
+    return `Корт ${n}`;
   }
 }
 
@@ -1076,11 +1213,12 @@ function autoFill(r,i,side){
   const b = document.getElementById(`b-${r}-${i}`);
   if(!a || !b) return;
 
+  const limit = getRoundLimit();
   const av = parseInt(a.value);
   const bv = parseInt(b.value);
 
-  if(side === "a" && !isNaN(av) && av >= 0 && av <= 32) b.value = 32 - av;
-  if(side === "b" && !isNaN(bv) && bv >= 0 && bv <= 32) a.value = 32 - bv;
+  if(side === "a" && !isNaN(av) && av >= 0 && av <= limit) b.value = limit - av;
+  if(side === "b" && !isNaN(bv) && bv >= 0 && bv <= limit) a.value = limit - bv;
 
   saveData();
 }
@@ -1105,6 +1243,7 @@ function generateMatches(){
   try {
     refreshRounds();
     const teams = getTeams();
+    const limit = getRoundLimit();
     let html = "";
 
     rounds.forEach((round,r)=>{
@@ -1115,8 +1254,8 @@ function generateMatches(){
         <div class="court">${getCourtName(m[2])}</div>
         <div class="teams">${teams[m[0]]} 🆚 ${teams[m[1]]}</div>
         <div class="score">
-          <input type="number" id="a-${r}-${i}" placeholder="0" min="0" max="32" oninput="autoFill(${r},${i},'a')">
-          <input type="number" id="b-${r}-${i}" placeholder="0" min="0" max="32" oninput="autoFill(${r},${i},'b')">
+          <input type="number" id="a-${r}-${i}" placeholder="0" min="0" max="${limit}" oninput="autoFill(${r},${i},'a')">
+          <input type="number" id="b-${r}-${i}" placeholder="0" min="0" max="${limit}" oninput="autoFill(${r},${i},'b')">
         </div>
       </div>`;
       });
@@ -1131,7 +1270,7 @@ function generateMatches(){
       console.error('matches container not found');
       return;
     }
-    
+
     loadScores();
     saveData();
     console.log('generateMatches completed successfully');
@@ -1259,7 +1398,7 @@ function calculateResults(){
       <thead>
         <tr>
           <th>Место</th>
-          <th>Команда</th>
+          <th>Пара</th>
           <th>В-П-Н</th>
           <th>Очки</th>
           <th>Разница</th>
@@ -1297,7 +1436,7 @@ html += `
   if(allGroupRoundsFilled()){
     html += `
     <div id="group-action-buttons" class="button-row">
-      <button class="secondary" onclick="startPlayoff()">Играть плей-офф</button>
+      ${getPairCount() === 4 ? `<button class="secondary" onclick="startPlayoff()">Играть плей-офф</button>` : ``}
       <button class="secondary" onclick="saveTournament()">Сохранить турнир</button>
     </div>
     <div id="playoff-section"></div>
@@ -1310,6 +1449,7 @@ html += `
 }
 
 function startPlayoff(){
+  if(getPairCount() !== 4) return;
   if(!roundsStats || roundsStats.length < 4){
     calculateResults();
   }
@@ -1442,7 +1582,7 @@ function tryRenderTournamentTable(){
 
   let html = `<h2 style="text-align:center;margin-top:18px;">📋 Таблица турнира</h2>`;
   html += `<div class="tourney-container"><div class="tourney-scroll"><table class="tourney-table"><thead><tr>`;
-  html += `<th>Место</th><th>Команда</th>`;
+  html += `<th>Место</th><th>Пара</th>`;
   for(let r=0;r<rounds.length;r++) html += `<th>Р${r+1}</th>`;
   html += `<th>ПФ</th><th>Ф/3М</th><th>Очки</th><th>Разница</th><th>В-П-Н</th>`;
   html += `</tr></thead><tbody>`;
@@ -1509,7 +1649,12 @@ function saveData(){
     const td = document.getElementById('tournamentDate');
     const c1 = document.getElementById('court1');
     const c2 = document.getElementById('court2');
+    const c3 = document.getElementById('court3');
     const rc = document.getElementById('roundCount');
+    const pc = document.getElementById('pairCount');
+    const cc = document.getElementById('courtCount');
+    const rl = document.getElementById('roundLimit');
+    const rlc = document.getElementById('roundLimitCustom');
     const t1a = document.getElementById('team1a');
     const t1b = document.getElementById('team1b');
     const t2a = document.getElementById('team2a');
@@ -1522,9 +1667,15 @@ function saveData(){
     const data = {
       name: tn?.value || 'Командный Американо',
       date: td?.value || '',
+      pairCount: pc?.value || String(DEFAULT_PAIR_COUNT),
+      courtCount: cc?.value || String(DEFAULT_COURT_COUNT),
+      roundLimit: getRoundLimit(),
+      roundLimitMode: rl?.value || String(DEFAULT_ROUND_LIMIT),
+      roundLimitCustom: rlc?.value || '',
+      roundCount: rc?.value || '2',
       court1: c1?.value || '',
       court2: c2?.value || '',
-      roundCount: rc?.value || '2',
+      court3: c3?.value || '',
       team1a: t1a?.value || "",
       team1b: t1b?.value || "",
       team2a: t2a?.value || "",
@@ -1533,6 +1684,7 @@ function saveData(){
       team3b: t3b?.value || "",
       team4a: t4a?.value || "",
       team4b: t4b?.value || "",
+      teams: getTeams(),
       scores:{}
     };
 
@@ -1579,6 +1731,9 @@ function loadData(){
   // Намеренно не подставляем прошлые имена/корты/дату.
   // Новый запуск должен начинаться с пустых полей.
   updateHeader('tournament');
+  updatePairInputs();
+  updateCourtFields();
+  onRoundLimitChange();
   hidePostResultButtons();
 }
 
@@ -1838,9 +1993,15 @@ function getCurrentTournamentSnapshot(){
   return {
     name: document.getElementById('tournamentName')?.value || '',
     date: document.getElementById('tournamentDate')?.value || '',
+    pairCount: document.getElementById('pairCount')?.value || String(DEFAULT_PAIR_COUNT),
+    courtCount: document.getElementById('courtCount')?.value || String(DEFAULT_COURT_COUNT),
+    roundLimit: getRoundLimit(),
+    roundLimitMode: document.getElementById('roundLimit')?.value || String(DEFAULT_ROUND_LIMIT),
+    roundLimitCustom: document.getElementById('roundLimitCustom')?.value || '',
+    roundCount: document.getElementById('roundCount')?.value || '2',
     court1: document.getElementById('court1')?.value || '',
     court2: document.getElementById('court2')?.value || '',
-    roundCount: document.getElementById('roundCount')?.value || '2',
+    court3: document.getElementById('court3')?.value || '',
     team1a: document.getElementById('team1a')?.value || '',
     team1b: document.getElementById('team1b')?.value || '',
     team2a: document.getElementById('team2a')?.value || '',
@@ -1862,11 +2023,31 @@ function editHistoryTournament(id){
   const data = item.editData;
   editingTournamentId = item.id;
   editingCloudId = item._cloudId || null;
-  ['tournamentName','tournamentDate','roundCount','court1','court2','team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b'].forEach(id=>{
+
+  const pairCountValue = data.pairCount || item.pairCount || DEFAULT_PAIR_COUNT;
+  const courtCountValue = data.courtCount || item.courtCount || DEFAULT_COURT_COUNT;
+  const roundLimitValue = data.roundLimit || item.roundLimit || DEFAULT_ROUND_LIMIT;
+  const roundLimitMode = ROUND_LIMIT_OPTIONS.includes(Number(roundLimitValue)) ? String(roundLimitValue) : 'custom';
+  const roundLimitCustomValue = roundLimitMode === 'custom' ? String(roundLimitValue) : '';
+
+  ['tournamentName','tournamentDate','roundCount','court1','court2','court3','team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b'].forEach(id=>{
     const el = document.getElementById(id);
     if(el && data[id] !== undefined) el.value = data[id] || '';
   });
+
+  const pairCountEl = document.getElementById('pairCount');
+  if(pairCountEl) pairCountEl.value = String(pairCountValue);
+  const courtCountEl = document.getElementById('courtCount');
+  if(courtCountEl) courtCountEl.value = String(courtCountValue);
+  const roundLimitEl = document.getElementById('roundLimit');
+  if(roundLimitEl) roundLimitEl.value = roundLimitMode;
+  const roundLimitCustomEl = document.getElementById('roundLimitCustom');
+  if(roundLimitCustomEl) roundLimitCustomEl.value = roundLimitCustomValue || String(roundLimitValue);
+
   switchTab('tournament');
+  updatePairInputs();
+  updateCourtFields();
+  onRoundLimitChange();
   refreshRounds();
   generateMatches();
   if(data.scores){
@@ -1898,21 +2079,24 @@ function buildTournamentHistoryEntry(){
   const groupData = computeGroupStats();
   return {
     id: editingTournamentId || String(Date.now()),
-    name:getTournamentNameValue(),
-    date:getTournamentDateDisplay(),
-    roundCount:getRoundCount(),
-    savedAt:new Date().toISOString(),
-    teams:getTeams(),
-    editData:getCurrentTournamentSnapshot(),
-    groupText:buildGroupStageText(),
-    dayText:buildDayText(),
-    groupStandings:groupData.sorted.map((item,index)=>({
-      place:index+1,
-      team:item[0],
+    name: getTournamentNameValue(),
+    date: getTournamentDateDisplay(),
+    pairCount: getPairCount(),
+    courtCount: getCourtCount(),
+    roundLimit: getRoundLimit(),
+    roundCount: getRoundCount(),
+    savedAt: new Date().toISOString(),
+    teams: getTeams(),
+    editData: getCurrentTournamentSnapshot(),
+    groupText: buildGroupStageText(),
+    dayText: buildDayText(),
+    groupStandings: groupData.sorted.map((item,index)=>( {
+      place: index+1,
+      team: item[0],
       ...item[1]
     })),
-    finalPlaces:getFinalPlaces(),
-    playerStats:getPersonalStats()
+    finalPlaces: getFinalPlaces(),
+    playerStats: getPersonalStats()
   };
 }
 
