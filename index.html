@@ -64,6 +64,9 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .rating-table{width:100%;border-collapse:collapse;margin-top:12px}
 .rating-table th,.rating-table td{padding:10px 12px;border-bottom:1px solid #2a2a2a;text-align:left}
 .rating-table th{color:#ddd;font-weight:700;font-size:14px}
+.rating-controls{display:grid;grid-template-columns:minmax(180px,260px) 1fr;gap:12px;align-items:end;margin-bottom:12px}
+.rating-controls label{margin:0 0 8px}
+@media (max-width:700px){.rating-controls{grid-template-columns:1fr}}
 .autocomplete-menu{position:fixed;z-index:9999;background:#181818;border:1px solid #3a3a3a;border-radius:14px;box-shadow:0 14px 34px rgba(0,0,0,.45);overflow:hidden;max-height:260px;overflow-y:auto;display:none}
 .autocomplete-item{padding:12px 14px;cursor:pointer;font-size:16px;border-bottom:1px solid #252525}
 .autocomplete-item:last-child{border-bottom:none}
@@ -172,7 +175,6 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
 <div id="results"></div>
 
 <div id="post-results-buttons" class="button-row" style="display:none;">
-  <button class="secondary" onclick="exportFullReport()">Полная версия</button>
   <button class="secondary" onclick="shareResults()">Поделиться результатом</button>
   <button class="secondary" onclick="saveTournament()">Сохранить турнир</button>
   <button class="secondary" onclick="clearTournament()">Новый турнир / очистить</button>
@@ -512,6 +514,58 @@ function toggleHistoryDetail(id){
   showHistoryDetail(id);
 }
 
+
+function getRoundsForHistory(item){
+  const raw = Number(item?.roundCount || item?.editData?.roundCount || 2);
+  const count = [1,2,3].includes(raw) ? raw : 2;
+  return buildRoundsByCount(count);
+}
+
+function getHistoryTeams(item){
+  if(Array.isArray(item?.teams) && item.teams.length >= 4) return item.teams;
+  const data = item?.editData || {};
+  const formatTeam = (a,b)=>{
+    const parts = [stripPlayerBadge(a || ''), stripPlayerBadge(b || '')].filter(Boolean);
+    return parts.length ? parts.join(' · ') : 'Команда';
+  };
+  return [
+    formatTeam(data.team1a, data.team1b),
+    formatTeam(data.team2a, data.team2b),
+    formatTeam(data.team3a, data.team3b),
+    formatTeam(data.team4a, data.team4b)
+  ];
+}
+
+function buildHistoryMatchesHtml(item){
+  const roundsForItem = getRoundsForHistory(item);
+  const teams = getHistoryTeams(item);
+  const scores = item?.editData?.scores || {};
+  if(!roundsForItem.length || !teams.length) return '<div class="small">История игр недоступна.</div>';
+
+  return roundsForItem.map((round,r)=>{
+    const lines = round.map((m,i)=>{
+      const a = scores[`a-${r}-${i}`] ?? '-';
+      const b = scores[`b-${r}-${i}`] ?? '-';
+      return `<div class="small">${escapeHtml(teams[m[0]] || 'Команда')} ${escapeHtml(a)}:${escapeHtml(b)} ${escapeHtml(teams[m[1]] || 'Команда')}</div>`;
+    }).join('');
+    return `<div style="margin:10px 0 4px;font-weight:700">Раунд ${r+1}</div>${lines}`;
+  }).join('');
+}
+
+function buildHistoryGroupStatsHtml(item){
+  return (item.groupStandings || []).map(s=>
+    `<div class="small">${s.place}. ${escapeHtml(getBadgedTeam(s.team))} — ${s.wins}-${s.losses}-${s.draws} • ${s.scored}-${s.conceded} • ${s.delta>0?'+':''}${s.delta}</div>`
+  ).join('');
+}
+
+function buildHistoryGroupPlacesHtml(item){
+  const medals = ['🥇','🥈','🥉','4️⃣'];
+  return (item.groupStandings || []).map((s,index)=>
+    `<div class="small">${medals[index] || `${index+1}.`} ${escapeHtml(getBadgedTeam(s.team))}</div>`
+  ).join('');
+}
+
+
 function showHistoryDetail(id){
   const item = findHistoryItem(id);
   const detail = document.getElementById('historyDetail');
@@ -519,12 +573,12 @@ function showHistoryDetail(id){
 
   const finalPlaces = Array.isArray(item.finalPlaces) ? item.finalPlaces : [];
   const finalHtml = finalPlaces.length === 4
-    ? `<div class="small">🥇 ${getBadgedPlayer(finalPlaces[0]||'-')}<br>🥈 ${getBadgedPlayer(finalPlaces[1]||'-')}<br>🥉 ${getBadgedPlayer(finalPlaces[2]||'-')}<br>4️⃣ ${getBadgedPlayer(finalPlaces[3]||'-')}</div>`
+    ? `<div class="small">🥇 ${escapeHtml(getBadgedPlayer(finalPlaces[0]||'-'))}<br>🥈 ${escapeHtml(getBadgedPlayer(finalPlaces[1]||'-'))}<br>🥉 ${escapeHtml(getBadgedPlayer(finalPlaces[2]||'-'))}<br>4️⃣ ${escapeHtml(getBadgedPlayer(finalPlaces[3]||'-'))}</div>`
     : `<div class="small">Турнир сохранен после группового этапа. Итоговые места плей-офф не заполнены.</div>`;
 
-  const groupHtml = (item.groupStandings || []).map(s=>
-    `<div class="small">${s.place}. ${getBadgedTeam(s.team)} — ${s.wins}-${s.losses}-${s.draws} • ${s.scored}-${s.conceded} • ${s.delta>0?'+':''}${s.delta}</div>`
-  ).join('');
+  const matchesHtml = buildHistoryMatchesHtml(item);
+  const groupStatsHtml = buildHistoryGroupStatsHtml(item) || '<div class="small">Итоги группового этапа недоступны.</div>';
+  const groupPlacesHtml = buildHistoryGroupPlacesHtml(item) || '<div class="small">Итоговые места группового этапа недоступны.</div>';
 
   const playoffText = extractPlayoffBlock(item.dayText);
   const playoffHtml = playoffText
@@ -535,12 +589,22 @@ function showHistoryDetail(id){
     <div class="history-detail">
       <div class="history-card-title">${escapeHtml(item.name)}</div>
       <div class="history-card-meta">${escapeHtml(item.date)}</div>
-      <div style="margin:12px 0;font-weight:700">Итоговые места</div>
-      ${finalHtml}
-      <div style="margin:16px 0;font-weight:700">Итоги группового этапа</div>
-      <div>${groupHtml}</div>
-      <div style="margin:16px 0;font-weight:700">Плей-офф</div>
+
+      <div style="margin:16px 0 8px;font-weight:700">История игр</div>
+      <div>${matchesHtml}</div>
+
+      <div style="margin:16px 0 8px;font-weight:700">Итоги группового этапа</div>
+      <div>${groupStatsHtml}</div>
+
+      <div style="margin:16px 0 8px;font-weight:700">Итоговые места группового этапа</div>
+      <div>${groupPlacesHtml}</div>
+
+      <div style="margin:16px 0 8px;font-weight:700">Плей-офф</div>
       <div class="small">${playoffHtml}</div>
+
+      <div style="margin:16px 0 8px;font-weight:700">Итоговые места турнира</div>
+      ${finalHtml}
+
       <div class="button-row" style="margin-top:16px;">
         <button class="secondary" onclick="copyHistoryReport('${item.id}')">Скопировать отчет</button>
         <button class="secondary" onclick="editHistoryTournament('${item.id}')">Редактировать</button>
@@ -636,6 +700,55 @@ function getPlayerSeriesStats(){
   return [];
 }
 
+
+function getRatingSortMode(){
+  const fromSelect = document.getElementById('ratingSortMode')?.value;
+  const saved = localStorage.getItem('padelFlowRatingSortMode');
+  return fromSelect || saved || 'points';
+}
+
+function setRatingSortMode(value){
+  localStorage.setItem('padelFlowRatingSortMode', value);
+  renderRating();
+}
+
+function getPlayerWinrateValue(player){
+  const played = player.wins + player.losses + player.draws;
+  return played ? player.wins / played : 0;
+}
+
+function sortRatingList(list, mode){
+  const sorted = [...list];
+  sorted.sort((a,b)=>{
+    if(mode === 'record'){
+      if(b.wins !== a.wins) return b.wins - a.wins;
+      if(a.losses !== b.losses) return a.losses - b.losses;
+      if(b.draws !== a.draws) return b.draws - a.draws;
+      if(b.delta !== a.delta) return b.delta - a.delta;
+      if(b.scored !== a.scored) return b.scored - a.scored;
+      return a.name.localeCompare(b.name,'ru');
+    }
+
+    if(mode === 'winrate'){
+      const br = getPlayerWinrateValue(b);
+      const ar = getPlayerWinrateValue(a);
+      if(br !== ar) return br - ar;
+      if(b.wins !== a.wins) return b.wins - a.wins;
+      if(b.tournaments !== a.tournaments) return b.tournaments - a.tournaments;
+      if(b.delta !== a.delta) return b.delta - a.delta;
+      return a.name.localeCompare(b.name,'ru');
+    }
+
+    // points: сортируем по набранным очкам, потом по разнице.
+    if(b.scored !== a.scored) return b.scored - a.scored;
+    if(b.delta !== a.delta) return b.delta - a.delta;
+    if(b.wins !== a.wins) return b.wins - a.wins;
+    return a.name.localeCompare(b.name,'ru');
+  });
+  return sorted;
+}
+
+
 async function renderRating(){
   await loadTournamentHistory();
   const saved = getHistoryDataSync();
@@ -646,6 +759,7 @@ async function renderRating(){
     container.innerHTML = `<div class="history-detail"><strong>Рейтинг пока пуст</strong></div>`;
     return;
   }
+
   const stats = {};
   saved.forEach(tournament=>{
     const players = tournament.playerStats || [];
@@ -664,20 +778,38 @@ async function renderRating(){
       stats[p.name].draws += p.draws;
     });
   });
-  const list = Object.values(stats).sort((a,b)=>{
-    if(b.delta !== a.delta) return b.delta - a.delta;
-    if(b.wins !== a.wins) return b.wins - a.wins;
-    if(b.scored !== a.scored) return b.scored - a.scored;
-    return a.name.localeCompare(b.name,'ru');
-  });
+
+  const mode = getRatingSortMode();
+  const list = sortRatingList(Object.values(stats), mode);
+
   const rows = list.map(p=>{
     const played = p.wins + p.losses + p.draws;
     const rate = played ? Math.round((p.wins/played)*100) : 0;
     const badge = getPlayerBadge(p.name);
-    return `<tr><td>${badge ? badge + ' ' : ''}${p.name}</td><td>${p.tournaments}</td><td>${p.scored}-${p.conceded}</td><td>${p.delta>0?'+':''}${p.delta}</td><td>${p.wins}-${p.losses}-${p.draws}</td><td>${rate}%</td></tr>`;
+    return `<tr><td>${badge ? badge + ' ' : ''}${escapeHtml(p.name)}</td><td>${p.tournaments}</td><td>${p.scored}-${p.conceded}</td><td>${p.delta>0?'+':''}${p.delta}</td><td>${p.wins}-${p.losses}-${p.draws}</td><td>${rate}%</td></tr>`;
   }).join('');
+
   container.innerHTML = `
-    <div class="tourney-container"><div class="tourney-scroll"><table class="rating-table"><thead><tr><th>Игрок</th><th>Турниры</th><th>Очки</th><th>Разница</th><th>В-П-Н</th><th>Winrate</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+    <div class="rating-controls">
+      <div>
+        <label>Считать рейтинг по</label>
+        <select id="ratingSortMode" onchange="setRatingSortMode(this.value)">
+          <option value="points" ${mode === 'points' ? 'selected' : ''}>Количеству очков</option>
+          <option value="record" ${mode === 'record' ? 'selected' : ''}>В-П-Н</option>
+          <option value="winrate" ${mode === 'winrate' ? 'selected' : ''}>Проценту побед</option>
+        </select>
+      </div>
+    </div>
+    <div class="tourney-container">
+      <div class="tourney-scroll">
+        <table class="rating-table">
+          <thead>
+            <tr><th>Игрок</th><th>Турниры</th><th>Очки</th><th>Разница</th><th>В-П-Н</th><th>Процент побед</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
     <div class="button-row">
       <button class="secondary" onclick="copyRatingText()">Копировать рейтинг</button>
       <button class="secondary" onclick="shareRatingText()">Поделиться рейтингом</button>
@@ -1425,7 +1557,7 @@ function buildGroupStageText(){
   const name = getTournamentNameValue();
   const date = getTournamentDateDisplay();
   let text = `🎾 ${name}${date ? ' • ' + date : ''}\n\n`;
-  text += "📊 Групповой этап\n\n";
+  text += "📋 История игр\n\n";
 
   rounds.forEach((round,r)=>{
     text += `Раунд ${r+1}\n`;
@@ -1437,15 +1569,18 @@ function buildGroupStageText(){
     text += "\n";
   });
 
-  text += `🏆 Итоги группового этапа\n\n`;
-  const medals = ["🥇","🥈","🥉","4️⃣"];
+  text += `📊 Итоги группового этапа\n\n`;
   data.sorted.forEach((item,index)=>{
     const s = item[1];
-    text += `${medals[index]} ${index+1} место — ${getBadgedTeam(item[0])}\n`;
-    text += `Очки: ${s.scored}-${s.conceded}\n`;
-    text += `Разница: ${s.delta>0?"+":""}${s.delta}\n`;
-    text += `В-П-Н: ${s.wins}-${s.losses}-${s.draws}\n\n`;
+    text += `${index+1}. ${getBadgedTeam(item[0])} — ${s.wins}-${s.losses}-${s.draws} • ${s.scored}-${s.conceded} • ${s.delta>0?"+":""}${s.delta}\n`;
   });
+
+  text += `\n🏅 Итоговые места группового этапа\n\n`;
+  const medals = ["🥇","🥈","🥉","4️⃣"];
+  data.sorted.forEach((item,index)=>{
+    text += `${medals[index]} ${getBadgedTeam(item[0])}\n`;
+  });
+  text += "\n";
 
   return text;
 }
@@ -1572,14 +1707,14 @@ function shareResults(){
 
 
 function buildRatingText(){
-  const list = getRatingStats();
+  const list = sortRatingList(getRatingStats(), getRatingSortMode());
   let text = '🏆 Рейтинг игроков PadelFlow\n\n';
   if(!list.length) return text + 'Рейтинг пока пуст';
   list.forEach((p,index)=>{
     const played = p.wins + p.losses + p.draws;
     const rate = played ? Math.round((p.wins/played)*100) : 0;
     text += `${index+1}. ${p.name}\n`;
-    text += `Турниры: ${p.tournaments} | Очки: ${p.scored}-${p.conceded} | Разница: ${p.delta>0?'+':''}${p.delta} | В-П-Н: ${p.wins}-${p.losses}-${p.draws} | Winrate: ${rate}%\n\n`;
+    text += `Турниры: ${p.tournaments} | Очки: ${p.scored}-${p.conceded} | Разница: ${p.delta>0?'+':''}${p.delta} | В-П-Н: ${p.wins}-${p.losses}-${p.draws} | Процент побед: ${rate}%\n\n`;
   });
   return text;
 }
