@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PadelFlow</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// Гарантируем, что суперба загружается асинхронно
+window.addEventListener('load', function(){
+  if(typeof supabase === 'undefined' && typeof window.supabase !== 'undefined'){
+    window.supabase.createClient = window.supabase.createClient || (function(){return null;});
+  }
+});
+</script>
 <style>
 body{margin:0;padding:16px;background:#111;color:white;font-family:Arial,sans-serif}
 input{width:100%;box-sizing:border-box;padding:14px;margin:6px 0;border:none;border-radius:12px;font-size:18px}
@@ -193,7 +201,9 @@ const defaultPlayers = [
   'Михаил Авагян',
   'Сотников Александр',
   'Боев Сергей',
-  'Гейер Станислав'
+  'Гейер Станислав',
+  'Шагинуров Олег',
+  'Алена А'
 ];
 
 function getCurrentDate(){
@@ -560,51 +570,95 @@ function renderRating(){
   container.innerHTML = `<div class="tourney-container"><div class="tourney-scroll"><table class="rating-table"><thead><tr><th>Игрок</th><th>Турниры</th><th>Очки</th><th>Разница</th><th>В-П-Н</th><th>Winrate</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 
+function stripPlayerBadge(name){
+  // Удаляет медали (🥇 🥈 🥉) из начала строки и нормализует
+  try {
+    const str = String(name || '').trim();
+    if(!str) return '';
+    return str.replace(/^[🥇🥈🥉]\s*/, '').trim().replace(/\s+/g,' ');
+  } catch(e){
+    console.warn('stripPlayerBadge error:', e);
+    return String(name || '').trim().replace(/\s+/g,' ');
+  }
+}
+
 function normalizePlayerName(name){
-  return String(name || '').trim().replace(/\s+/g,' ');
+  try {
+    return stripPlayerBadge(name);
+  } catch(e){
+    console.warn('normalizePlayerName error:', e);
+    return String(name || '').trim().replace(/\s+/g,' ');
+  }
 }
 
 function getTeams(){
-  const formatTeam = (a,b)=>{
-    const parts = [normalizePlayerName(a), normalizePlayerName(b)].filter(Boolean);
-    return parts.join(' · ');
-  };
-  return [
-    formatTeam(team1a.value, team1b.value),
-    formatTeam(team2a.value, team2b.value),
-    formatTeam(team3a.value, team3b.value),
-    formatTeam(team4a.value, team4b.value)
-  ];
+  try {
+    const formatTeam = (a,b)=>{
+      const partA = stripPlayerBadge(a || '');
+      const partB = stripPlayerBadge(b || '');
+      const parts = [partA, partB].filter(Boolean);
+      return parts.length > 0 ? parts.join(' · ') : 'Команда';
+    };
+    return [
+      formatTeam(team1a?.value, team1b?.value),
+      formatTeam(team2a?.value, team2b?.value),
+      formatTeam(team3a?.value, team3b?.value),
+      formatTeam(team4a?.value, team4b?.value)
+    ];
+  } catch(e){
+    console.error('getTeams error:', e);
+    return ['Команда 1', 'Команда 2', 'Команда 3', 'Команда 4'];
+  }
 }
 
 function getPlayersByIndex(idx){
-  const pairs = [
-    [team1a.value, team1b.value],
-    [team2a.value, team2b.value],
-    [team3a.value, team3b.value],
-    [team4a.value, team4b.value]
-  ];
-  return pairs[idx].map(normalizePlayerName).filter(Boolean);
+  try {
+    const pairs = [
+      [team1a?.value, team1b?.value],
+      [team2a?.value, team2b?.value],
+      [team3a?.value, team3b?.value],
+      [team4a?.value, team4b?.value]
+    ];
+    if(!pairs[idx]) return [];
+    return pairs[idx].map(stripPlayerBadge).filter(Boolean);
+  } catch(e){
+    console.warn('getPlayersByIndex error:', e);
+    return [];
+  }
 }
 
 function getCourtName(n){
-  return n === 1 ? "Корт №" + court1.value : "Корт №" + court2.value;
+  try {
+    const c1 = document.getElementById('court1');
+    const c2 = document.getElementById('court2');
+    const val = n === 1 ? (c1?.value || '2') : (c2?.value || '6');
+    return "Корт №" + String(val);
+  } catch(e){
+    console.warn('getCourtName error:', e);
+    return "Корт №" + (n === 1 ? '2' : '6');
+  }
 }
 
 function loadPlayersList(){
-  let players = [];
-  try { players = JSON.parse(localStorage.getItem('playersList') || '[]'); } catch(e){ players = []; }
-  if(!Array.isArray(players) || players.length === 0) players = defaultPlayers.slice();
+  try {
+    let players = [];
+    try { players = JSON.parse(localStorage.getItem('playersList') || '[]'); } catch(e){ players = []; }
+    if(!Array.isArray(players) || players.length === 0) players = defaultPlayers.slice();
 
-  const clean = [];
-  players.forEach(p=>{
-    const name = normalizePlayerName(p);
-    if(name && !clean.some(x=>x.toLowerCase()===name.toLowerCase())) clean.push(name);
-  });
+    const clean = [];
+    players.forEach(p=>{
+      const name = normalizePlayerName(p);
+      if(name && !clean.some(x=>x.toLowerCase()===name.toLowerCase())) clean.push(name);
+    });
 
-  localStorage.setItem('playersList', JSON.stringify(clean));
-  const list = document.getElementById('playersList');
-  list.innerHTML = clean.map(p=>`<option value="${p}">`).join('');
+    localStorage.setItem('playersList', JSON.stringify(clean));
+    const list = document.getElementById('playersList');
+    if(list){
+      list.innerHTML = clean.map(p=>`<option value="${p}">`).join('');
+    }
+  } catch(e){
+    console.warn('loadPlayersList error:', e);
+  }
 }
 
 function savePlayersFromFields(){
@@ -612,7 +666,7 @@ function savePlayersFromFields(){
   try { players = JSON.parse(localStorage.getItem('playersList') || '[]'); } catch(e){ players = []; }
   ['team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b'].forEach(id=>{
     const el = document.getElementById(id);
-    const name = normalizePlayerName(el ? el.value : '');
+    const name = stripPlayerBadge(el ? el.value : '');
     if(name && !players.some(p=>String(p).toLowerCase()===name.toLowerCase())) players.push(name);
   });
   localStorage.setItem('playersList', JSON.stringify(players));
@@ -650,13 +704,14 @@ function autoFillPlayoff(side,id){
 }
 
 function generateMatches(){
-  const teams = getTeams();
-  let html = "";
+  try {
+    const teams = getTeams();
+    let html = "";
 
-  rounds.forEach((round,r)=>{
-    html += `<h2 style="text-align:center;">Раунд ${r+1}</h2>`;
-    round.forEach((m,i)=>{
-      html += `
+    rounds.forEach((round,r)=>{
+      html += `<h2 style="text-align:center;">Раунд ${r+1}</h2>`;
+      round.forEach((m,i)=>{
+        html += `
       <div class="match">
         <div class="court">${getCourtName(m[2])}</div>
         <div class="teams">${teams[m[0]]} 🆚 ${teams[m[1]]}</div>
@@ -665,12 +720,24 @@ function generateMatches(){
           <input type="number" id="b-${r}-${i}" placeholder="0" min="0" max="32" oninput="autoFill(${r},${i},'b')">
         </div>
       </div>`;
+      });
     });
-  });
 
-  document.getElementById('matches').innerHTML = html;
-  loadScores();
-  saveData();
+    const matchesContainer = document.getElementById('matches');
+    if(matchesContainer){
+      matchesContainer.innerHTML = html;
+    } else {
+      console.error('matches container not found');
+      return;
+    }
+    
+    loadScores();
+    saveData();
+    console.log('generateMatches completed successfully');
+  } catch(e){
+    console.error('generateMatches error:', e);
+    alert('Ошибка при создании расписания. Проверьте консоль.');
+  }
 }
 
 function computeGroupStats(){
@@ -990,69 +1057,105 @@ function getPlayoffScoreForTeam(team,type){
 }
 
 function saveData(){
-  const data = {
-    name: tournamentName.value || 'Командный Американо',
-    date: tournamentDate.value || getCurrentDate(),
-    court1: court1.value,
-    court2: court2.value,
-    team1a: team1a.value,
-    team1b: team1b.value,
-    team2a: team2a.value,
-    team2b: team2b.value,
-    team3a: team3a.value,
-    team3b: team3b.value,
-    team4a: team4a.value,
-    team4b: team4b.value,
-    scores:{}
-  };
+  try {
+    const tn = document.getElementById('tournamentName');
+    const td = document.getElementById('tournamentDate');
+    const c1 = document.getElementById('court1');
+    const c2 = document.getElementById('court2');
+    const t1a = document.getElementById('team1a');
+    const t1b = document.getElementById('team1b');
+    const t2a = document.getElementById('team2a');
+    const t2b = document.getElementById('team2b');
+    const t3a = document.getElementById('team3a');
+    const t3b = document.getElementById('team3b');
+    const t4a = document.getElementById('team4a');
+    const t4b = document.getElementById('team4b');
+    
+    const data = {
+      name: tn?.value || 'Командный Американо',
+      date: td?.value || getCurrentDate(),
+      court1: c1?.value || "2",
+      court2: c2?.value || "6",
+      team1a: t1a?.value || "",
+      team1b: t1b?.value || "",
+      team2a: t2a?.value || "",
+      team2b: t2b?.value || "",
+      team3a: t3a?.value || "",
+      team3b: t3b?.value || "",
+      team4a: t4a?.value || "",
+      team4b: t4b?.value || "",
+      scores:{}
+    };
 
-  rounds.forEach((round,r)=>{
-    round.forEach((m,i)=>{
-      const a = document.getElementById(`a-${r}-${i}`);
-      const b = document.getElementById(`b-${r}-${i}`);
-      if(a) data.scores[`a-${r}-${i}`] = a.value;
-      if(b) data.scores[`b-${r}-${i}`] = b.value;
+    rounds.forEach((round,r)=>{
+      round.forEach((m,i)=>{
+        const a = document.getElementById(`a-${r}-${i}`);
+        const b = document.getElementById(`b-${r}-${i}`);
+        if(a) data.scores[`a-${r}-${i}`] = a.value;
+        if(b) data.scores[`b-${r}-${i}`] = b.value;
+      });
     });
-  });
 
-  ["sf1","sf2","final","3rd"].forEach(stage=>{
-    const a = document.getElementById(`playoff-a-${stage}`);
-    const b = document.getElementById(`playoff-b-${stage}`);
-    if(a) data.scores[`playoff-a-${stage}`] = a.value;
-    if(b) data.scores[`playoff-b-${stage}`] = b.value;
-  });
+    ["sf1","sf2","final","3rd"].forEach(stage=>{
+      const a = document.getElementById(`playoff-a-${stage}`);
+      const b = document.getElementById(`playoff-b-${stage}`);
+      if(a) data.scores[`playoff-a-${stage}`] = a.value;
+      if(b) data.scores[`playoff-b-${stage}`] = b.value;
+    });
 
-  localStorage.setItem("padelAmericanoData", JSON.stringify(data));
+    localStorage.setItem("padelAmericanoData", JSON.stringify(data));
+  } catch(e){
+    console.warn('saveData error:', e);
+  }
 }
 
 function loadData(){
-  const saved = localStorage.getItem("padelAmericanoData");
-  if(!saved){
-    tournamentDate.value = getCurrentDate();
+  try {
+    const saved = localStorage.getItem("padelAmericanoData");
+    if(!saved){
+      const dt = document.getElementById('tournamentDate');
+      if(dt) dt.value = getCurrentDate();
+      updateHeader();
+      return;
+    }
+
+    let data = {};
+    try { data = JSON.parse(saved); } catch(e){ data = {}; }
+
+    const c1 = document.getElementById('court1');
+    const c2 = document.getElementById('court2');
+    const tn = document.getElementById('tournamentName');
+    const td = document.getElementById('tournamentDate');
+    
+    if(c1) c1.value = data.court1 || "2";
+    if(c2) c2.value = data.court2 || "6";
+    if(tn) tn.value = data.name || "Командный Американо";
+    if(td) td.value = data.date || getCurrentDate();
+
+    const t1a = document.getElementById('team1a');
+    const t1b = document.getElementById('team1b');
+    const t2a = document.getElementById('team2a');
+    const t2b = document.getElementById('team2b');
+    const t3a = document.getElementById('team3a');
+    const t3b = document.getElementById('team3b');
+    const t4a = document.getElementById('team4a');
+    const t4b = document.getElementById('team4b');
+    
+    if(t1a) t1a.value = data.team1a || "Михаил";
+    if(t1b) t1b.value = data.team1b || "Александр С";
+    if(t2a) t2a.value = data.team2a || "Константин";
+    if(t2b) t2b.value = data.team2b || "Виталий";
+    if(t3a) t3a.value = data.team3a || "Никита";
+    if(t3b) t3b.value = data.team3b || "Александр Ж";
+    if(t4a) t4a.value = data.team4a || "Сергей";
+    if(t4b) t4b.value = data.team4b || "Станислав";
+
     updateHeader();
-    return;
+    renderTeamInputBadges();
+  } catch(e){
+    console.warn('loadData error:', e);
   }
-
-  let data = {};
-  try { data = JSON.parse(saved); } catch(e){ data = {}; }
-
-  court1.value = data.court1 || "2";
-  court2.value = data.court2 || "6";
-  tournamentName.value = data.name || "Командный Американо";
-  tournamentDate.value = data.date || getCurrentDate();
-
-  team1a.value = data.team1a || "Михаил";
-  team1b.value = data.team1b || "Александр С";
-  team2a.value = data.team2a || "Константин";
-  team2b.value = data.team2b || "Виталий";
-  team3a.value = data.team3a || "Никита";
-  team3b.value = data.team3b || "Александр Ж";
-  team4a.value = data.team4a || "Сергей";
-  team4b.value = data.team4b || "Станислав";
-
-  updateHeader();
-  renderTeamInputBadges();
-}
+}}
 
 function loadScores(){
   const saved = localStorage.getItem("padelAmericanoData");
