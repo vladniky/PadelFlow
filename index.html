@@ -12,7 +12,8 @@ button{width:100%;padding:16px;margin:12px 0;border:none;border-radius:14px;back
 .secondary{background:#b7ff2a;color:#071006}
 .danger{background:#ef4444!important;color:#111!important}
 .app-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:24px}
-.header-title{font-size:42px;font-weight:bold;line-height:1.1;margin:0;max-width:100%}
+.header-title{font-size:42px;font-weight:bold;line-height:1.1;margin:0;max-width:calc(100% - 88px)}
+.header-logo{width:64px;height:64px;border-radius:14px;object-fit:cover;flex-shrink:0;display:block}
 label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .top-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px;align-items:start}
 .top-grid .form-item:nth-child(1),
@@ -82,6 +83,7 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
   body{padding:12px}
   .app-header{align-items:center;margin-bottom:18px}
   .header-title{font-size:34px;max-width:calc(100% - 112px)}
+  .header-logo{width:48px;height:48px}
   .top-grid{grid-template-columns:1fr}
   .top-grid .form-item:nth-child(n){grid-column:auto}
   .teams-grid,.team-inputs{grid-template-columns:1fr}
@@ -100,6 +102,7 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
 
 <header class="app-header">
   <div class="header-title" id="appHeader">PadelFlow</div>
+  <img src="icon-192.png" class="header-logo" alt="PadelFlow">
 </header>
 
 <div class="tabs">
