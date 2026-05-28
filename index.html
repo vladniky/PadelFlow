@@ -5,22 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PadelFlow</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-// Гарантируем, что суперба загружается асинхронно
-window.addEventListener('load', function(){
-  if(typeof supabase === 'undefined' && typeof window.supabase !== 'undefined'){
-    window.supabase.createClient = window.supabase.createClient || (function(){return null;});
-  }
-});
-</script>
 <style>
 body{margin:0;padding:16px;background:#111;color:white;font-family:Arial,sans-serif}
 input{width:100%;box-sizing:border-box;padding:14px;margin:6px 0;border:none;border-radius:12px;font-size:18px}
-button{width:100%;padding:16px;margin:12px 0;border:none;border-radius:14px;background:#22c55e;color:white;font-size:18px;font-weight:700}
-.secondary{background:#333}
-.header-title{font-size:42px;font-weight:bold;line-height:1.1;margin-bottom:24px}
+button{width:100%;padding:16px;margin:12px 0;border:none;border-radius:14px;background:#b7ff2a;color:#071006;font-size:18px;font-weight:700}
+.secondary{background:#b7ff2a;color:#071006}
+.danger{background:#ef4444!important;color:#111!important}
+.app-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:24px}
+.header-title{font-size:42px;font-weight:bold;line-height:1.1;margin:0;max-width:100%}
 label{display:block;margin-top:10px;color:#aaa;font-size:14px}
-.top-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;align-items:start}
+.top-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;align-items:start}
 .form-item label{margin:0 0 8px}
 .teams-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px}
 .team label{margin:0 0 8px}
@@ -31,7 +25,7 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .score{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .small{color:#aaa;font-size:15px}
 .delta-value{font-weight:700}
-.delta-pos{color:#22c55e}
+.delta-pos{color:#b7ff2a}
 .delta-neg{color:#ef4444}
 .delta-zero{color:#ccc}
 .tourney-container{background:#1a1a1a;padding:12px;border-radius:12px;margin-bottom:16px}
@@ -49,7 +43,7 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .button-row button{flex:1;min-width:200px}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;position:sticky;top:0;z-index:20;background:#111;padding:8px 0}
 .tab-button{flex:1;min-width:120px;padding:12px 16px;border-radius:14px;border:none;background:#222;color:white;font-size:16px;font-weight:700;cursor:pointer}
-.tab-button.active{background:#22c55e;color:#111}
+.tab-button.active{background:#b7ff2a;color:#071006;box-shadow:0 0 0 1px rgba(183,255,42,.75),0 0 18px rgba(183,255,42,.25)}
 .tab-content{display:none}
 .tab-content.active{display:block}
 .history-card{background:#1f1f1f;border:1px solid #2a2a2a;border-radius:16px;padding:18px;margin-bottom:14px;cursor:pointer;transition:background .2s,border .2s}
@@ -57,14 +51,21 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .history-card-title{font-size:20px;font-weight:700;margin-bottom:8px}
 .history-card-meta{color:#aaa;font-size:14px;margin-bottom:10px}
 .history-detail{background:#1f1f1f;border-radius:16px;padding:18px;margin-top:16px}
-.player-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.player-badges{display:none}
 .player-badge{font-size:14px;color:#ddd;display:inline-flex;align-items:center;gap:4px;background:#161616;padding:4px 8px;border-radius:999px;border:1px solid #2a2a2a}
 .rating-table{width:100%;border-collapse:collapse;margin-top:12px}
 .rating-table th,.rating-table td{padding:10px 12px;border-bottom:1px solid #2a2a2a;text-align:left}
 .rating-table th{color:#ddd;font-weight:700;font-size:14px}
+.autocomplete-menu{position:fixed;z-index:9999;background:#181818;border:1px solid #3a3a3a;border-radius:14px;box-shadow:0 14px 34px rgba(0,0,0,.45);overflow:hidden;max-height:260px;overflow-y:auto;display:none}
+.autocomplete-item{padding:12px 14px;cursor:pointer;font-size:16px;border-bottom:1px solid #252525}
+.autocomplete-item:last-child{border-bottom:none}
+.autocomplete-item:hover,.autocomplete-item.active{background:#263315;color:#dfff30}
+.autocomplete-empty{padding:12px 14px;color:#888;font-size:14px}
+input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,255,42,.12)}
 @media (max-width:700px){
   body{padding:12px}
-  .header-title{font-size:34px}
+  .app-header{align-items:center;margin-bottom:18px}
+  .header-title{font-size:34px;max-width:calc(100% - 112px)}
   .top-grid,.teams-grid,.team-inputs{grid-template-columns:1fr}
   .score{gap:8px}
   input{font-size:16px}
@@ -74,7 +75,9 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 </head>
 <body>
 
-<div class="header-title" id="appHeader">Командный Американо</div>
+<header class="app-header">
+  <div class="header-title" id="appHeader">PadelFlow</div>
+</header>
 
 <div class="tabs">
   <button class="tab-button active" data-tab="tournament" onclick="switchTab('tournament')">Турнир</button>
@@ -86,68 +89,75 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 <div class="top-grid">
   <div class="form-item">
     <label>Название турнира</label>
-    <input id="tournamentName" value="Командный Американо" oninput="updateHeader(); saveData()">
+    <input id="tournamentName" value="" placeholder="Командный Американо" oninput="updateHeader(); saveData()">
   </div>
   <div class="form-item">
     <label>Дата турнира</label>
-    <input id="tournamentDate" value="" oninput="updateHeader(); saveData()">
+    <input id="tournamentDate" type="date" value="" oninput="updateHeader(); saveData()">
+  </div>
+  <div class="form-item">
+    <label>Количество кругов</label>
+    <select id="roundCount" onchange="saveData()" style="width:100%;box-sizing:border-box;padding:14px;margin:6px 0;border:none;border-radius:12px;font-size:18px;background:white;color:#111">
+      <option value="1">1 круг / 3 раунда</option>
+      <option value="2" selected>2 круга / 6 раундов</option>
+      <option value="3">3 круга / 9 раундов</option>
+    </select>
   </div>
   <div class="form-item">
     <label>Корт 1</label>
-    <input id="court1" value="2" oninput="saveData()">
+    <input id="court1" value="" placeholder="2" oninput="saveData()">
   </div>
   <div class="form-item">
     <label>Корт 2</label>
-    <input id="court2" value="6" oninput="saveData()">
+    <input id="court2" value="" placeholder="6" oninput="saveData()">
   </div>
 </div>
 
 <datalist id="playersList"></datalist>
+<div id="playerAutocompleteMenu" class="autocomplete-menu"></div>
 
 <div class="teams-grid">
   <div class="team">
     <label>Команда 1</label>
     <div class="team-inputs">
-      <input id="team1a" value="Михаил" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
-      <input id="team1b" value="Александр С" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team1a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team1b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
     </div>
     <div class="player-badges" id="team1badges"></div>
   </div>
   <div class="team">
     <label>Команда 2</label>
     <div class="team-inputs">
-      <input id="team2a" value="Константин" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
-      <input id="team2b" value="Виталий" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team2a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team2b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
     </div>
     <div class="player-badges" id="team2badges"></div>
   </div>
   <div class="team">
     <label>Команда 3</label>
     <div class="team-inputs">
-      <input id="team3a" value="Никита" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
-      <input id="team3b" value="Александр Ж" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team3a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team3b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
     </div>
     <div class="player-badges" id="team3badges"></div>
   </div>
   <div class="team">
     <label>Команда 4</label>
     <div class="team-inputs">
-      <input id="team4a" value="Сергей" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
-      <input id="team4b" value="Станислав" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team4a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team4b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
     </div>
     <div class="player-badges" id="team4badges"></div>
   </div>
 </div>
 
-<button onclick="generateMatches()">Создать расписание</button>
+<button onclick="startTournament()">Начать турнир</button>
 
 <div id="matches"></div>
 
-<button onclick="calculateResults()">Посчитать результаты</button>
-
 <div id="results"></div>
 
-<div id="post-results-buttons" class="button-row">
+<div id="post-results-buttons" class="button-row" style="display:none;">
   <button class="secondary" onclick="exportFullReport()">Полная версия</button>
   <button class="secondary" onclick="shareResults()">Поделиться результатом</button>
   <button class="secondary" onclick="saveTournament()">Сохранить турнир</button>
@@ -156,11 +166,6 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 </div>
 
 <div id="tab-history" class="tab-content" style="display:none;">
-  <div class="button-row" style="margin-bottom:16px;">
-    <button class="secondary" onclick="exportHistoryBackup()">Экспорт истории</button>
-    <button class="secondary" onclick="triggerHistoryImport()">Импорт истории</button>
-  </div>
-  <input id="historyImportInput" type="file" accept="application/json" style="display:none" onchange="importHistoryFile(event)">
   <div id="historyContainer"></div>
   <div id="historyDetail"></div>
 </div>
@@ -173,15 +178,16 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 // Supabase инициализация
 const SUPABASE_URL = 'https://lnrkhhiusfkwigxmichp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_C5yjnR5cd0W3I_GbeHKxeA_DBCj-KRn';
-let supabase = null;
-if(typeof window.supabase !== 'undefined'){
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabaseClient = null;
+if(window.supabase && typeof window.supabase.createClient === 'function'){
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 }
 
 const HISTORY_KEY = 'padelFlowTournamentHistory';
 let currentHistory = [];
+let openedHistoryId = null;
 
-const rounds = [
+const roundTemplates = [
   [[0,3,1],[1,2,2]],
   [[0,1,1],[2,3,2]],
   [[0,2,1],[1,3,2]],
@@ -190,7 +196,28 @@ const rounds = [
   [[2,0,1],[3,1,2]]
 ];
 
+let rounds = [];
+
+function getRoundCount(){
+  const el = document.getElementById('roundCount');
+  const value = parseInt(el?.value || '2', 10);
+  return [1,2,3].includes(value) ? value : 2;
+}
+
+function buildRoundsByCount(count){
+  if(count === 1) return roundTemplates.slice(0,3);
+  if(count === 3) return roundTemplates.concat(roundTemplates.slice(0,3));
+  return roundTemplates.slice(0,6);
+}
+
+function refreshRounds(){
+  rounds = buildRoundsByCount(getRoundCount());
+  return rounds;
+}
+
 let lastResultsText = "";
+let editingTournamentId = null;
+let editingCloudId = null;
 let roundsStats = [];
 let lastStats = null;
 const defaultPlayers = [
@@ -208,7 +235,30 @@ const defaultPlayers = [
 
 function getCurrentDate(){
   const now = new Date();
-  return `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+}
+
+function formatDateForDisplay(value){
+  const raw = String(value || '').trim();
+  if(!raw) return '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
+    const [yyyy, mm, dd] = raw.split('-');
+    return `${dd}.${mm}.${yyyy}`;
+  }
+  return raw;
+}
+
+function getTournamentNameValue(){
+  const value = document.getElementById('tournamentName')?.value?.trim();
+  return value || 'Командный Американо';
+}
+
+function getTournamentDateValue(){
+  return document.getElementById('tournamentDate')?.value || '';
+}
+
+function getTournamentDateDisplay(){
+  return formatDateForDisplay(getTournamentDateValue());
 }
 
 function updateHeader(tab='tournament'){
@@ -222,9 +272,9 @@ function updateHeader(tab='tournament'){
     header.textContent = 'Рейтинг игроков';
     return;
   }
-  const name = document.getElementById('tournamentName').value || 'Командный Американо';
-  const date = document.getElementById('tournamentDate').value || getCurrentDate();
-  header.textContent = `${name} • ${date}`;
+  const name = getTournamentNameValue();
+  const date = getTournamentDateDisplay();
+  header.textContent = date ? `${name} • ${date}` : name;
 }
 
 function switchTab(tab){
@@ -259,13 +309,13 @@ function findHistoryItem(id){
 
 async function loadTournamentHistory(){
   const localHistory = getLocalHistory();
-  if(typeof supabase === 'undefined'){
+  if(!supabaseClient){
     currentHistory = localHistory;
     return localHistory;
   }
 
   try {
-    const { data, error } = await supabase.from('tournaments').select('id, created_at, name, date, data').order('created_at', { ascending: false });
+    const { data, error } = await supabaseClient.from('tournaments').select('id, created_at, name, date, data').order('created_at', { ascending: false });
     if(error) throw error;
 
     const cloudHistory = Array.isArray(data) ? data.map(row => {
@@ -273,6 +323,7 @@ async function loadTournamentHistory(){
       if(!item.id) item.id = String(row.id || Date.now());
       return {
         ...item,
+        _cloudId: row.id,
         name: row.name || item.name || '',
         date: row.date || item.date || '',
         savedAt: item.savedAt || new Date(row.created_at).toISOString()
@@ -292,12 +343,23 @@ async function loadTournamentHistory(){
   }
 }
 
-async function saveTournamentToCloud(tournament){
-  if(typeof supabase === 'undefined'){
+async function saveTournamentToCloud(tournament, cloudId = null){
+  if(!supabaseClient){
     return { ok: false, error: 'Supabase unavailable' };
   }
   try {
-    const { error } = await supabase.from('tournaments').insert([{ name: tournament.name, date: tournament.date, data: tournament }]);
+    let response;
+    if(cloudId){
+      response = await supabaseClient
+        .from('tournaments')
+        .update({ name: tournament.name, date: tournament.date, data: tournament })
+        .eq('id', cloudId);
+    } else {
+      response = await supabaseClient
+        .from('tournaments')
+        .insert([{ name: tournament.name, date: tournament.date, data: tournament }]);
+    }
+    const { error } = response;
     return error ? { ok: false, error } : { ok: true };
   } catch(err){
     return { ok: false, error: err };
@@ -306,18 +368,18 @@ async function saveTournamentToCloud(tournament){
 
 async function syncLocalToCloud(){
   const localHistory = getLocalHistory();
-  if(typeof supabase === 'undefined' || !navigator.onLine || !localHistory.length){
+  if(!supabaseClient || !navigator.onLine || !localHistory.length){
     return { synced: 0 };
   }
 
   try {
-    const { data, error } = await supabase.from('tournaments').select('data');
+    const { data, error } = await supabaseClient.from('tournaments').select('data');
     if(error) throw error;
     const remoteIds = new Set((Array.isArray(data) ? data : []).map(row => String(row.data?.id)).filter(Boolean));
     const toSync = localHistory.filter(item => item.id && !remoteIds.has(String(item.id)));
     if(!toSync.length) return { synced: 0 };
     const inserts = toSync.map(item => ({ name: item.name, date: item.date, data: item }));
-    const { error: insertError } = await supabase.from('tournaments').insert(inserts);
+    const { error: insertError } = await supabaseClient.from('tournaments').insert(inserts);
     if(insertError) throw insertError;
     return { synced: inserts.length };
   } catch(err){
@@ -373,9 +435,7 @@ function buildPlayerMedalMap(){
 }
 
 function getPlayerBadge(name){
-  if(!name) return '';
-  const medalMap = buildPlayerMedalMap();
-  return medalMap[name] || '';
+  return '';
 }
 
 function getBadgedPlayer(name){
@@ -406,6 +466,7 @@ async function renderHistory(){
   const detail = document.getElementById('historyDetail');
   if(!container || !detail) return;
   if(!saved.length){
+    openedHistoryId = null;
     container.innerHTML = `<div class="history-detail"><strong>Сохраненных турниров пока нет</strong></div>`;
     detail.innerHTML = '';
     return;
@@ -414,33 +475,62 @@ async function renderHistory(){
     const winner = item.finalPlaces?.[0] || '-';
     const second = item.finalPlaces?.[1] || '-';
     const third = item.finalPlaces?.[2] || '-';
-    return `<div class="history-card" onclick="showHistoryDetail('${item.id}')"><div class="history-card-title">${item.name}</div><div class="history-card-meta">${item.date}</div><div>Победитель: <strong>${getBadgedPlayer(winner)}</strong></div><div class="small">🥇 ${getBadgedPlayer(winner)} · 🥈 ${getBadgedPlayer(second)} · 🥉 ${getBadgedPlayer(third)}</div></div>`;
+    return `<div class="history-card" onclick="toggleHistoryDetail('${item.id}')"><div class="history-card-title">${item.name}</div><div class="history-card-meta">${item.date}</div><div>Победитель: <strong>${getBadgedPlayer(winner)}</strong></div><div class="small">🥇 ${getBadgedPlayer(winner)} · 🥈 ${getBadgedPlayer(second)} · 🥉 ${getBadgedPlayer(third)}</div></div>`;
   }).join('');
   detail.innerHTML = '';
 }
 
+function extractPlayoffBlock(dayText){
+  const text = String(dayText || '');
+  const start = text.indexOf('🏆 Плей-офф');
+  if(start === -1) return '';
+  return text.slice(start).trim();
+}
+
+function toggleHistoryDetail(id){
+  const detail = document.getElementById('historyDetail');
+  if(openedHistoryId === id){
+    openedHistoryId = null;
+    if(detail) detail.innerHTML = '';
+    return;
+  }
+  openedHistoryId = id;
+  showHistoryDetail(id);
+}
+
 function showHistoryDetail(id){
-  const key = 'padelFlowTournamentHistory';
-  let saved = [];
-  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
-  const item = saved.find(t=>t.id === id);
+  const item = findHistoryItem(id);
   const detail = document.getElementById('historyDetail');
   if(!item || !detail) return;
-  const standings = item.groupStandings.map(s=>`<tr><td>${s.place}</td><td>${getBadgedTeam(s.team)}</td><td>${s.wins}-${s.losses}-${s.draws}</td><td>${s.scored}-${s.conceded}</td><td>${s.delta>0?'+':''}${s.delta}</td></tr>`).join('');
-  const playoffLines = item.dayText ? item.dayText.split('\n').filter(line=>line.startsWith('Полуфинал')||line.startsWith('Матч')||line.startsWith('Финал')||line.startsWith('🏆 Плей-офф')).join('<br>') : '';
+
+  const finalPlaces = Array.isArray(item.finalPlaces) ? item.finalPlaces : [];
+  const finalHtml = finalPlaces.length === 4
+    ? `<div class="small">🥇 ${getBadgedPlayer(finalPlaces[0]||'-')}<br>🥈 ${getBadgedPlayer(finalPlaces[1]||'-')}<br>🥉 ${getBadgedPlayer(finalPlaces[2]||'-')}<br>4️⃣ ${getBadgedPlayer(finalPlaces[3]||'-')}</div>`
+    : `<div class="small">Турнир сохранен после группового этапа. Итоговые места плей-офф не заполнены.</div>`;
+
+  const groupHtml = (item.groupStandings || []).map(s=>
+    `<div class="small">${s.place}. ${getBadgedTeam(s.team)} — ${s.wins}-${s.losses}-${s.draws} • ${s.scored}-${s.conceded} • ${s.delta>0?'+':''}${s.delta}</div>`
+  ).join('');
+
+  const playoffText = extractPlayoffBlock(item.dayText);
+  const playoffHtml = playoffText
+    ? playoffText.split('\n').map(line=>escapeHtml(line)).join('<br>')
+    : 'Плей-офф не игрался или не был сохранен.';
+
   detail.innerHTML = `
     <div class="history-detail">
-      <div class="history-card-title">${item.name}</div>
-      <div class="history-card-meta">${item.date}</div>
+      <div class="history-card-title">${escapeHtml(item.name)}</div>
+      <div class="history-card-meta">${escapeHtml(item.date)}</div>
       <div style="margin:12px 0;font-weight:700">Итоговые места</div>
-      <div class="small">🥇 ${getBadgedPlayer(item.finalPlaces?.[0]||'-')}<br>🥈 ${getBadgedPlayer(item.finalPlaces?.[1]||'-')}<br>🥉 ${getBadgedPlayer(item.finalPlaces?.[2]||'-')}<br>4️⃣ ${getBadgedPlayer(item.finalPlaces?.[3]||'-')}</div>
+      ${finalHtml}
       <div style="margin:16px 0;font-weight:700">Итоги группового этапа</div>
-      <div>${item.groupStandings.map(s=>`<div class="small">${s.place}. ${getBadgedTeam(s.team)} — ${s.wins}-${s.losses}-${s.draws} • ${s.scored}-${s.conceded} • ${s.delta>0?'+':''}${s.delta}</div>`).join('')}</div>
+      <div>${groupHtml}</div>
       <div style="margin:16px 0;font-weight:700">Плей-офф</div>
-      <div class="small">${item.dayText.split('\n').filter(line=>line.startsWith('Полуфинал')||line.startsWith('Матч')||line.startsWith('Финал')||line.startsWith('🏆 Плей-офф')).join('<br>')}</div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
-        <button class="secondary" onclick="copyHistoryReport('${item.id}')" style="flex:1;min-width:180px">Скопировать отчет</button>
-        <button class="secondary" onclick="deleteHistoryTournament('${item.id}')" style="flex:1;min-width:180px;background:#ef4444">Удалить турнир</button>
+      <div class="small">${playoffHtml}</div>
+      <div class="button-row" style="margin-top:16px;">
+        <button class="secondary" onclick="copyHistoryReport('${item.id}')">Скопировать отчет</button>
+        <button class="secondary" onclick="editHistoryTournament('${item.id}')">Редактировать</button>
+        <button class="danger" onclick="deleteHistoryTournament('${item.id}')">Удалить турнир</button>
       </div>
     </div>
   `;
@@ -452,18 +542,21 @@ function copyHistoryReport(id){
   navigator.clipboard.writeText(item.dayText).then(()=>alert('Готово! Отчет скопирован'));
 }
 
-function deleteHistoryTournament(id){
+async function deleteHistoryTournament(id){
   if(!confirm('Удалить турнир?')) return;
-  const localSaved = getLocalHistory();
-  const found = localSaved.some(t=>t.id === id);
-  if(!found){
-    alert('Турнир доступен только из облака и не может быть удален локально.');
-    return;
+  const item = findHistoryItem(id);
+  const filteredLocal = getLocalHistory().filter(t=>t.id !== id);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(filteredLocal));
+  if(item && item._cloudId && supabaseClient){
+    try {
+      await supabaseClient.from('tournaments').delete().eq('id', item._cloudId);
+    } catch(e){
+      console.warn('Cloud delete failed', e);
+    }
   }
-  const filtered = localSaved.filter(t=>t.id !== id);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered));
   currentHistory = currentHistory.filter(t => t.id !== id);
   renderHistory();
+  renderRating();
   const detail = document.getElementById('historyDetail');
   if(detail) detail.innerHTML = '';
 }
@@ -501,6 +594,8 @@ function importHistoryFile(event){
       const parsed = JSON.parse(text);
       if(!Array.isArray(parsed)) throw new Error('Invalid format');
       localStorage.setItem('padelFlowTournamentHistory', JSON.stringify(parsed));
+      currentHistory = parsed;
+      loadPlayersList();
       renderHistory();
       renderRating();
       alert('История успешно восстановлена');
@@ -527,13 +622,13 @@ function getPlayerSeriesStats(){
   return [];
 }
 
-function renderRating(){
-  const key = 'padelFlowTournamentHistory';
-  let saved = [];
-  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){ saved = []; }
+async function renderRating(){
+  await loadTournamentHistory();
+  const saved = getHistoryDataSync();
   const container = document.getElementById('ratingContainer');
   if(!container) return;
   if(!saved.length){
+    openedHistoryId = null;
     container.innerHTML = `<div class="history-detail"><strong>Рейтинг пока пуст</strong></div>`;
     return;
   }
@@ -567,7 +662,12 @@ function renderRating(){
     const badge = getPlayerBadge(p.name);
     return `<tr><td>${badge ? badge + ' ' : ''}${p.name}</td><td>${p.tournaments}</td><td>${p.scored}-${p.conceded}</td><td>${p.delta>0?'+':''}${p.delta}</td><td>${p.wins}-${p.losses}-${p.draws}</td><td>${rate}%</td></tr>`;
   }).join('');
-  container.innerHTML = `<div class="tourney-container"><div class="tourney-scroll"><table class="rating-table"><thead><tr><th>Игрок</th><th>Турниры</th><th>Очки</th><th>Разница</th><th>В-П-Н</th><th>Winrate</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  container.innerHTML = `
+    <div class="tourney-container"><div class="tourney-scroll"><table class="rating-table"><thead><tr><th>Игрок</th><th>Турниры</th><th>Очки</th><th>Разница</th><th>В-П-Н</th><th>Winrate</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+    <div class="button-row">
+      <button class="secondary" onclick="copyRatingText()">Копировать рейтинг</button>
+      <button class="secondary" onclick="shareRatingText()">Поделиться рейтингом</button>
+    </div>`;
 }
 
 function stripPlayerBadge(name){
@@ -631,30 +731,135 @@ function getCourtName(n){
   try {
     const c1 = document.getElementById('court1');
     const c2 = document.getElementById('court2');
-    const val = n === 1 ? (c1?.value || '2') : (c2?.value || '6');
-    return "Корт №" + String(val);
+    const val = n === 1 ? (c1?.value || '') : (c2?.value || '');
+    return val ? "Корт №" + String(val) : (n === 1 ? "Корт 1" : "Корт 2");
   } catch(e){
     console.warn('getCourtName error:', e);
-    return "Корт №" + (n === 1 ? '2' : '6');
+    return n === 1 ? "Корт 1" : "Корт 2";
   }
+}
+
+
+function escapeHtml(value){
+  return String(value ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
+}
+
+function getAllPlayers(){
+  let players = [];
+  try { players = JSON.parse(localStorage.getItem('playersList') || '[]'); } catch(e){ players = []; }
+  if(!Array.isArray(players)) players = [];
+  players = players.concat(defaultPlayers);
+
+  getHistoryDataSync().forEach(tournament=>{
+    (tournament.playerStats || []).forEach(p=>{
+      if(p && p.name) players.push(p.name);
+    });
+    (tournament.teams || []).forEach(team=>{
+      String(team || '').split(' · ').forEach(name=>players.push(name));
+    });
+  });
+
+  const clean = [];
+  players.forEach(p=>{
+    const name = normalizePlayerName(p);
+    if(name && !clean.some(x=>x.toLowerCase()===name.toLowerCase())) clean.push(name);
+  });
+  clean.sort((a,b)=>a.localeCompare(b,'ru'));
+  return clean;
+}
+
+function getPlayerInputs(){
+  return ['team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b']
+    .map(id=>document.getElementById(id))
+    .filter(Boolean);
+}
+
+function hidePlayerAutocomplete(){
+  const menu = document.getElementById('playerAutocompleteMenu');
+  if(menu){
+    menu.style.display = 'none';
+    menu.innerHTML = '';
+    menu.dataset.target = '';
+  }
+}
+
+function showPlayerAutocomplete(input){
+  const menu = document.getElementById('playerAutocompleteMenu');
+  if(!menu || !input) return;
+
+  const query = normalizePlayerName(input.value).toLowerCase();
+  const players = getAllPlayers();
+  const matches = players
+    .filter(name => !query || name.toLowerCase().includes(query))
+    .slice(0, 12);
+
+  const rect = input.getBoundingClientRect();
+  menu.style.left = `${rect.left}px`;
+  menu.style.top = `${rect.bottom + 4}px`;
+  menu.style.width = `${rect.width}px`;
+  menu.dataset.target = input.id;
+
+  if(!matches.length){
+    menu.innerHTML = `<div class="autocomplete-empty">Игрок не найден — имя сохранится после сохранения турнира</div>`;
+  } else {
+    menu.innerHTML = matches.map(name =>
+      `<div class="autocomplete-item" data-name="${escapeHtml(name)}">${escapeHtml(name)}</div>`
+    ).join('');
+  }
+
+  menu.style.display = 'block';
+
+  menu.querySelectorAll('.autocomplete-item').forEach(item=>{
+    item.addEventListener('mousedown', function(e){
+      e.preventDefault();
+      const target = document.getElementById(menu.dataset.target);
+      if(target){
+        target.value = this.dataset.name || this.textContent;
+        saveData();
+        renderTeamInputBadges();
+      }
+      hidePlayerAutocomplete();
+    });
+  });
+}
+
+function setupPlayerAutocomplete(){
+  const inputs = getPlayerInputs();
+
+  inputs.forEach(input=>{
+    input.setAttribute('list','playersList');
+
+    input.addEventListener('focus', ()=>showPlayerAutocomplete(input));
+    input.addEventListener('input', ()=>{
+      saveData();
+      renderTeamInputBadges();
+      showPlayerAutocomplete(input);
+    });
+    input.addEventListener('blur', ()=>{
+      setTimeout(()=>{
+        savePlayersFromFields();
+        hidePlayerAutocomplete();
+      }, 120);
+    });
+  });
+
+  window.addEventListener('resize', hidePlayerAutocomplete);
+  window.addEventListener('scroll', hidePlayerAutocomplete, true);
 }
 
 function loadPlayersList(){
   try {
-    let players = [];
-    try { players = JSON.parse(localStorage.getItem('playersList') || '[]'); } catch(e){ players = []; }
-    if(!Array.isArray(players) || players.length === 0) players = defaultPlayers.slice();
-
-    const clean = [];
-    players.forEach(p=>{
-      const name = normalizePlayerName(p);
-      if(name && !clean.some(x=>x.toLowerCase()===name.toLowerCase())) clean.push(name);
-    });
-
+    const clean = getAllPlayers();
     localStorage.setItem('playersList', JSON.stringify(clean));
+
     const list = document.getElementById('playersList');
     if(list){
-      list.innerHTML = clean.map(p=>`<option value="${p}">`).join('');
+      list.innerHTML = clean.map(p=>`<option value="${escapeHtml(p)}">`).join('');
     }
   } catch(e){
     console.warn('loadPlayersList error:', e);
@@ -705,6 +910,7 @@ function autoFillPlayoff(side,id){
 
 function generateMatches(){
   try {
+    refreshRounds();
     const teams = getTeams();
     let html = "";
 
@@ -723,6 +929,8 @@ function generateMatches(){
       });
     });
 
+    html += `<div class="button-row"><button onclick="calculateResults()">Посчитать результаты</button></div>`;
+
     const matchesContainer = document.getElementById('matches');
     if(matchesContainer){
       matchesContainer.innerHTML = html;
@@ -738,6 +946,25 @@ function generateMatches(){
     console.error('generateMatches error:', e);
     alert('Ошибка при создании расписания. Проверьте консоль.');
   }
+}
+
+
+function startTournament(){
+  refreshRounds();
+  hidePostResultButtons();
+  const results = document.getElementById('results');
+  if(results) results.innerHTML = '';
+  generateMatches();
+}
+
+function showPostResultButtons(){
+  const el = document.getElementById('post-results-buttons');
+  if(el) el.style.display = 'flex';
+}
+
+function hidePostResultButtons(){
+  const el = document.getElementById('post-results-buttons');
+  if(el) el.style.display = 'none';
 }
 
 function computeGroupStats(){
@@ -824,6 +1051,8 @@ function deltaClass(delta){
 }
 
 function calculateResults(){
+  if(!rounds || !rounds.length) refreshRounds();
+  hidePostResultButtons();
   const data = computeGroupStats();
   lastStats = data;
   roundsStats = data.sorted.map(x=>x[0]);
@@ -873,14 +1102,38 @@ html += `
 `;
 
   if(allGroupRoundsFilled()){
-    html += showPlayoff();
+    html += `
+    <div id="group-action-buttons" class="button-row">
+      <button class="secondary" onclick="startPlayoff()">Играть плей-офф</button>
+      <button class="secondary" onclick="saveTournament()">Сохранить турнир</button>
+    </div>
+    <div id="playoff-section"></div>
+    `;
   }
 
   document.getElementById('results').innerHTML = html;
+  lastResultsText = buildDayText();
+  saveData();
+}
+
+function startPlayoff(){
+  if(!roundsStats || roundsStats.length < 4){
+    calculateResults();
+  }
+  const groupButtons = document.getElementById('group-action-buttons');
+  if(groupButtons) groupButtons.style.display = 'none';
+  const section = document.getElementById('playoff-section');
+  if(section){
+    section.innerHTML = showPlayoff();
+  } else {
+    const results = document.getElementById('results');
+    if(results && !document.getElementById('playoff-finals')){
+      results.insertAdjacentHTML('beforeend', showPlayoff());
+    }
+  }
   loadPlayoffScores();
   tryRenderFinals();
   tryRenderTournamentTable();
-  lastResultsText = buildDayText();
   saveData();
 }
 
@@ -1028,6 +1281,7 @@ function tryRenderTournamentTable(){
   html += `</tbody></table></div></div>`;
   
   container.innerHTML = html;
+  showPostResultButtons();
   lastResultsText = buildDayText();
   saveData();
 }
@@ -1062,6 +1316,7 @@ function saveData(){
     const td = document.getElementById('tournamentDate');
     const c1 = document.getElementById('court1');
     const c2 = document.getElementById('court2');
+    const rc = document.getElementById('roundCount');
     const t1a = document.getElementById('team1a');
     const t1b = document.getElementById('team1b');
     const t2a = document.getElementById('team2a');
@@ -1073,9 +1328,10 @@ function saveData(){
     
     const data = {
       name: tn?.value || 'Командный Американо',
-      date: td?.value || getCurrentDate(),
-      court1: c1?.value || "2",
-      court2: c2?.value || "6",
+      date: td?.value || '',
+      court1: c1?.value || '',
+      court2: c2?.value || '',
+      roundCount: rc?.value || '2',
       team1a: t1a?.value || "",
       team1b: t1b?.value || "",
       team2a: t2a?.value || "",
@@ -1109,53 +1365,29 @@ function saveData(){
   }
 }
 
+function startFreshTournament(){
+  localStorage.removeItem("padelAmericanoData");
+  const ids = ['tournamentName','tournamentDate','court1','court2','team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b'];
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  const rc = document.getElementById('roundCount');
+  if(rc) rc.value = '2';
+  const matches = document.getElementById('matches');
+  const results = document.getElementById('results');
+  if(matches) matches.innerHTML = '';
+  if(results) results.innerHTML = '';
+  hidePostResultButtons();
+  updateHeader('tournament');
+}
+
 function loadData(){
-  try {
-    const saved = localStorage.getItem("padelAmericanoData");
-    if(!saved){
-      const dt = document.getElementById('tournamentDate');
-      if(dt) dt.value = getCurrentDate();
-      updateHeader();
-      return;
-    }
-
-    let data = {};
-    try { data = JSON.parse(saved); } catch(e){ data = {}; }
-
-    const c1 = document.getElementById('court1');
-    const c2 = document.getElementById('court2');
-    const tn = document.getElementById('tournamentName');
-    const td = document.getElementById('tournamentDate');
-    
-    if(c1) c1.value = data.court1 || "2";
-    if(c2) c2.value = data.court2 || "6";
-    if(tn) tn.value = data.name || "Командный Американо";
-    if(td) td.value = data.date || getCurrentDate();
-
-    const t1a = document.getElementById('team1a');
-    const t1b = document.getElementById('team1b');
-    const t2a = document.getElementById('team2a');
-    const t2b = document.getElementById('team2b');
-    const t3a = document.getElementById('team3a');
-    const t3b = document.getElementById('team3b');
-    const t4a = document.getElementById('team4a');
-    const t4b = document.getElementById('team4b');
-    
-    if(t1a) t1a.value = data.team1a || "Михаил";
-    if(t1b) t1b.value = data.team1b || "Александр С";
-    if(t2a) t2a.value = data.team2a || "Константин";
-    if(t2b) t2b.value = data.team2b || "Виталий";
-    if(t3a) t3a.value = data.team3a || "Никита";
-    if(t3b) t3b.value = data.team3b || "Александр Ж";
-    if(t4a) t4a.value = data.team4a || "Сергей";
-    if(t4b) t4b.value = data.team4b || "Станислав";
-
-    updateHeader();
-    renderTeamInputBadges();
-  } catch(e){
-    console.warn('loadData error:', e);
-  }
-}}
+  // Намеренно не подставляем прошлые имена/корты/дату.
+  // Новый запуск должен начинаться с пустых полей.
+  updateHeader('tournament');
+  hidePostResultButtons();
+}
 
 function loadScores(){
   const saved = localStorage.getItem("padelAmericanoData");
@@ -1176,9 +1408,9 @@ function loadPlayoffScores(){
 
 function buildGroupStageText(){
   const data = computeGroupStats();
-  const name = tournamentName.value || 'Командный Американо';
-  const date = tournamentDate.value || getCurrentDate();
-  let text = `🎾 ${name} • ${date}\n\n`;
+  const name = getTournamentNameValue();
+  const date = getTournamentDateDisplay();
+  let text = `🎾 ${name}${date ? ' • ' + date : ''}\n\n`;
   text += "📊 Групповой этап\n\n";
 
   rounds.forEach((round,r)=>{
@@ -1261,9 +1493,9 @@ function exportFullReport(){
 
 function buildCompactShareText(){
   const data = computeGroupStats();
-  const name = tournamentName.value || 'Командный Американо';
-  const date = tournamentDate.value || getCurrentDate();
-  let text = `🎾 ${name} • ${date}\n\n`;
+  const name = getTournamentNameValue();
+  const date = getTournamentDateDisplay();
+  let text = `🎾 ${name}${date ? ' • ' + date : ''}\n\n`;
   text += `🏆 Итоги группового этапа\n\n`;
 
   const medals = ["🥇","🥈","🥉","4️⃣"];
@@ -1324,6 +1556,33 @@ function shareResults(){
   }
 }
 
+
+function buildRatingText(){
+  const list = getRatingStats();
+  let text = '🏆 Рейтинг игроков PadelFlow\n\n';
+  if(!list.length) return text + 'Рейтинг пока пуст';
+  list.forEach((p,index)=>{
+    const played = p.wins + p.losses + p.draws;
+    const rate = played ? Math.round((p.wins/played)*100) : 0;
+    text += `${index+1}. ${p.name}\n`;
+    text += `Турниры: ${p.tournaments} | Очки: ${p.scored}-${p.conceded} | Разница: ${p.delta>0?'+':''}${p.delta} | В-П-Н: ${p.wins}-${p.losses}-${p.draws} | Winrate: ${rate}%\n\n`;
+  });
+  return text;
+}
+
+function copyRatingText(){
+  navigator.clipboard.writeText(buildRatingText()).then(()=>alert('Готово! Рейтинг скопирован'));
+}
+
+function shareRatingText(){
+  const text = buildRatingText();
+  if(navigator.share){
+    navigator.share({text}).catch(()=>copyRatingText());
+  } else {
+    copyRatingText();
+  }
+}
+
 function getPersonalStats(){
   const playerStats = {};
   function ensure(name){
@@ -1363,14 +1622,92 @@ function getPersonalStats(){
   });
 }
 
+
+function getCurrentTournamentSnapshot(){
+  const scores = {};
+  rounds.forEach((round,r)=>{
+    round.forEach((m,i)=>{
+      const a = document.getElementById(`a-${r}-${i}`);
+      const b = document.getElementById(`b-${r}-${i}`);
+      if(a) scores[`a-${r}-${i}`] = a.value;
+      if(b) scores[`b-${r}-${i}`] = b.value;
+    });
+  });
+  ["sf1","sf2","final","3rd"].forEach(stage=>{
+    const a = document.getElementById(`playoff-a-${stage}`);
+    const b = document.getElementById(`playoff-b-${stage}`);
+    if(a) scores[`playoff-a-${stage}`] = a.value;
+    if(b) scores[`playoff-b-${stage}`] = b.value;
+  });
+  return {
+    name: document.getElementById('tournamentName')?.value || '',
+    date: document.getElementById('tournamentDate')?.value || '',
+    court1: document.getElementById('court1')?.value || '',
+    court2: document.getElementById('court2')?.value || '',
+    roundCount: document.getElementById('roundCount')?.value || '2',
+    team1a: document.getElementById('team1a')?.value || '',
+    team1b: document.getElementById('team1b')?.value || '',
+    team2a: document.getElementById('team2a')?.value || '',
+    team2b: document.getElementById('team2b')?.value || '',
+    team3a: document.getElementById('team3a')?.value || '',
+    team3b: document.getElementById('team3b')?.value || '',
+    team4a: document.getElementById('team4a')?.value || '',
+    team4b: document.getElementById('team4b')?.value || '',
+    scores
+  };
+}
+
+function editHistoryTournament(id){
+  const item = findHistoryItem(id);
+  if(!item || !item.editData){
+    alert('Для этого турнира редактирование недоступно: нет сохраненных исходных данных.');
+    return;
+  }
+  const data = item.editData;
+  editingTournamentId = item.id;
+  editingCloudId = item._cloudId || null;
+  ['tournamentName','tournamentDate','roundCount','court1','court2','team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && data[id] !== undefined) el.value = data[id] || '';
+  });
+  switchTab('tournament');
+  refreshRounds();
+  generateMatches();
+  if(data.scores){
+    Object.keys(data.scores).forEach(scoreId=>{
+      const el = document.getElementById(scoreId);
+      if(el) el.value = data.scores[scoreId];
+    });
+  }
+  calculateResults();
+  const hasPlayoffScores = data.scores && Object.keys(data.scores).some(key => key.startsWith('playoff-') && data.scores[key] !== '');
+  if(hasPlayoffScores){
+    startPlayoff();
+    Object.keys(data.scores).forEach(scoreId=>{
+      const el = document.getElementById(scoreId);
+      if(el) el.value = data.scores[scoreId];
+    });
+    tryRenderFinals();
+    Object.keys(data.scores).forEach(scoreId=>{
+      const el = document.getElementById(scoreId);
+      if(el) el.value = data.scores[scoreId];
+    });
+    tryRenderTournamentTable();
+  }
+  updateHeader('tournament');
+  alert('Турнир загружен для редактирования. После изменений нажмите «Сохранить турнир».');
+}
+
 function buildTournamentHistoryEntry(){
   const groupData = computeGroupStats();
   return {
-    id:String(Date.now()),
-    name:tournamentName.value || 'Командный Американо',
-    date:tournamentDate.value || getCurrentDate(),
+    id: editingTournamentId || String(Date.now()),
+    name:getTournamentNameValue(),
+    date:getTournamentDateDisplay(),
+    roundCount:getRoundCount(),
     savedAt:new Date().toISOString(),
     teams:getTeams(),
+    editData:getCurrentTournamentSnapshot(),
     groupText:buildGroupStageText(),
     dayText:buildDayText(),
     groupStandings:groupData.sorted.map((item,index)=>({
@@ -1386,18 +1723,27 @@ function buildTournamentHistoryEntry(){
 async function saveTournament(){
   savePlayersFromFields();
   const entry = buildTournamentHistoryEntry();
-  const saved = getLocalHistory();
+  let saved = getLocalHistory();
+
+  if(editingTournamentId){
+    saved = saved.filter(item => item.id !== editingTournamentId);
+  }
   saved.push(entry);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(saved));
   currentHistory = [entry, ...currentHistory.filter(item => item.id !== entry.id)];
 
-  const cloudResult = await saveTournamentToCloud(entry);
+  const cloudResult = await saveTournamentToCloud(entry, editingCloudId);
   if(cloudResult.ok){
-    alert('Готово! Турнир сохранен в облако');
+    alert(editingTournamentId ? 'Готово! Турнир обновлен в облаке' : 'Готово! Турнир сохранен в облако');
   } else {
     console.warn('Supabase save failed', cloudResult.error);
     alert('Готово! Турнир сохранен локально. Облачная синхронизация будет выполнена позднее.');
   }
+
+  editingTournamentId = null;
+  editingCloudId = null;
+  renderHistory();
+  renderRating();
 }
 
 function clearTournament(){
@@ -1417,10 +1763,17 @@ function getPlayerSeriesStats(){
   return [];
 }
 
-loadPlayersList();
-loadData();
-generateMatches();
-renderTeamInputBadges();
+async function initApp(){
+  refreshRounds();
+  await loadTournamentHistory();
+  loadPlayersList();
+  loadData();
+  setupPlayerAutocomplete();
+  renderTeamInputBadges();
+  hidePostResultButtons();
+}
+
+initApp();
 </script>
 </body>
 </html>
