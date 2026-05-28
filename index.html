@@ -7,14 +7,22 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 body{margin:0;padding:16px;background:#111;color:white;font-family:Arial,sans-serif}
-input{width:100%;box-sizing:border-box;padding:14px;margin:6px 0;border:none;border-radius:12px;font-size:18px}
+input,select{width:100%;box-sizing:border-box;padding:14px;margin:6px 0;border:none;border-radius:12px;font-size:18px}
 button{width:100%;padding:16px;margin:12px 0;border:none;border-radius:14px;background:#b7ff2a;color:#071006;font-size:18px;font-weight:700}
 .secondary{background:#b7ff2a;color:#071006}
 .danger{background:#ef4444!important;color:#111!important}
 .app-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:24px}
 .header-title{font-size:42px;font-weight:bold;line-height:1.1;margin:0;max-width:100%}
 label{display:block;margin-top:10px;color:#aaa;font-size:14px}
-.top-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;align-items:start}
+.top-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px;align-items:start}
+.top-grid .form-item:nth-child(1),
+.top-grid .form-item:nth-child(2),
+.top-grid .form-item:nth-child(3){grid-column:span 2}
+.top-grid .form-item:nth-child(4),
+.top-grid .form-item:nth-child(5){grid-column:span 3}
+.top-grid input,
+.top-grid select{padding:12px!important;margin:4px 0!important;font-size:16px!important;height:48px}
+.top-grid label{font-size:13px}
 .form-item label{margin:0 0 8px}
 .teams-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px}
 .team label{margin:0 0 8px}
@@ -62,11 +70,17 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .autocomplete-item:hover,.autocomplete-item.active{background:#263315;color:#dfff30}
 .autocomplete-empty{padding:12px 14px;color:#888;font-size:14px}
 input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,255,42,.12)}
+@media (min-width:701px) and (max-width:980px){
+  .top-grid{grid-template-columns:repeat(2,1fr)}
+  .top-grid .form-item:nth-child(n){grid-column:auto}
+}
 @media (max-width:700px){
   body{padding:12px}
   .app-header{align-items:center;margin-bottom:18px}
   .header-title{font-size:34px;max-width:calc(100% - 112px)}
-  .top-grid,.teams-grid,.team-inputs{grid-template-columns:1fr}
+  .top-grid{grid-template-columns:1fr}
+  .top-grid .form-item:nth-child(n){grid-column:auto}
+  .teams-grid,.team-inputs{grid-template-columns:1fr}
   .score{gap:8px}
   input{font-size:16px}
   button{font-size:16px}
@@ -97,7 +111,7 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
   </div>
   <div class="form-item">
     <label>Количество кругов</label>
-    <select id="roundCount" onchange="saveData()" style="width:100%;box-sizing:border-box;padding:14px;margin:6px 0;border:none;border-radius:12px;font-size:18px;background:white;color:#111">
+    <select id="roundCount" onchange="saveData()">
       <option value="1">1 круг / 3 раунда</option>
       <option value="2" selected>2 круга / 6 раундов</option>
       <option value="3">3 круга / 9 раундов</option>
