@@ -155,6 +155,8 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
       <option value="2">2 пары / 4 игрока</option>
       <option value="3">3 пары / 6 игроков</option>
       <option value="4" selected>4 пары / 8 игроков</option>
+      <option value="5">5 пар / 10 игроков</option>
+      <option value="6">6 пар / 12 игроков</option>
     </select>
   </div>
   <div class="form-item">
@@ -237,6 +239,22 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
     </div>
     <div class="player-badges" id="team4badges"></div>
   </div>
+  <div class="team" id="team5" style="display:none;">
+    <label>Пара 5</label>
+    <div class="team-inputs">
+      <input id="team5a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team5b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+    </div>
+    <div class="player-badges" id="team5badges"></div>
+  </div>
+  <div class="team" id="team6" style="display:none;">
+    <label>Пара 6</label>
+    <div class="team-inputs">
+      <input id="team6a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team6b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+    </div>
+    <div class="player-badges" id="team6badges"></div>
+  </div>
 </div>
 
 <button id="startTournamentBtn" onclick="startTournament()">Начать турнир</button>
@@ -280,6 +298,7 @@ const DRAFT_KEY = 'padelFlowCurrentDraft';
 const LEGACY_DRAFT_KEY = 'padelAmericanoData';
 let currentHistory = [];
 let openedHistoryId = null;
+let tournamentStarted = false;
 
 const roundTemplates = [
   [[0,3,1],[1,2,2]],
@@ -296,11 +315,12 @@ const DEFAULT_PAIR_COUNT = 4;
 const DEFAULT_COURT_COUNT = 2;
 const DEFAULT_ROUND_LIMIT = 32;
 const ROUND_LIMIT_OPTIONS = [21,24,27,32];
+const PLAYOFF_LIMIT_OPTIONS = [15,21,24,27,32];
 
 function getPairCount(){
   const el = document.getElementById('pairCount');
   const value = parseInt(el?.value || String(DEFAULT_PAIR_COUNT), 10);
-  return [2,3,4].includes(value) ? value : DEFAULT_PAIR_COUNT;
+  return [2,3,4,5,6].includes(value) ? value : DEFAULT_PAIR_COUNT;
 }
 
 function getCourtCount(){
@@ -325,35 +345,107 @@ function getRoundLimit(){
   return ROUND_LIMIT_OPTIONS.includes(value) ? value : DEFAULT_ROUND_LIMIT;
 }
 
+
+function getPlayoffLimitMode(){
+  const el = document.getElementById('playoffLimit');
+  return el?.value || '27';
+}
+
+function getPlayoffLimit(){
+  const mode = getPlayoffLimitMode();
+  if(mode === 'custom'){
+    const custom = document.getElementById('playoffLimitCustom');
+    const customValue = parseInt(custom?.value || '', 10);
+    return customValue > 0 ? customValue : 27;
+  }
+  const value = parseInt(mode, 10);
+  return PLAYOFF_LIMIT_OPTIONS.includes(value) ? value : 27;
+}
+
+function onPlayoffLimitChange(){
+  const mode = getPlayoffLimitMode();
+  const customInput = document.getElementById('playoffLimitCustom');
+  if(customInput){
+    customInput.style.display = mode === 'custom' ? 'block' : 'none';
+    if(mode !== 'custom' && !customInput.value){
+      customInput.value = '27';
+    }
+  }
+  saveData();
+}
+
+
+function setPlayoffLimitFromSnapshot(snapshot){
+  if(!snapshot) return;
+  const playoffLimitEl = document.getElementById('playoffLimit');
+  const playoffLimitCustomEl = document.getElementById('playoffLimitCustom');
+  if(playoffLimitEl){
+    if(snapshot.playoffLimitMode === 'custom'){
+      playoffLimitEl.value = 'custom';
+    } else if(PLAYOFF_LIMIT_OPTIONS.includes(Number(snapshot.playoffLimitMode))){
+      playoffLimitEl.value = String(snapshot.playoffLimitMode);
+    } else if(PLAYOFF_LIMIT_OPTIONS.includes(Number(snapshot.playoffLimit))){
+      playoffLimitEl.value = String(snapshot.playoffLimit);
+    } else {
+      playoffLimitEl.value = '27';
+    }
+  }
+  if(playoffLimitCustomEl){
+    playoffLimitCustomEl.value = snapshot.playoffLimitMode === 'custom'
+      ? String(snapshot.playoffLimitCustom || snapshot.playoffLimit || 27)
+      : String(snapshot.playoffLimit || 27);
+    playoffLimitCustomEl.style.display = playoffLimitEl?.value === 'custom' ? 'block' : 'none';
+  }
+}
+
+
+
 function getRoundCount(){
   const el = document.getElementById('roundCount');
   const value = parseInt(el?.value || '2', 10);
   return [1,2,3].includes(value) ? value : 2;
 }
 
+function buildRoundRobinRounds(pairCount, courtCount){
+  const hasBye = pairCount % 2 === 1;
+  const bye = -1;
+  let items = Array.from({length: pairCount}, (_, i) => i);
+  if(hasBye) items.push(bye);
+
+  const n = items.length;
+  const roundsList = [];
+  for(let r = 0; r < n - 1; r++){
+    const matches = [];
+    for(let i = 0; i < n / 2; i++){
+      const a = items[i];
+      const b = items[n - 1 - i];
+      if(a !== bye && b !== bye){
+        matches.push([a, b, (matches.length % courtCount) + 1]);
+      }
+    }
+    roundsList.push(matches);
+    items = [items[0], items[n - 1], ...items.slice(1, n - 1)];
+  }
+  return roundsList;
+}
+
 function buildRoundsByCount(pairCount, roundCount, courtCount){
-  const rounds = [];
-  if(pairCount === 2){
-    const base = [[0,1]];
-    for(let roundIndex = 0; roundIndex < roundCount; roundIndex++){
-      rounds.push(base.map((m,i) => [m[0], m[1], (roundIndex * base.length + i) % courtCount + 1]));
-    }
-    return rounds;
-  }
+  const safePairCount = [2,3,4,5,6].includes(Number(pairCount)) ? Number(pairCount) : DEFAULT_PAIR_COUNT;
+  const safeRoundCount = [1,2,3].includes(Number(roundCount)) ? Number(roundCount) : 2;
+  const safeCourtCount = [1,2,3].includes(Number(courtCount)) ? Number(courtCount) : DEFAULT_COURT_COUNT;
 
-  if(pairCount === 3){
-    const base = [[0,1],[0,2],[1,2]];
-    for(let roundIndex = 0; roundIndex < roundCount; roundIndex++){
-      rounds.push(base.map((m,i) => [m[0], m[1], (roundIndex * base.length + i) % courtCount + 1]));
-    }
-    return rounds;
+  const baseRounds = buildRoundRobinRounds(safePairCount, safeCourtCount);
+  const result = [];
+  for(let circle = 0; circle < safeRoundCount; circle++){
+    baseRounds.forEach((round, roundIndex)=>{
+      result.push(round.map((match, matchIndex)=>[
+        match[0],
+        match[1],
+        ((circle * baseRounds.length + roundIndex + matchIndex) % safeCourtCount) + 1
+      ]));
+    });
   }
-
-  const maxRounds = roundCount === 1 ? 3 : roundCount === 3 ? 9 : 6;
-  const selected = roundTemplates.slice(0, maxRounds);
-  return selected.map((round, roundIndex) =>
-    round.map((match, matchIndex) => [match[0], match[1], (roundIndex * round.length + matchIndex) % courtCount + 1])
-  );
+  return result;
 }
 
 function refreshRounds(){
@@ -374,7 +466,7 @@ function onRoundLimitChange(){
 
 function updatePairInputs(){
   const count = getPairCount();
-  for(let idx = 1; idx <= 4; idx++){
+  for(let idx = 1; idx <= 6; idx++){
     const teamBlock = document.getElementById(`team${idx}`);
     if(teamBlock){
       teamBlock.style.display = idx <= count ? 'block' : 'none';
@@ -485,6 +577,7 @@ function switchTab(tab){
     content.classList.toggle('active', show);
     content.style.display = show ? 'block' : 'none';
   });
+  updateDraftVisibility(tab);
   updateHeader(tab);
   if(tab === 'history') renderHistory();
   if(tab === 'rating') renderRating();
@@ -649,7 +742,10 @@ function getBadgedTeam(team){
 }
 
 function renderTeamInputBadges(){
-  [['team1a','team1b','team1badges'],['team2a','team2b','team2badges'],['team3a','team3b','team3badges'],['team4a','team4b','team4badges']].forEach(([a,b,target])=>{
+  for(let idx = 1; idx <= 6; idx++){
+    const a = `team${idx}a`;
+    const b = `team${idx}b`;
+    const target = `team${idx}badges`;
     const nameA = normalizePlayerName(document.getElementById(a)?.value);
     const nameB = normalizePlayerName(document.getElementById(b)?.value);
     const badges = [nameA,nameB].filter(Boolean).map(name=>{
@@ -658,7 +754,7 @@ function renderTeamInputBadges(){
     }).join('');
     const targetEl = document.getElementById(target);
     if(targetEl) targetEl.innerHTML = badges;
-  });
+  }
 }
 
 function parseHistoryDateValue(value){
@@ -748,13 +844,18 @@ function toggleHistoryDetail(id){
 
 
 function getRoundsForHistory(item){
-  const raw = Number(item?.roundCount || item?.editData?.roundCount || 2);
-  const count = [1,2,3].includes(raw) ? raw : 2;
-  return buildRoundsByCount(count);
+  const pairRaw = Number(item?.pairCount || item?.editData?.pairCount || 4);
+  const roundRaw = Number(item?.roundCount || item?.editData?.roundCount || 2);
+  const courtRaw = Number(item?.courtCount || item?.editData?.courtCount || 2);
+  const pairCount = [2,3,4,5,6].includes(pairRaw) ? pairRaw : 4;
+  const roundCount = [1,2,3].includes(roundRaw) ? roundRaw : 2;
+  const courtCount = [1,2,3].includes(courtRaw) ? courtRaw : 2;
+  return buildRoundsByCount(pairCount, roundCount, courtCount);
 }
 
 function getHistoryTeams(item){
-  const pairCount = Number(item?.pairCount || 4);
+  const rawPairCount = Number(item?.pairCount || item?.editData?.pairCount || 4);
+  const pairCount = [2,3,4,5,6].includes(rawPairCount) ? rawPairCount : 4;
   if(Array.isArray(item?.teams) && item.teams.length >= 2){
     return item.teams.slice(0, Math.min(item.teams.length, pairCount));
   }
@@ -763,12 +864,7 @@ function getHistoryTeams(item){
     const parts = [stripPlayerBadge(a || ''), stripPlayerBadge(b || '')].filter(Boolean);
     return parts.length ? parts.join(' · ') : `Пара ${index}`;
   };
-  return [
-    formatTeam(data.team1a, data.team1b, 1),
-    formatTeam(data.team2a, data.team2b, 2),
-    formatTeam(data.team3a, data.team3b, 3),
-    formatTeam(data.team4a, data.team4b, 4)
-  ].slice(0, pairCount);
+  return Array.from({length: pairCount}, (_, i)=>formatTeam(data[`team${i+1}a`], data[`team${i+1}b`], i+1));
 }
 
 function buildHistoryMatchesHtml(item){
@@ -794,7 +890,7 @@ function buildHistoryGroupStatsHtml(item){
 }
 
 function buildHistoryGroupPlacesHtml(item){
-  const medals = ['🥇','🥈','🥉','4️⃣'];
+  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
   return (item.groupStandings || []).map((s,index)=>
     `<div class="small">${medals[index] || `${index+1}.`} ${escapeHtml(getBadgedTeam(s.team))}</div>`
   ).join('');
@@ -803,18 +899,34 @@ function buildHistoryGroupPlacesHtml(item){
 
 function buildHistoryDetailHtml(item){
   const finalPlaces = Array.isArray(item.finalPlaces) ? item.finalPlaces : [];
-  const finalHtml = finalPlaces.length === 4
-    ? `<div class="small">🥇 ${escapeHtml(getBadgedPlayer(finalPlaces[0]||'-'))}<br>🥈 ${escapeHtml(getBadgedPlayer(finalPlaces[1]||'-'))}<br>🥉 ${escapeHtml(getBadgedPlayer(finalPlaces[2]||'-'))}<br>4️⃣ ${escapeHtml(getBadgedPlayer(finalPlaces[3]||'-'))}</div>`
-    : `<div class="small">Турнир сохранен после группового этапа. Итоговые места плей-офф не заполнены.</div>`;
+  const finalMedals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
+  const finalHtml = finalPlaces.length
+    ? `<div class="small">${finalPlaces.map((place,index)=>`${finalMedals[index] || (index+1+'.')} ${escapeHtml(getBadgedPlayer(place||'-'))}`).join('<br>')}</div>`
+    : `<div class="small">Турнир сохранен после группового этапа. Итоговые места недоступны.</div>`;
 
   const matchesHtml = buildHistoryMatchesHtml(item);
   const groupStatsHtml = buildHistoryGroupStatsHtml(item) || '<div class="small">Итоги группового этапа недоступны.</div>';
   const groupPlacesHtml = buildHistoryGroupPlacesHtml(item) || '<div class="small">Итоговые места группового этапа недоступны.</div>';
 
   const playoffText = extractPlayoffBlock(item.dayText);
-  const playoffHtml = playoffText
-    ? playoffText.split('\n').map(line=>escapeHtml(line)).join('<br>')
-    : 'Плей-офф не игрался или не был сохранен.';
+  const playoffLines = playoffText ? playoffText.split('\n').filter(Boolean) : [];
+  const playoffHeading = playoffLines.length ? playoffLines.shift() : 'Плей-офф';
+  let playoffFooterHeading = '';
+  const playoffBodyLines = [];
+  const playoffFooterLines = [];
+  let activeLines = playoffBodyLines;
+
+  playoffLines.forEach(line=>{
+    if(line.startsWith('🏆 Итоги плей-офф') || line.startsWith('🏅 Итог турнира') || line.startsWith('🏅 Итоговые места')){
+      playoffFooterHeading = '🏆 Итоги плей-офф';
+      activeLines = playoffFooterLines;
+      return;
+    }
+    activeLines.push(line);
+  });
+
+  const playoffBody = playoffBodyLines.length ? playoffBodyLines.map(line=>escapeHtml(line)).join('<br>') : 'Плей-офф не игрался или не был сохранен.';
+  const playoffFooter = playoffFooterLines.length ? playoffFooterLines.map(line=>escapeHtml(line)).join('<br>') : '';
 
   return `
     <div class="history-detail" id="history-detail-${escapeHtml(item.id)}">
@@ -830,11 +942,11 @@ function buildHistoryDetailHtml(item){
       <div style="margin:16px 0 8px;font-weight:700">Итоговые места группового этапа</div>
       <div>${groupPlacesHtml}</div>
 
-      <div style="margin:16px 0 8px;font-weight:700">Плей-офф</div>
-      <div class="small">${playoffHtml}</div>
+      <div style="margin:16px 0 8px;font-weight:700">${escapeHtml(playoffHeading)}</div>
+      <div class="small">${playoffBody}</div>
+      ${playoffFooterHeading ? `<div style="margin:16px 0 8px;font-weight:700">${escapeHtml(playoffFooterHeading)}</div><div class="small">${playoffFooter}</div>` : ''}
 
-      <div style="margin:16px 0 8px;font-weight:700">Итоговые места турнира</div>
-      ${finalHtml}
+      ${playoffText ? '' : `<div style="margin:16px 0 8px;font-weight:700">Итоговые места турнира</div>${finalHtml}`}
 
       <div class="button-row" style="margin-top:16px;">
         <button class="secondary" onclick="copyHistoryReport('${item.id}')">Скопировать отчет</button>
@@ -1014,13 +1126,12 @@ async function renderRating(){
       stats[p.name].losses += p.losses;
       stats[p.name].draws += p.draws;
     });
-    // count matches: calculate by pair matchups in group stages + playoffs
-    if(tournament.groupStandings && tournament.groupStandings.length >= 4){
-      // for group stage: 4 teams means C(4,2) = 6 matches per round
-      const roundCount = tournament.roundCount || 1;
-      const groupMatches = 6 * roundCount;
-      // for playoffs: 2 semifinals + 1 final + 1 3rd place = 4 matches (if finalPlaces.length === 4)
-      const playoffMatches = tournament.finalPlaces && tournament.finalPlaces.length === 4 ? 4 : 0;
+    // count matches: C(pairCount,2) per circle + playoffs for 4 pairs
+    if(tournament.groupStandings && tournament.groupStandings.length >= 2){
+      const pairCount = Number(tournament.pairCount || tournament.groupStandings.length || 4);
+      const roundCount = Number(tournament.roundCount || 1);
+      const groupMatches = (pairCount * (pairCount - 1) / 2) * roundCount;
+      const playoffMatches = pairCount === 4 && tournament.finalPlaces && tournament.finalPlaces.length === 4 ? 4 : (pairCount === 6 && tournament.finalPlaces && tournament.finalPlaces.length === 6 ? 9 : 0);
       totalMatches += groupMatches + playoffMatches;
     }
   });
@@ -1105,13 +1216,10 @@ function getTeams(){
       const parts = [partA, partB].filter(Boolean);
       return parts.length > 0 ? parts.join(' · ') : `Пара ${index}`;
     };
-    const allTeams = [
-      formatTeam(team1a?.value, team1b?.value, 1),
-      formatTeam(team2a?.value, team2b?.value, 2),
-      formatTeam(team3a?.value, team3b?.value, 3),
-      formatTeam(team4a?.value, team4b?.value, 4)
-    ];
-    return allTeams.slice(0, getPairCount());
+    return Array.from({length: getPairCount()}, (_, i)=>{
+      const idx = i + 1;
+      return formatTeam(document.getElementById(`team${idx}a`)?.value, document.getElementById(`team${idx}b`)?.value, idx);
+    });
   } catch(e){
     console.error('getTeams error:', e);
     const defaultCount = getPairCount();
@@ -1121,15 +1229,13 @@ function getTeams(){
 
 function getPlayersByIndex(idx){
   try {
-    const pairs = [
-      [team1a?.value, team1b?.value],
-      [team2a?.value, team2b?.value],
-      [team3a?.value, team3b?.value],
-      [team4a?.value, team4b?.value]
-    ];
     if(idx < 0 || idx >= getPairCount()) return [];
-    if(!pairs[idx]) return [];
-    return pairs[idx].map(stripPlayerBadge).filter(Boolean);
+    const pairIndex = idx + 1;
+    const pair = [
+      document.getElementById(`team${pairIndex}a`)?.value,
+      document.getElementById(`team${pairIndex}b`)?.value
+    ];
+    return pair.map(stripPlayerBadge).filter(Boolean);
   } catch(e){
     console.warn('getPlayersByIndex error:', e);
     return [];
@@ -1203,9 +1309,11 @@ function cleanupOldLocalStorage(){
 }
 
 function getPlayerInputs(){
-  return ['team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b']
-    .map(id=>document.getElementById(id))
-    .filter(Boolean);
+  const ids = [];
+  for(let idx = 1; idx <= 6; idx++){
+    ids.push(`team${idx}a`, `team${idx}b`);
+  }
+  return ids.map(id=>document.getElementById(id)).filter(Boolean);
 }
 
 function hidePlayerAutocomplete(){
@@ -1299,8 +1407,7 @@ function savePlayersFromFields(){
   let players = [];
   try { players = JSON.parse(localStorage.getItem('playersList') || '[]'); } catch(e){ players = []; }
   const normalizedExisting = players.map(p=>normalizePlayerKey(p));
-  ['team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b'].forEach(id=>{
-    const el = document.getElementById(id);
+  getPlayerInputs().forEach(el=>{
     const name = stripPlayerBadge(el ? el.value : '');
     if(!name) return;
     const normalized = normalizePlayerKey(name);
@@ -1333,11 +1440,12 @@ function autoFillPlayoff(side,id){
   const b = document.getElementById(`playoff-b-${id}`);
   if(!a || !b) return;
 
+  const limit = getPlayoffLimit();
   const av = parseInt(a.value);
   const bv = parseInt(b.value);
 
-  if(side === "a" && !isNaN(av) && av >= 0 && av <= 27) b.value = 27 - av;
-  if(side === "b" && !isNaN(bv) && bv >= 0 && bv <= 27) a.value = 27 - bv;
+  if(side === "a" && !isNaN(av) && av >= 0 && av <= limit) b.value = limit - av;
+  if(side === "b" && !isNaN(bv) && bv >= 0 && bv <= limit) a.value = limit - bv;
 
   saveData();
   tryRenderFinals();
@@ -1394,6 +1502,7 @@ function startTournament(){
     alert('Заполните всех игроков');
     return;
   }
+  setTournamentStarted(true);
   refreshRounds();
   hidePostResultButtons();
   const results = document.getElementById('results');
@@ -1531,7 +1640,7 @@ function calculateResults(){
       <tbody>
 `;
 
-const medals = ["🥇","🥈","🥉","4️⃣"];
+const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
 
 data.sorted.forEach((item,index)=>{
   const name = item[0];
@@ -1558,9 +1667,10 @@ html += `
 `;
 
   if(allGroupRoundsFilled()){
+    const pairCount = getPairCount();
     html += `
     <div id="group-action-buttons" class="button-row">
-      ${getPairCount() === 4 ? `<button class="secondary" onclick="startPlayoff()">Играть плей-офф</button>` : ``}
+      ${pairCount === 4 || pairCount === 6 ? `<button class="secondary" onclick="startPlayoff()">Играть плей-офф</button>` : ``}
       <button class="secondary" onclick="saveTournament()">Сохранить турнир</button>
     </div>
     <div id="playoff-section"></div>
@@ -1573,8 +1683,9 @@ html += `
 }
 
 function startPlayoff(){
-  if(getPairCount() !== 4) return;
-  if(!roundsStats || roundsStats.length < 4){
+  const pairCount = getPairCount();
+  if(pairCount !== 4 && pairCount !== 6) return;
+  if(!roundsStats || roundsStats.length < pairCount){
     calculateResults();
   }
   const groupButtons = document.getElementById('group-action-buttons');
@@ -1588,6 +1699,7 @@ function startPlayoff(){
       results.insertAdjacentHTML('beforeend', showPlayoff());
     }
   }
+  onPlayoffLimitChange();
   loadPlayoffScores();
   tryRenderFinals();
   tryRenderTournamentTable();
@@ -1595,23 +1707,73 @@ function startPlayoff(){
 }
 
 function showPlayoff(){
-  if(!roundsStats || roundsStats.length < 4) return "";
+  const pairCount = getPairCount();
+  if(!roundsStats || roundsStats.length < pairCount) return "";
+
+  const limit = getPlayoffLimit();
+  const playoffLimitHtml = `
+  <div class="settings-grid" style="margin-top:8px;">
+    <div class="form-item">
+      <label>Играем плей-офф до</label>
+      <select id="playoffLimit" onchange="onPlayoffLimitChange()">
+        <option value="15" ${limit === 15 ? 'selected' : ''}>15</option>
+        <option value="21" ${limit === 21 ? 'selected' : ''}>21</option>
+        <option value="24" ${limit === 24 ? 'selected' : ''}>24</option>
+        <option value="27" ${limit === 27 ? 'selected' : ''}>27</option>
+        <option value="32" ${limit === 32 ? 'selected' : ''}>32</option>
+        <option value="custom" ${!PLAYOFF_LIMIT_OPTIONS.includes(limit) ? 'selected' : ''}>Свой</option>
+      </select>
+      <input id="playoffLimitCustom" type="number" min="1" placeholder="Свое число" value="${limit}" style="${!PLAYOFF_LIMIT_OPTIONS.includes(limit) ? '' : 'display:none;'}margin-top:6px;" oninput="saveData()">
+    </div>
+  </div>`;
+
+  if(pairCount === 6){
+    const firstRound = [
+      {id:'q1', label:'Матч 1', a:roundsStats[0], b:roundsStats[5], court:1},
+      {id:'q2', label:'Матч 2', a:roundsStats[1], b:roundsStats[4], court:2},
+      {id:'q3', label:'Матч 3', a:roundsStats[2], b:roundsStats[3], court:3}
+    ];
+
+    const matchesHtml = firstRound.map((m,index)=>`
+      <div class="match">
+        <div class="court">${m.label} · ${getCourtName(((index) % getCourtCount()) + 1)}</div>
+        <div class="teams">${m.a} 🆚 ${m.b}</div>
+        <div class="score">
+          <input type="number" id="playoff-a-${m.id}" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('a','${m.id}')">
+          <input type="number" id="playoff-b-${m.id}" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('b','${m.id}')">
+        </div>
+      </div>
+    `).join('');
+
+    return `
+    <h2 style="text-align:center;">🏆 Плей-офф</h2>
+    ${playoffLimitHtml}
+    <h3 style="text-align:center;margin-top:16px;">Первый раунд</h3>
+    ${matchesHtml}
+    <div id="playoff-finals"></div>
+    <div id="tournament-table"></div>
+    `;
+  }
+
+  if(pairCount !== 4) return "";
+
   return `
   <h2 style="text-align:center;">🏆 Плей-офф</h2>
+  ${playoffLimitHtml}
   <div class="match">
-    <div class="court">Полуфинал 1</div>
+    <div class="court">Полуфинал 1 · ${getCourtName(1)}</div>
     <div class="teams">${roundsStats[0]} 🆚 ${roundsStats[3]}</div>
     <div class="score">
-      <input type="number" id="playoff-a-sf1" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('a','sf1')">
-      <input type="number" id="playoff-b-sf1" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('b','sf1')">
+      <input type="number" id="playoff-a-sf1" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('a','sf1')">
+      <input type="number" id="playoff-b-sf1" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('b','sf1')">
     </div>
   </div>
   <div class="match">
-    <div class="court">Полуфинал 2</div>
+    <div class="court">Полуфинал 2 · ${getCourtName(Math.min(2, getCourtCount()))}</div>
     <div class="teams">${roundsStats[1]} 🆚 ${roundsStats[2]}</div>
     <div class="score">
-      <input type="number" id="playoff-a-sf2" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('a','sf2')">
-      <input type="number" id="playoff-b-sf2" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('b','sf2')">
+      <input type="number" id="playoff-a-sf2" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('a','sf2')">
+      <input type="number" id="playoff-b-sf2" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('b','sf2')">
     </div>
   </div>
   <div id="playoff-finals"></div>
@@ -1619,7 +1781,109 @@ function showPlayoff(){
   `;
 }
 
+
+function getPlayoffMatchScore(id){
+  const a = document.getElementById(`playoff-a-${id}`);
+  const b = document.getElementById(`playoff-b-${id}`);
+  if(!a || !b || a.value === "" || b.value === "") return null;
+  return {a:Number(a.value), b:Number(b.value)};
+}
+
+function getPlayoffMatchTeams(id){
+  const pairCount = getPairCount();
+
+  if(pairCount === 4){
+    if(id === 'sf1') return [roundsStats[0], roundsStats[3]];
+    if(id === 'sf2') return [roundsStats[1], roundsStats[2]];
+    const finalData = getPlayoffFinalists();
+    if(!finalData) return [];
+    if(id === 'final') return [finalData.sf1Winner, finalData.sf2Winner];
+    if(id === '3rd') return [finalData.sf1Loser, finalData.sf2Loser];
+    return [];
+  }
+
+  if(pairCount === 6){
+    if(id === 'q1') return [roundsStats[0], roundsStats[5]];
+    if(id === 'q2') return [roundsStats[1], roundsStats[4]];
+    if(id === 'q3') return [roundsStats[2], roundsStats[3]];
+    const finalData = getPlayoffFinalists();
+    if(!finalData) return [];
+    if(id === 'w12') return [finalData.q1Winner, finalData.q2Winner];
+    if(id === 'w13') return [finalData.q1Winner, finalData.q3Winner];
+    if(id === 'w23') return [finalData.q2Winner, finalData.q3Winner];
+    if(id === 'l12') return [finalData.q1Loser, finalData.q2Loser];
+    if(id === 'l13') return [finalData.q1Loser, finalData.q3Loser];
+    if(id === 'l23') return [finalData.q2Loser, finalData.q3Loser];
+    return [];
+  }
+
+  return [];
+}
+
+function getPlayoffWinnerLoser(id){
+  const teams = getPlayoffMatchTeams(id);
+  const score = getPlayoffMatchScore(id);
+  if(!teams.length || !score) return null;
+  const winner = score.a >= score.b ? teams[0] : teams[1];
+  const loser = winner === teams[0] ? teams[1] : teams[0];
+  return {winner, loser, score, teams};
+}
+
+function rankPlayoffMiniGroup(teams, matchIds){
+  const stats = {};
+  teams.forEach(team=>{
+    stats[team] = {team, scored:0, conceded:0, delta:0, wins:0};
+  });
+
+  matchIds.forEach(id=>{
+    const matchTeams = getPlayoffMatchTeams(id);
+    const score = getPlayoffMatchScore(id);
+    if(matchTeams.length !== 2 || !score) return;
+
+    const [A,B] = matchTeams;
+    stats[A].scored += score.a;
+    stats[A].conceded += score.b;
+    stats[B].scored += score.b;
+    stats[B].conceded += score.a;
+
+    if(score.a > score.b) stats[A].wins++;
+    if(score.b > score.a) stats[B].wins++;
+  });
+
+  Object.keys(stats).forEach(team=>{
+    stats[team].delta = stats[team].scored - stats[team].conceded;
+  });
+
+  return Object.values(stats).sort((a,b)=>{
+    if(b.delta !== a.delta) return b.delta - a.delta;
+    if(b.scored !== a.scored) return b.scored - a.scored;
+    if(b.wins !== a.wins) return b.wins - a.wins;
+    return teams.indexOf(a.team) - teams.indexOf(b.team);
+  }).map(item=>item.team);
+}
+
 function getPlayoffFinalists(){
+  const pairCount = getPairCount();
+
+  if(pairCount === 6){
+    if(!roundsStats || roundsStats.length < 6) return null;
+    const q1 = getPlayoffWinnerLoser('q1');
+    const q2 = getPlayoffWinnerLoser('q2');
+    const q3 = getPlayoffWinnerLoser('q3');
+    if(!q1 || !q2 || !q3) return null;
+
+    return {
+      q1Winner:q1.winner,
+      q1Loser:q1.loser,
+      q2Winner:q2.winner,
+      q2Loser:q2.loser,
+      q3Winner:q3.winner,
+      q3Loser:q3.loser,
+      winners:[q1.winner, q2.winner, q3.winner],
+      losers:[q1.loser, q2.loser, q3.loser]
+    };
+  }
+
   if(!roundsStats || roundsStats.length < 4) return null;
   const sf1a = document.getElementById('playoff-a-sf1');
   const sf1b = document.getElementById('playoff-b-sf1');
@@ -1642,27 +1906,68 @@ function getPlayoffFinalists(){
 }
 
 function tryRenderFinals(){
+  const pairCount = getPairCount();
   const finalData = getPlayoffFinalists();
   const container = document.getElementById('playoff-finals');
   if(!container || !finalData) return;
 
+  const limit = getPlayoffLimit();
+
+  if(pairCount === 6){
+    const winners = finalData.winners;
+    const losers = finalData.losers;
+
+    const finalRound = [
+      {id:'w12', label:'1–3 места · Матч 1', a:winners[0], b:winners[1], court:1},
+      {id:'w13', label:'1–3 места · Матч 2', a:winners[0], b:winners[2], court:2},
+      {id:'w23', label:'1–3 места · Матч 3', a:winners[1], b:winners[2], court:3}
+    ];
+
+    const lowerRound = [
+      {id:'l12', label:'4–6 места · Матч 1', a:losers[0], b:losers[1], court:1},
+      {id:'l13', label:'4–6 места · Матч 2', a:losers[0], b:losers[2], court:2},
+      {id:'l23', label:'4–6 места · Матч 3', a:losers[1], b:losers[2], court:3}
+    ];
+
+    const renderMatch = (m,index)=>`
+      <div class="match">
+        <div class="court">${m.label} · ${getCourtName(((index) % getCourtCount()) + 1)}</div>
+        <div class="teams">${m.a} 🆚 ${m.b}</div>
+        <div class="score">
+          <input type="number" id="playoff-a-${m.id}" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('a','${m.id}')">
+          <input type="number" id="playoff-b-${m.id}" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('b','${m.id}')">
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = `
+      <h3 style="text-align:center;margin-top:16px;">🏆 Финальный раунд за 1–3 места</h3>
+      ${finalRound.map(renderMatch).join('')}
+      <h3 style="text-align:center;margin-top:16px;">🎾 Раунд за 4–6 места</h3>
+      ${lowerRound.map(renderMatch).join('')}
+    `;
+
+    loadPlayoffScores();
+    return;
+  }
+
   container.innerHTML = `
   <h3 style="text-align:center;margin-top:16px;">🏆 Финал</h3>
   <div class="match">
-    <div class="court">Финал</div>
+    <div class="court">Финал · ${getCourtName(1)}</div>
     <div class="teams">${finalData.sf1Winner} 🆚 ${finalData.sf2Winner}</div>
     <div class="score">
-      <input type="number" id="playoff-a-final" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('a','final')">
-      <input type="number" id="playoff-b-final" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('b','final')">
+      <input type="number" id="playoff-a-final" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('a','final')">
+      <input type="number" id="playoff-b-final" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('b','final')">
     </div>
   </div>
   <h3 style="text-align:center;margin-top:8px;">🥉 Матч за 3 место</h3>
   <div class="match">
-    <div class="court">За 3 место</div>
+    <div class="court">За 3 место · ${getCourtName(Math.min(2, getCourtCount()))}</div>
     <div class="teams">${finalData.sf1Loser} 🆚 ${finalData.sf2Loser}</div>
     <div class="score">
-      <input type="number" id="playoff-a-3rd" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('a','3rd')">
-      <input type="number" id="playoff-b-3rd" placeholder="0" min="0" max="27" oninput="autoFillPlayoff('b','3rd')">
+      <input type="number" id="playoff-a-3rd" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('a','3rd')">
+      <input type="number" id="playoff-b-3rd" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('b','3rd')">
     </div>
   </div>`;
 
@@ -1670,16 +1975,30 @@ function tryRenderFinals(){
 }
 
 function playoffsCompleted(){
-  const ids = ['playoff-a-sf1','playoff-b-sf1','playoff-a-sf2','playoff-b-sf2','playoff-a-final','playoff-b-final','playoff-a-3rd','playoff-b-3rd'];
+  const pairCount = getPairCount();
+  const ids = pairCount === 6
+    ? ['q1','q2','q3','w12','w13','w23','l12','l13','l23']
+    : ['sf1','sf2','final','3rd'];
+
   return ids.every(id=>{
-    const el = document.getElementById(id);
-    return el && el.value !== "";
+    const a = document.getElementById(`playoff-a-${id}`);
+    const b = document.getElementById(`playoff-b-${id}`);
+    return a && b && a.value !== "" && b.value !== "";
   });
 }
 
 function getFinalPlaces(){
+  const pairCount = getPairCount();
   const finalData = getPlayoffFinalists();
   if(!finalData) return [];
+
+  if(pairCount === 6){
+    if(!playoffsCompleted()) return [];
+    const topThree = rankPlayoffMiniGroup(finalData.winners, ['w12','w13','w23']);
+    const bottomThree = rankPlayoffMiniGroup(finalData.losers, ['l12','l13','l23']);
+    return [...topThree, ...bottomThree];
+  }
+
   const fa = document.getElementById('playoff-a-final');
   const fb = document.getElementById('playoff-b-final');
   const ta = document.getElementById('playoff-a-3rd');
@@ -1700,19 +2019,21 @@ function tryRenderTournamentTable(){
   if(!container) return;
 
   const data = lastStats;
-  const sorted = data.sorted;
-  const medals = ["🥇","🥈","🥉","4️⃣"];
+  const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
   const finalPlaces = getFinalPlaces();
+  const pairCount = getPairCount();
 
   let html = `<h2 style="text-align:center;margin-top:18px;">📋 Таблица турнира</h2>`;
   html += `<div class="tourney-container"><div class="tourney-scroll"><table class="tourney-table"><thead><tr>`;
   html += `<th>Место</th><th>Пара</th>`;
   for(let r=0;r<rounds.length;r++) html += `<th>Р${r+1}</th>`;
-  html += `<th>ПФ</th><th>Ф/3М</th><th>Очки</th><th>Разница</th><th>В-П-Н</th>`;
+  html += pairCount === 6 ? `<th>1-й раунд</th><th>Фин. раунд</th>` : `<th>ПФ</th><th>Ф/3М</th>`;
+  html += `<th>Очки</th><th>Разница</th><th>В-П-Н</th>`;
   html += `</tr></thead><tbody>`;
 
   finalPlaces.forEach((team,index)=>{
     const s = data.stats[team];
+    if(!s) return;
     html += `<tr>`;
     html += `<td style="font-weight:700">${medals[index]} ${index+1}</td>`;
     html += `<td style="text-align:left;padding-left:12px"><strong>${team}</strong></td>`;
@@ -1736,7 +2057,7 @@ function tryRenderTournamentTable(){
   });
 
   html += `</tbody></table></div></div>`;
-  
+
   container.innerHTML = html;
   showPostResultButtons();
   lastResultsText = buildDayText();
@@ -1745,6 +2066,26 @@ function tryRenderTournamentTable(){
 
 function getPlayoffScoreForTeam(team,type){
   if(!roundsStats || roundsStats.length < 4) return '-';
+
+  const pairCount = getPairCount();
+
+  if(pairCount === 6){
+    const firstIds = ['q1','q2','q3'];
+    const finalIds = ['w12','w13','w23','l12','l13','l23'];
+    const ids = type === 'semi' ? firstIds : finalIds;
+    const parts = [];
+
+    ids.forEach(id=>{
+      const teams = getPlayoffMatchTeams(id);
+      const score = getPlayoffMatchScore(id);
+      if(teams.length === 2 && score && (team === teams[0] || team === teams[1])){
+        parts.push(team === teams[0] ? `${score.a}-${score.b}` : `${score.b}-${score.a}`);
+      }
+    });
+
+    return parts.length ? parts.join(', ') : '-';
+  }
+
   const finalData = getPlayoffFinalists();
   const sf1a = document.getElementById('playoff-a-sf1');
   const sf1b = document.getElementById('playoff-b-sf1');
@@ -1791,6 +2132,10 @@ function saveData(){
     const t3b = document.getElementById('team3b');
     const t4a = document.getElementById('team4a');
     const t4b = document.getElementById('team4b');
+    const t5a = document.getElementById('team5a');
+    const t5b = document.getElementById('team5b');
+    const t6a = document.getElementById('team6a');
+    const t6b = document.getElementById('team6b');
     
     const data = {
       name: tn?.value || 'Американо',
@@ -1800,7 +2145,11 @@ function saveData(){
       roundLimit: getRoundLimit(),
       roundLimitMode: rl?.value || String(DEFAULT_ROUND_LIMIT),
       roundLimitCustom: rlc?.value || '',
+      playoffLimit: getPlayoffLimit(),
+      playoffLimitMode: getPlayoffLimitMode(),
+      playoffLimitCustom: document.getElementById('playoffLimitCustom')?.value || '',
       roundCount: rc?.value || '2',
+      tournamentStarted: tournamentStarted,
       court1: c1?.value || '',
       court2: c2?.value || '',
       court3: c3?.value || '',
@@ -1812,6 +2161,10 @@ function saveData(){
       team3b: t3b?.value || "",
       team4a: t4a?.value || "",
       team4b: t4b?.value || "",
+      team5a: t5a?.value || "",
+      team5b: t5b?.value || "",
+      team6a: t6a?.value || "",
+      team6b: t6b?.value || "",
       teams: getTeams(),
       scores:{}
     };
@@ -1825,11 +2178,13 @@ function saveData(){
       });
     });
 
-    ["sf1","sf2","final","3rd"].forEach(stage=>{
-      const a = document.getElementById(`playoff-a-${stage}`);
-      const b = document.getElementById(`playoff-b-${stage}`);
-      if(a) data.scores[`playoff-a-${stage}`] = a.value;
-      if(b) data.scores[`playoff-b-${stage}`] = b.value;
+    data.playoffLimit = getPlayoffLimit();
+    data.playoffLimitMode = getPlayoffLimitMode();
+    const playoffLimitCustom = document.getElementById('playoffLimitCustom');
+    data.playoffLimitCustom = playoffLimitCustom?.value || '';
+
+    document.querySelectorAll('input[id^="playoff-a-"], input[id^="playoff-b-"]').forEach(input=>{
+      data.scores[input.id] = input.value;
     });
 
     const draft = {
@@ -1851,7 +2206,7 @@ function startFreshTournament(){
   removeDraft();
   editingTournamentId = null;
   editingCloudId = null;
-  const ids = ['tournamentName','tournamentDate','court1','court2','court3','team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b'];
+  const ids = ['tournamentName','tournamentDate','court1','court2','court3','team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b','team5a','team5b','team6a','team6b'];
   ids.forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.value = '';
@@ -1870,6 +2225,7 @@ function startFreshTournament(){
   updateCourtFields();
   onRoundLimitChange();
   refreshRounds();
+  setTournamentStarted(false);
   const matches = document.getElementById('matches');
   const results = document.getElementById('results');
   if(matches) matches.innerHTML = '';
@@ -1887,6 +2243,11 @@ function loadData(){
   updatePairInputs();
   updateCourtFields();
   onRoundLimitChange();
+  setTournamentStarted(false);
+  const matches = document.getElementById('matches');
+  const results = document.getElementById('results');
+  if(matches) matches.innerHTML = '';
+  if(results) results.innerHTML = '';
   hidePostResultButtons();
   updateDraftStatus();
 }
@@ -1923,6 +2284,18 @@ function updateDraftStatus(){
   } else {
     el.textContent = 'Черновик не сохранен';
   }
+}
+
+function updateDraftVisibility(tab){
+  const isTournamentTab = tab === 'tournament';
+  const draftStatus = document.getElementById('draftStatus');
+  const saveDraftNowBtn = document.getElementById('saveDraftNowBtn');
+  if(draftStatus) draftStatus.style.display = isTournamentTab ? 'block' : 'none';
+  if(saveDraftNowBtn) saveDraftNowBtn.style.display = isTournamentTab ? 'inline-flex' : 'none';
+}
+
+function setTournamentStarted(value){
+  tournamentStarted = Boolean(value);
 }
 
 function showDraftModal(){
@@ -1978,7 +2351,11 @@ function restoreDraft(draft){
     team3a: snapshot.team3a || '',
     team3b: snapshot.team3b || '',
     team4a: snapshot.team4a || '',
-    team4b: snapshot.team4b || ''
+    team4b: snapshot.team4b || '',
+    team5a: snapshot.team5a || '',
+    team5b: snapshot.team5b || '',
+    team6a: snapshot.team6a || '',
+    team6b: snapshot.team6b || ''
   };
 
   Object.entries(fieldMap).forEach(([id,value])=>{
@@ -2017,24 +2394,37 @@ function restoreDraft(draft){
   refreshRounds();
   renderTeamInputBadges();
 
-  generateMatches();
+  setTournamentStarted(Boolean(snapshot.tournamentStarted));
 
-  if(snapshot.scores){
-    Object.entries(snapshot.scores).forEach(([id,value])=>{
-      const el = document.getElementById(id);
-      if(el) el.value = value || '';
-    });
-  }
+  if(tournamentStarted){
+    generateMatches();
 
-  if(allGroupRoundsFilled()){
-    calculateResults();
-  }
+    if(snapshot.scores){
+      Object.entries(snapshot.scores).forEach(([id,value])=>{
+        const el = document.getElementById(id);
+        if(el) el.value = value || '';
+      });
+    }
 
-  const hasPlayoffData = Object.keys(snapshot.scores || {}).some(key => key.startsWith('playoff-') && snapshot.scores[key] !== '');
-  if(hasPlayoffData){
-    startPlayoff();
-    tryRenderFinals();
-    if(playoffsCompleted()) tryRenderTournamentTable();
+    if(allGroupRoundsFilled()){
+      calculateResults();
+    }
+
+    const hasPlayoffData = Object.keys(snapshot.scores || {}).some(key => key.startsWith('playoff-') && snapshot.scores[key] !== '');
+    if(hasPlayoffData){
+      startPlayoff();
+      setPlayoffLimitFromSnapshot(snapshot);
+      loadPlayoffScores();
+      tryRenderFinals();
+      loadPlayoffScores();
+      if(playoffsCompleted()) tryRenderTournamentTable();
+    }
+  } else {
+    const matches = document.getElementById('matches');
+    const results = document.getElementById('results');
+    if(matches) matches.innerHTML = '';
+    if(results) results.innerHTML = '';
+    hidePostResultButtons();
   }
 
   if(draft.activeTab){
@@ -2203,7 +2593,7 @@ function buildGroupStageText(){
   });
 
   text += `\n🏅 Итоговые места группового этапа\n\n`;
-  const medals = ["🥇","🥈","🥉","4️⃣"];
+  const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
   data.sorted.forEach((item,index)=>{
     text += `${medals[index]} ${getBadgedTeam(item[0])}\n`;
   });
@@ -2215,33 +2605,80 @@ function buildGroupStageText(){
 function buildDayText(){
   let text = buildGroupStageText();
 
+  const pairCount = getPairCount();
   const finalData = getPlayoffFinalists();
   if(finalData){
-    const sf1a = document.getElementById('playoff-a-sf1');
-    const sf1b = document.getElementById('playoff-b-sf1');
-    const sf2a = document.getElementById('playoff-a-sf2');
-    const sf2b = document.getElementById('playoff-b-sf2');
-
     text += `🏆 Плей-офф\n\n`;
-    text += `Полуфинал 1\n${getBadgedTeam(roundsStats[0])} ${sf1a.value}:${sf1b.value} ${getBadgedTeam(roundsStats[3])}\n\n`;
-    text += `Полуфинал 2\n${getBadgedTeam(roundsStats[1])} ${sf2a.value}:${sf2b.value} ${getBadgedTeam(roundsStats[2])}\n\n`;
 
-    const fa = document.getElementById('playoff-a-final');
-    const fb = document.getElementById('playoff-b-final');
-    const ta = document.getElementById('playoff-a-3rd');
-    const tb = document.getElementById('playoff-b-3rd');
+    if(pairCount === 6){
+      const qIds = ['q1','q2','q3'];
+      text += `Первый раунд\n`;
+      qIds.forEach((id,index)=>{
+        const teams = getPlayoffMatchTeams(id);
+        const score = getPlayoffMatchScore(id);
+        if(teams.length === 2 && score){
+          text += `${index+1}. ${getBadgedTeam(teams[0])} ${score.a}:${score.b} ${getBadgedTeam(teams[1])}\n`;
+        }
+      });
+      text += `\n`;
 
-    if(ta && tb && ta.value !== "" && tb.value !== ""){
-      text += `🥉 Матч за 3 место\n${getBadgedPlayer(finalData.sf1Loser)} ${ta.value}:${tb.value} ${getBadgedPlayer(finalData.sf2Loser)}\n\n`;
+      const winnerIds = ['w12','w13','w23'];
+      if(winnerIds.some(id=>getPlayoffMatchScore(id))){
+        text += `🏆 Раунд за 1–3 места\n`;
+        winnerIds.forEach((id,index)=>{
+          const teams = getPlayoffMatchTeams(id);
+          const score = getPlayoffMatchScore(id);
+          if(teams.length === 2 && score){
+            text += `${index+1}. ${getBadgedTeam(teams[0])} ${score.a}:${score.b} ${getBadgedTeam(teams[1])}\n`;
+          }
+        });
+        text += `\n`;
+      }
+
+      const loserIds = ['l12','l13','l23'];
+      if(loserIds.some(id=>getPlayoffMatchScore(id))){
+        text += `🎾 Раунд за 4–6 места\n`;
+        loserIds.forEach((id,index)=>{
+          const teams = getPlayoffMatchTeams(id);
+          const score = getPlayoffMatchScore(id);
+          if(teams.length === 2 && score){
+            text += `${index+1}. ${getBadgedTeam(teams[0])} ${score.a}:${score.b} ${getBadgedTeam(teams[1])}\n`;
+          }
+        });
+        text += `\n`;
+      }
+
+      const finalPlaces = getFinalPlaces();
+      if(finalPlaces.length === 6){
+        text += `🏆 Итоги плей-офф\n\n`;
+        const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
+        finalPlaces.forEach((place,index)=>{
+          text += `${medals[index]} ${place}\n`;
+        });
+      }
+
+      return text;
     }
 
-    if(fa && fb && fa.value !== "" && fb.value !== ""){
-      text += `🏆 Финал\n${getBadgedPlayer(finalData.sf1Winner)} ${fa.value}:${fb.value} ${getBadgedPlayer(finalData.sf2Winner)}\n\n`;
+    const sf1 = getPlayoffMatchScore('sf1');
+    const sf2 = getPlayoffMatchScore('sf2');
+
+    text += `Полуфинал 1\n${getBadgedTeam(roundsStats[0])} ${sf1?.a ?? '-'}:${sf1?.b ?? '-'} ${getBadgedTeam(roundsStats[3])}\n\n`;
+    text += `Полуфинал 2\n${getBadgedTeam(roundsStats[1])} ${sf2?.a ?? '-'}:${sf2?.b ?? '-'} ${getBadgedTeam(roundsStats[2])}\n\n`;
+
+    const third = getPlayoffMatchScore('3rd');
+    if(third){
+      text += `🥉 Матч за 3 место\n${getBadgedPlayer(finalData.sf1Loser)} ${third.a}:${third.b} ${getBadgedPlayer(finalData.sf2Loser)}\n\n`;
+    }
+
+    const final = getPlayoffMatchScore('final');
+    if(final){
+      text += `🏆 Финал\n${getBadgedPlayer(finalData.sf1Winner)} ${final.a}:${final.b} ${getBadgedPlayer(finalData.sf2Winner)}\n\n`;
     }
 
     const finalPlaces = getFinalPlaces();
     if(finalPlaces.length === 4){
-      text += `🏅 Итоговые места\n\n`;
+      text += `🏆 Итоги плей-офф\n\n`;
       text += `🥇 ${finalPlaces[0]}\n`;
       text += `🥈 ${finalPlaces[1]}\n`;
       text += `🥉 ${finalPlaces[2]}\n`;
@@ -2274,7 +2711,7 @@ function buildCompactShareText(){
   let text = `🎾 ${name}${date ? ' • ' + date : ''}\n\n`;
   text += `🏆 Итоги группового этапа\n\n`;
 
-  const medals = ["🥇","🥈","🥉","4️⃣"];
+  const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
   data.sorted.forEach((item,index)=>{
     const team = item[0];
     const s = item[1];
@@ -2285,36 +2722,31 @@ function buildCompactShareText(){
 
   const playoffFinalists = getPlayoffFinalists();
   if(playoffFinalists){
-    const sf1a = document.getElementById('playoff-a-sf1');
-    const sf1b = document.getElementById('playoff-b-sf1');
-    const sf2a = document.getElementById('playoff-a-sf2');
-    const sf2b = document.getElementById('playoff-b-sf2');
+    const pairCount = getPairCount();
     text += `🏆 Плей-офф\n\n`;
-    text += `Полуфиналы\n`;
-    text += `${getBadgedTeam(roundsStats[0])} ${sf1a.value}:${sf1b.value} ${getBadgedTeam(roundsStats[3])}\n`;
-    text += `${getBadgedTeam(roundsStats[1])} ${sf2a.value}:${sf2b.value} ${getBadgedTeam(roundsStats[2])}\n\n`;
 
-    const ta = document.getElementById('playoff-a-3rd');
-    const tb = document.getElementById('playoff-b-3rd');
-    if(ta && tb && ta.value !== '' && tb.value !== ''){
-      text += `Матч за 3 место\n`;
-      text += `${getBadgedPlayer(playoffFinalists.sf1Loser)} ${ta.value}:${tb.value} ${getBadgedPlayer(playoffFinalists.sf2Loser)}\n\n`;
-    }
-
-    const fa = document.getElementById('playoff-a-final');
-    const fb = document.getElementById('playoff-b-final');
-    if(fa && fb && fa.value !== '' && fb.value !== ''){
-      text += `Финал\n`;
-      text += `${getBadgedPlayer(playoffFinalists.sf1Winner)} ${fa.value}:${fb.value} ${getBadgedPlayer(playoffFinalists.sf2Winner)}\n\n`;
+    if(pairCount === 6){
+      ['q1','q2','q3'].forEach((id,index)=>{
+        const teams = getPlayoffMatchTeams(id);
+        const score = getPlayoffMatchScore(id);
+        if(teams.length === 2 && score){
+          text += `Первый раунд ${index+1}\n${getBadgedTeam(teams[0])} ${score.a}:${score.b} ${getBadgedTeam(teams[1])}\n\n`;
+        }
+      });
+    } else {
+      const sf1 = getPlayoffMatchScore('sf1');
+      const sf2 = getPlayoffMatchScore('sf2');
+      text += `Полуфиналы\n`;
+      text += `${getBadgedTeam(roundsStats[0])} ${sf1?.a ?? '-'}:${sf1?.b ?? '-'} ${getBadgedTeam(roundsStats[3])}\n`;
+      text += `${getBadgedTeam(roundsStats[1])} ${sf2?.a ?? '-'}:${sf2?.b ?? '-'} ${getBadgedTeam(roundsStats[2])}\n\n`;
     }
 
     const finalPlaces = getFinalPlaces();
-    if(finalPlaces.length === 4){
-      text += `🏅 Итог турнира\n\n`;
-      text += `🥇 ${finalPlaces[0]}\n`;
-      text += `🥈 ${finalPlaces[1]}\n`;
-      text += `🥉 ${finalPlaces[2]}\n`;
-      text += `4️⃣ ${finalPlaces[3]}\n`;
+    if(finalPlaces.length){
+      text += `� Итоги плей-офф\n\n`;
+      finalPlaces.forEach((place,index)=>{
+        text += `${medals[index] || (index+1+'.')} ${place}\n`;
+      });
     }
   }
 
@@ -2409,12 +2841,11 @@ function getCurrentTournamentSnapshot(){
       if(b) scores[`b-${r}-${i}`] = b.value;
     });
   });
-  ["sf1","sf2","final","3rd"].forEach(stage=>{
-    const a = document.getElementById(`playoff-a-${stage}`);
-    const b = document.getElementById(`playoff-b-${stage}`);
-    if(a) scores[`playoff-a-${stage}`] = a.value;
-    if(b) scores[`playoff-b-${stage}`] = b.value;
+
+  document.querySelectorAll('input[id^="playoff-a-"], input[id^="playoff-b-"]').forEach(input=>{
+    scores[input.id] = input.value;
   });
+
   return {
     name: document.getElementById('tournamentName')?.value || '',
     date: document.getElementById('tournamentDate')?.value || '',
@@ -2423,6 +2854,9 @@ function getCurrentTournamentSnapshot(){
     roundLimit: getRoundLimit(),
     roundLimitMode: document.getElementById('roundLimit')?.value || String(DEFAULT_ROUND_LIMIT),
     roundLimitCustom: document.getElementById('roundLimitCustom')?.value || '',
+    playoffLimit: getPlayoffLimit(),
+    playoffLimitMode: getPlayoffLimitMode(),
+    playoffLimitCustom: document.getElementById('playoffLimitCustom')?.value || '',
     roundCount: document.getElementById('roundCount')?.value || '2',
     court1: document.getElementById('court1')?.value || '',
     court2: document.getElementById('court2')?.value || '',
@@ -2435,6 +2869,11 @@ function getCurrentTournamentSnapshot(){
     team3b: document.getElementById('team3b')?.value || '',
     team4a: document.getElementById('team4a')?.value || '',
     team4b: document.getElementById('team4b')?.value || '',
+    team5a: document.getElementById('team5a')?.value || '',
+    team5b: document.getElementById('team5b')?.value || '',
+    team6a: document.getElementById('team6a')?.value || '',
+    team6b: document.getElementById('team6b')?.value || '',
+    tournamentStarted: tournamentStarted,
     scores
   };
 }
@@ -2455,7 +2894,7 @@ function editHistoryTournament(id){
   const roundLimitMode = ROUND_LIMIT_OPTIONS.includes(Number(roundLimitValue)) ? String(roundLimitValue) : 'custom';
   const roundLimitCustomValue = roundLimitMode === 'custom' ? String(roundLimitValue) : '';
 
-  ['tournamentName','tournamentDate','roundCount','court1','court2','court3','team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b'].forEach(id=>{
+  ['tournamentName','tournamentDate','roundCount','court1','court2','court3','team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b','team5a','team5b','team6a','team6b'].forEach(id=>{
     const el = document.getElementById(id);
     if(el && data[id] !== undefined) el.value = data[id] || '';
   });
@@ -2513,10 +2952,10 @@ function showTournamentCompletedCard(){
     return;
   }
 
-  const medals = ['🥇','🥈','🥉','4️⃣'];
+  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
   const placesHtml = finalPlaces.map((place,idx)=>`
     <div style="margin:12px 0;">
-      <div style="font-size:18px;font-weight:700;">${medals[idx]} ${idx === 0 ? '1 место' : idx === 1 ? '2 место' : idx === 2 ? '3 место' : '4 место'}</div>
+      <div style="font-size:18px;font-weight:700;">${medals[idx] || (idx+1+'.')} ${idx+1} место</div>
       <div style="font-size:16px;color:#ddd;">${escapeHtml(place)}</div>
     </div>
   `).join('');
@@ -2558,6 +2997,8 @@ function continueTournamentFlow(){
 
 function buildTournamentHistoryEntry(){
   const groupData = computeGroupStats();
+  const playoffPlaces = getFinalPlaces();
+  const finalPlacesForEntry = playoffPlaces.length ? playoffPlaces : groupData.sorted.map(item=>item[0]);
   return {
     id: editingTournamentId || String(Date.now()),
     name: getTournamentNameValue(),
@@ -2576,7 +3017,7 @@ function buildTournamentHistoryEntry(){
       team: item[0],
       ...item[1]
     })),
-    finalPlaces: getFinalPlaces(),
+    finalPlaces: finalPlacesForEntry,
     playerStats: getPersonalStats()
   };
 }
@@ -2615,11 +3056,6 @@ async function saveTournament(){
   removeDraft();
 
   // Show completion card if all playoff places are filled
-  if(entry.finalPlaces && entry.finalPlaces.length === 4){
-    showTournamentCompletedCard();
-    hidePostResultButtons();
-  }
-
   const cloudResult = await saveTournamentToCloud(entry, editingCloudId || entry._cloudId);
   if(cloudResult.ok){
     if(updated || editingTournamentId) alert('Готово! Турнир обновлен');
@@ -2633,6 +3069,7 @@ async function saveTournament(){
   editingCloudId = null;
   renderHistory();
   renderRating();
+  startFreshTournament();
 }
 
 function clearTournament(){
