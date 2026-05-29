@@ -56,6 +56,13 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .tab-button.active{background:#b7ff2a;color:#071006;box-shadow:0 0 0 1px rgba(183,255,42,.75),0 0 18px rgba(183,255,42,.25)}
 .tab-content{display:none}
 .tab-content.active{display:block}
+button:disabled{opacity:.45;cursor:not-allowed;}
+.draft-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.draft-modal{background:#111;border:1px solid #2a2a2a;border-radius:18px;padding:24px;max-width:420px;width:100%;box-shadow:0 18px 60px rgba(0,0,0,.65)}
+.draft-modal-title{font-size:24px;font-weight:700;margin-bottom:12px}
+.draft-modal-text{color:#ccc;margin-bottom:20px;line-height:1.5}
+.draft-modal-actions{display:flex;gap:12px;flex-wrap:wrap}
+.draft-modal-actions button{flex:1}
 .history-card{background:#1f1f1f;border:1px solid #2a2a2a;border-radius:16px;padding:18px;margin-bottom:14px;cursor:pointer;transition:background .2s,border .2s}
 .history-card:hover{background:#272727}
 .history-card-open{border-color:#b7ff2a;box-shadow:0 0 0 1px rgba(183,255,42,.45)}
@@ -112,6 +119,17 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
   <button class="tab-button active" data-tab="tournament" onclick="switchTab('tournament')">Турнир</button>
   <button class="tab-button" data-tab="history" onclick="switchTab('history')">История</button>
   <button class="tab-button" data-tab="rating" onclick="switchTab('rating')">Рейтинг</button>
+</div>
+<div id="draftStatus" class="small" style="margin-bottom:16px;">Черновик не сохранен</div>
+<div id="draftModalOverlay" class="draft-modal-overlay">
+  <div class="draft-modal">
+    <div class="draft-modal-title">Найден незавершенный турнир</div>
+    <div class="draft-modal-text">В localStorage найден черновик турнира. Продолжите его или начните новый.</div>
+    <div class="draft-modal-actions">
+      <button onclick="continueDraft()">Продолжить турнир</button>
+      <button class="secondary" onclick="discardDraftAndStartNew()">Начать новый</button>
+    </div>
+  </div>
 </div>
 
 <div id="tab-tournament" class="tab-content active">
@@ -214,7 +232,8 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
   </div>
 </div>
 
-<button onclick="startTournament()">Начать турнир</button>
+<button id="startTournamentBtn" onclick="startTournament()">Начать турнир</button>
+<div id="startStatus" class="small" style="margin-top:4px;">Заполните всех игроков</div>
 
 <div id="matches"></div>
 
@@ -246,6 +265,8 @@ if(window.supabase && typeof window.supabase.createClient === 'function'){
 }
 
 const HISTORY_KEY = 'padelFlowTournamentHistory';
+const DRAFT_KEY = 'padelFlowCurrentDraft';
+const LEGACY_DRAFT_KEY = 'padelAmericanoData';
 let currentHistory = [];
 let openedHistoryId = null;
 
@@ -681,7 +702,7 @@ async function renderHistory(){
     return `
       <div class="history-card ${isOpen ? 'history-card-open' : ''}" onclick="toggleHistoryDetail('${item.id}')">
         <div class="history-card-title">${escapeHtml(item.name)}</div>
-        <div class="history-card-meta">${escapeHtml(item.date)}</div>
+        <div class="history-card-meta">${escapeHtml(item.date)} • Пары: ${escapeHtml(String(item.pairCount || item?.editData?.pairCount || '-'))} • Кругов: ${escapeHtml(String(item.roundCount || item?.editData?.roundCount || '-'))} • Лимит: ${escapeHtml(String(item.roundLimit || item?.editData?.roundLimit || '-'))} • Корты: ${escapeHtml(String(item.courtCount || item?.editData?.courtCount || '-'))}</div>
         <div>Победитель: <strong>${escapeHtml(getBadgedPlayer(winner))}</strong></div>
         <div class="small">🥇 ${escapeHtml(getBadgedPlayer(winner))} · 🥈 ${escapeHtml(getBadgedPlayer(second))} · 🥉 ${escapeHtml(getBadgedPlayer(third))}</div>
       </div>
@@ -1214,10 +1235,16 @@ function loadPlayersList(){
 function savePlayersFromFields(){
   let players = [];
   try { players = JSON.parse(localStorage.getItem('playersList') || '[]'); } catch(e){ players = []; }
+  const normalizedExisting = players.map(p=>normalizePlayerKey(p));
   ['team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b'].forEach(id=>{
     const el = document.getElementById(id);
     const name = stripPlayerBadge(el ? el.value : '');
-    if(name && !players.some(p=>String(p).toLowerCase()===name.toLowerCase())) players.push(name);
+    if(!name) return;
+    const normalized = normalizePlayerKey(name);
+    if(normalized && !normalizedExisting.includes(normalized)){
+      players.push(name);
+      normalizedExisting.push(normalized);
+    }
   });
   localStorage.setItem('playersList', JSON.stringify(players));
   loadPlayersList();
@@ -1276,7 +1303,7 @@ function generateMatches(){
       });
     });
 
-    html += `<div class="button-row"><button onclick="calculateResults()">Посчитать результаты</button></div>`;
+    html += `<div class="button-row"><button id="calculateResultsBtn" onclick="calculateResults()" disabled>Посчитать результаты</button></div><div id="calculateStatus" class="small" style="margin-top:8px;"></div>`;
 
     const matchesContainer = document.getElementById('matches');
     if(matchesContainer){
@@ -1297,6 +1324,11 @@ function generateMatches(){
 
 
 function startTournament(){
+  if(!canStartTournament()){
+    alert('Заполните всех игроков');
+    updateStartTournamentState();
+    return;
+  }
   refreshRounds();
   hidePostResultButtons();
   const results = document.getElementById('results');
@@ -1398,6 +1430,11 @@ function deltaClass(delta){
 }
 
 function calculateResults(){
+  if(!canCalculateResults()){
+    alert('Заполнены не все результаты');
+    updateCalculateResultsState();
+    return;
+  }
   if(!rounds || !rounds.length) refreshRounds();
   hidePostResultButtons();
   const data = computeGroupStats();
@@ -1719,27 +1756,52 @@ function saveData(){
       if(b) data.scores[`playoff-b-${stage}`] = b.value;
     });
 
-    localStorage.setItem("padelAmericanoData", JSON.stringify(data));
+    const draft = {
+      snapshot: data,
+      activeTab: document.querySelector('.tab-button.active')?.dataset.tab || 'tournament',
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    localStorage.removeItem(LEGACY_DRAFT_KEY);
+    updateDraftStatus();
+    updateStartTournamentState();
+    updateCalculateResultsState();
   } catch(e){
     console.warn('saveData error:', e);
   }
 }
 
 function startFreshTournament(){
-  localStorage.removeItem("padelAmericanoData");
-  const ids = ['tournamentName','tournamentDate','court1','court2','team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b'];
+  removeDraft();
+  editingTournamentId = null;
+  editingCloudId = null;
+  const ids = ['tournamentName','tournamentDate','court1','court2','court3','team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b'];
   ids.forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.value = '';
   });
+  const pc = document.getElementById('pairCount');
+  if(pc) pc.value = String(DEFAULT_PAIR_COUNT);
+  const cc = document.getElementById('courtCount');
+  if(cc) cc.value = String(DEFAULT_COURT_COUNT);
   const rc = document.getElementById('roundCount');
   if(rc) rc.value = '2';
+  const rl = document.getElementById('roundLimit');
+  if(rl) rl.value = String(DEFAULT_ROUND_LIMIT);
+  const rlc = document.getElementById('roundLimitCustom');
+  if(rlc){ rlc.value = String(DEFAULT_ROUND_LIMIT); rlc.style.display = 'none'; }
+  updatePairInputs();
+  updateCourtFields();
+  onRoundLimitChange();
+  refreshRounds();
   const matches = document.getElementById('matches');
   const results = document.getElementById('results');
   if(matches) matches.innerHTML = '';
   if(results) results.innerHTML = '';
   hidePostResultButtons();
   updateHeader('tournament');
+  updateStartTournamentState();
+  updateCalculateResultsState();
 }
 
 function loadData(){
@@ -1750,19 +1812,215 @@ function loadData(){
   updateCourtFields();
   onRoundLimitChange();
   hidePostResultButtons();
+  updateDraftStatus();
+}
+
+function getRawDraft(){
+  try {
+    const saved = localStorage.getItem(DRAFT_KEY);
+    if(saved){
+      return JSON.parse(saved);
+    }
+  } catch(e) {
+    console.warn('getRawDraft error:', e);
+  }
+  try {
+    const legacy = localStorage.getItem(LEGACY_DRAFT_KEY);
+    if(legacy){
+      return { snapshot: JSON.parse(legacy), activeTab: 'tournament', savedAt: new Date().toISOString(), legacy: true };
+    }
+  } catch(e){
+    console.warn('getRawDraft legacy error:', e);
+  }
+  return null;
+}
+
+function updateDraftStatus(){
+  const el = document.getElementById('draftStatus');
+  if(!el) return;
+  const draft = getRawDraft();
+  if(draft && draft.savedAt){
+    const dt = new Date(draft.savedAt);
+    const hh = String(dt.getHours()).padStart(2,'0');
+    const mm = String(dt.getMinutes()).padStart(2,'0');
+    el.textContent = `Сохранено локально: ${hh}:${mm}`;
+  } else {
+    el.textContent = 'Черновик не сохранен';
+  }
+}
+
+function showDraftModal(){
+  const overlay = document.getElementById('draftModalOverlay');
+  if(overlay) overlay.style.display = 'flex';
+}
+
+function hideDraftModal(){
+  const overlay = document.getElementById('draftModalOverlay');
+  if(overlay) overlay.style.display = 'none';
+}
+
+function continueDraft(){
+  const draft = getRawDraft();
+  if(!draft){
+    hideDraftModal();
+    return;
+  }
+  restoreDraft(draft);
+  hideDraftModal();
+}
+
+function discardDraftAndStartNew(){
+  if(!confirm('Все несохраненные данные будут потеряны. Продолжить?')) return;
+  removeDraft();
+  hideDraftModal();
+  startFreshTournament();
+}
+
+function loadDraftPrompt(){
+  updateDraftStatus();
+  if(getRawDraft()){
+    showDraftModal();
+  } else {
+    loadData();
+  }
+}
+
+function restoreDraft(draft){
+  const snapshot = draft?.snapshot;
+  if(!snapshot) return;
+
+  const fieldMap = {
+    tournamentName: snapshot.name || '',
+    tournamentDate: snapshot.date || '',
+    court1: snapshot.court1 || '',
+    court2: snapshot.court2 || '',
+    court3: snapshot.court3 || '',
+    team1a: snapshot.team1a || '',
+    team1b: snapshot.team1b || '',
+    team2a: snapshot.team2a || '',
+    team2b: snapshot.team2b || '',
+    team3a: snapshot.team3a || '',
+    team3b: snapshot.team3b || '',
+    team4a: snapshot.team4a || '',
+    team4b: snapshot.team4b || ''
+  };
+
+  Object.entries(fieldMap).forEach(([id,value])=>{
+    const el = document.getElementById(id);
+    if(el) el.value = value;
+  });
+
+  const pairCountEl = document.getElementById('pairCount');
+  if(pairCountEl) pairCountEl.value = String(snapshot.pairCount || DEFAULT_PAIR_COUNT);
+  const courtCountEl = document.getElementById('courtCount');
+  if(courtCountEl) courtCountEl.value = String(snapshot.courtCount || DEFAULT_COURT_COUNT);
+  const roundCountEl = document.getElementById('roundCount');
+  if(roundCountEl) roundCountEl.value = String(snapshot.roundCount || 2);
+
+  const roundLimitEl = document.getElementById('roundLimit');
+  const roundLimitCustomEl = document.getElementById('roundLimitCustom');
+  if(roundLimitEl){
+    if(snapshot.roundLimitMode && snapshot.roundLimitMode === 'custom'){
+      roundLimitEl.value = 'custom';
+    } else if(snapshot.roundLimitMode && ROUND_LIMIT_OPTIONS.includes(Number(snapshot.roundLimitMode))){
+      roundLimitEl.value = String(snapshot.roundLimitMode);
+    } else if(ROUND_LIMIT_OPTIONS.includes(Number(snapshot.roundLimit))){
+      roundLimitEl.value = String(snapshot.roundLimit);
+    } else {
+      roundLimitEl.value = 'custom';
+    }
+  }
+  if(roundLimitCustomEl){
+    roundLimitCustomEl.value = snapshot.roundLimitMode === 'custom' ? String(snapshot.roundLimitCustom || snapshot.roundLimit || DEFAULT_ROUND_LIMIT) : String(snapshot.roundLimit || DEFAULT_ROUND_LIMIT);
+    roundLimitCustomEl.style.display = roundLimitEl?.value === 'custom' ? 'block' : 'none';
+  }
+
+  updatePairInputs();
+  updateCourtFields();
+  onRoundLimitChange();
+  refreshRounds();
+  renderTeamInputBadges();
+
+  generateMatches();
+
+  if(snapshot.scores){
+    Object.entries(snapshot.scores).forEach(([id,value])=>{
+      const el = document.getElementById(id);
+      if(el) el.value = value || '';
+    });
+  }
+
+  if(allGroupRoundsFilled()){
+    calculateResults();
+  }
+
+  const hasPlayoffData = Object.keys(snapshot.scores || {}).some(key => key.startsWith('playoff-') && snapshot.scores[key] !== '');
+  if(hasPlayoffData){
+    startPlayoff();
+    tryRenderFinals();
+    if(playoffsCompleted()) tryRenderTournamentTable();
+  }
+
+  if(draft.activeTab){
+    switchTab(draft.activeTab);
+  }
+
+  updateDraftStatus();
+  updateStartTournamentState();
+  updateCalculateResultsState();
 }
 
 function loadScores(){
-  const saved = localStorage.getItem("padelAmericanoData");
-  if(!saved) return;
-  let data = {};
-  try { data = JSON.parse(saved); } catch(e){ data = {}; }
-  if(!data.scores) return;
-
-  Object.keys(data.scores).forEach(id=>{
+  const draft = getRawDraft();
+  if(!draft || !draft.snapshot || !draft.snapshot.scores) return;
+  Object.entries(draft.snapshot.scores).forEach(([id,value])=>{
     const el = document.getElementById(id);
-    if(el) el.value = data.scores[id];
+    if(el) el.value = value || '';
   });
+}
+
+function removeDraft(){
+  localStorage.removeItem(DRAFT_KEY);
+  localStorage.removeItem(LEGACY_DRAFT_KEY);
+  updateDraftStatus();
+}
+
+function normalizePlayerKey(name){
+  return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function canStartTournament(){
+  const count = getPairCount();
+  for(let idx=1; idx<=count; idx++){
+    const a = document.getElementById(`team${idx}a`);
+    const b = document.getElementById(`team${idx}b`);
+    if(!a || !b || !stripPlayerBadge(a.value) || !stripPlayerBadge(b.value)){
+      return false;
+    }
+  }
+  return true;
+}
+
+function updateStartTournamentState(){
+  const btn = document.getElementById('startTournamentBtn');
+  const status = document.getElementById('startStatus');
+  const valid = canStartTournament();
+  if(btn) btn.disabled = !valid;
+  if(status) status.textContent = valid ? '' : 'Заполните всех игроков';
+}
+
+function canCalculateResults(){
+  return allGroupRoundsFilled();
+}
+
+function updateCalculateResultsState(){
+  const btn = document.getElementById('calculateResultsBtn');
+  const status = document.getElementById('calculateStatus');
+  const valid = canCalculateResults();
+  if(btn) btn.disabled = !valid;
+  if(status){
+    status.textContent = valid ? '' : 'Заполнены не все результаты';
+  }
 }
 
 function loadPlayoffScores(){
@@ -2126,6 +2384,7 @@ async function saveTournament(){
   saved.push(entry);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(saved));
   currentHistory = [entry, ...currentHistory.filter(item => item.id !== entry.id)];
+  removeDraft();
 
   const cloudResult = await saveTournamentToCloud(entry, editingCloudId);
   if(cloudResult.ok){
@@ -2142,9 +2401,8 @@ async function saveTournament(){
 }
 
 function clearTournament(){
-  if(confirm("Очистить турнир?")){
-    localStorage.removeItem("padelAmericanoData");
-    location.reload();
+  if(confirm('Все несохраненные данные будут потеряны. Продолжить?')){
+    startFreshTournament();
   }
 }
 
@@ -2162,10 +2420,12 @@ async function initApp(){
   refreshRounds();
   await loadTournamentHistory();
   loadPlayersList();
-  loadData();
+  loadDraftPrompt();
   setupPlayerAutocomplete();
   renderTeamInputBadges();
   hidePostResultButtons();
+  updateStartTournamentState();
+  updateCalculateResultsState();
 }
 
 initApp();
