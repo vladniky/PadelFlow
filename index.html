@@ -57,6 +57,10 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .tab-content{display:none}
 .tab-content.active{display:block}
 button:disabled{opacity:.45;cursor:not-allowed;}
+.error-border{box-shadow:0 0 0 2px rgba(239,68,68,0.9) inset; border-radius:12px}
+.prestart-checklist{background:transparent;color:#aaa;padding:8px 0;margin-bottom:8px;font-size:14px}
+.prestart-checklist .miss{color:#ef4444}
+.prestart-checklist .ok{color:#9ca3af}
 .draft-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 .draft-modal{background:#111;border:1px solid #2a2a2a;border-radius:18px;padding:24px;max-width:420px;width:100%;box-shadow:0 18px 60px rgba(0,0,0,.65)}
 .draft-modal-title{font-size:24px;font-weight:700;margin-bottom:12px}
@@ -120,7 +124,10 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
   <button class="tab-button" data-tab="history" onclick="switchTab('history')">История</button>
   <button class="tab-button" data-tab="rating" onclick="switchTab('rating')">Рейтинг</button>
 </div>
-<div id="draftStatus" class="small" style="margin-bottom:16px;">Черновик не сохранен</div>
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+  <div id="draftStatus" class="small">Черновик не сохранен</div>
+  <button id="saveDraftNowBtn" class="secondary" style="width:auto;padding:8px 12px;font-size:14px;">Сохранить сейчас</button>
+</div>
 <div id="draftModalOverlay" class="draft-modal-overlay">
   <div class="draft-modal">
     <div class="draft-modal-title">Найден незавершенный турнир</div>
@@ -233,7 +240,11 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
 </div>
 
 <button id="startTournamentBtn" onclick="startTournament()">Начать турнир</button>
-<div id="startStatus" class="small" style="margin-top:4px;">Заполните всех игроков</div>
+<div id="preStartChecklist" class="prestart-checklist"></div>
+<div style="display:flex;gap:8px;align-items:center;">
+  <div id="startStatus" class="small" style="margin-top:4px;">Заполните всех игроков</div>
+  <button id="editSettingsBtn" class="secondary" style="width:auto;padding:8px 12px;font-size:14px;display:none;margin-left:8px;">Изменить настройки</button>
+</div>
 
 <div id="matches"></div>
 
@@ -699,11 +710,21 @@ async function renderHistory(){
     const second = item.finalPlaces?.[1] || '-';
     const third = item.finalPlaces?.[2] || '-';
     const isOpen = String(openedHistoryId) === String(item.id);
+    const pairCount = item.pairCount || item?.editData?.pairCount || '-';
+    const roundCount = item.roundCount || item?.editData?.roundCount || '-';
+    const roundLimit = item.roundLimit || item?.editData?.roundLimit || '-';
     return `
       <div class="history-card ${isOpen ? 'history-card-open' : ''}" onclick="toggleHistoryDetail('${item.id}')">
         <div class="history-card-title">${escapeHtml(item.name)}</div>
-        <div class="history-card-meta">${escapeHtml(item.date)} • Пары: ${escapeHtml(String(item.pairCount || item?.editData?.pairCount || '-'))} • Кругов: ${escapeHtml(String(item.roundCount || item?.editData?.roundCount || '-'))} • Лимит: ${escapeHtml(String(item.roundLimit || item?.editData?.roundLimit || '-'))} • Корты: ${escapeHtml(String(item.courtCount || item?.editData?.courtCount || '-'))}</div>
-        <div>Победитель: <strong>${escapeHtml(getBadgedPlayer(winner))}</strong></div>
+        <div style="margin:8px 0 12px;color:#bbb;font-size:15px;">
+          <div>🏆 <strong>${escapeHtml(getBadgedPlayer(winner))}</strong></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;color:#999;margin-bottom:8px;">
+          <div>📅 ${escapeHtml(item.date)}</div>
+          <div>👥 ${escapeHtml(String(pairCount))} пар</div>
+          <div>🔄 ${escapeHtml(String(roundCount))} круга</div>
+          <div>🎾 до ${escapeHtml(String(roundLimit))}</div>
+        </div>
         <div class="small">🥇 ${escapeHtml(getBadgedPlayer(winner))} · 🥈 ${escapeHtml(getBadgedPlayer(second))} · 🥉 ${escapeHtml(getBadgedPlayer(third))}</div>
       </div>
       ${isOpen ? buildHistoryDetailHtml(item) : ''}
@@ -971,11 +992,12 @@ async function renderRating(){
   if(!container) return;
   if(!saved.length){
     openedHistoryId = null;
-    container.innerHTML = `<div class="history-detail"><strong>Рейтинг пока пуст</strong></div>`;
+    container.innerHTML = `<div class="history-detail"><strong>Рейтинг пока пуст</strong><div class="small">Рейтинг считается по сохраненным турнирам. Сохраните первый турнир, чтобы появился рейтинг.</div></div>`;
     return;
   }
 
   const stats = {};
+  let totalMatches = 0;
   saved.forEach(tournament=>{
     const players = tournament.playerStats || [];
     const seen = new Set();
@@ -992,6 +1014,15 @@ async function renderRating(){
       stats[p.name].losses += p.losses;
       stats[p.name].draws += p.draws;
     });
+    // count matches: calculate by pair matchups in group stages + playoffs
+    if(tournament.groupStandings && tournament.groupStandings.length >= 4){
+      // for group stage: 4 teams means C(4,2) = 6 matches per round
+      const roundCount = tournament.roundCount || 1;
+      const groupMatches = 6 * roundCount;
+      // for playoffs: 2 semifinals + 1 final + 1 3rd place = 4 matches (if finalPlaces.length === 4)
+      const playoffMatches = tournament.finalPlaces && tournament.finalPlaces.length === 4 ? 4 : 0;
+      totalMatches += groupMatches + playoffMatches;
+    }
   });
 
   const mode = getRatingSortMode();
@@ -1005,6 +1036,20 @@ async function renderRating(){
   }).join('');
 
   container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div style="background:#1f1f1f;border-radius:12px;padding:12px;text-align:center;">
+        <div style="font-size:24px;font-weight:700;color:#b7ff2a;">${saved.length}</div>
+        <div style="font-size:12px;color:#aaa;">Всего турниров</div>
+      </div>
+      <div style="background:#1f1f1f;border-radius:12px;padding:12px;text-align:center;">
+        <div style="font-size:24px;font-weight:700;color:#b7ff2a;">${Object.keys(stats).length}</div>
+        <div style="font-size:12px;color:#aaa;">Всего игроков</div>
+      </div>
+      <div style="background:#1f1f1f;border-radius:12px;padding:12px;text-align:center;">
+        <div style="font-size:24px;font-weight:700;color:#b7ff2a;">${totalMatches}</div>
+        <div style="font-size:12px;color:#aaa;">Всего матчей</div>
+      </div>
+    </div>
     <div class="rating-controls">
       <div>
         <label>Считать рейтинг по</label>
@@ -1130,13 +1175,31 @@ function getAllPlayers(){
     });
   });
 
+  // Strict deduplication: normalize and compare case-insensitively, but keep original case of first occurrence
+  const seen = new Set();
   const clean = [];
   players.forEach(p=>{
     const name = normalizePlayerName(p);
-    if(name && !clean.some(x=>x.toLowerCase()===name.toLowerCase())) clean.push(name);
+    if(name){
+      const key = name.toLowerCase().trim();
+      if(!seen.has(key)){
+        seen.add(key);
+        clean.push(name);
+      }
+    }
   });
   clean.sort((a,b)=>a.localeCompare(b,'ru'));
   return clean;
+}
+
+function cleanupOldLocalStorage(){
+  // Remove old/obsolete localStorage keys to prevent clutter
+  const keysToRemove = ['padelAmericanoData', 'padelFlowDraft', 'tempTournament'];
+  keysToRemove.forEach(key=>{
+    if(localStorage.getItem(key)){
+      localStorage.removeItem(key);
+    }
+  });
 }
 
 function getPlayerInputs(){
@@ -1325,8 +1388,10 @@ function generateMatches(){
 
 function startTournament(){
   if(!canStartTournament()){
-    alert('Заполните всех игроков');
+    // highlight empty player inputs
+    highlightEmptyPlayers();
     updateStartTournamentState();
+    alert('Заполните всех игроков');
     return;
   }
   refreshRounds();
@@ -1334,6 +1399,11 @@ function startTournament(){
   const results = document.getElementById('results');
   if(results) results.innerHTML = '';
   generateMatches();
+  // lock settings to avoid schedule breaks during tournament
+  setTournamentLocked(true);
+  saveData();
+  const status = document.getElementById('startStatus');
+  if(status) status.textContent = '';
 }
 
 function showPostResultButtons(){
@@ -1431,8 +1501,10 @@ function deltaClass(delta){
 
 function calculateResults(){
   if(!canCalculateResults()){
-    alert('Заполнены не все результаты');
+    // highlight empty score inputs
+    highlightEmptyScores();
     updateCalculateResultsState();
+    alert('Заполнены не все результаты');
     return;
   }
   if(!rounds || !rounds.length) refreshRounds();
@@ -1697,6 +1769,10 @@ function getPlayoffScoreForTeam(team,type){
 
 function saveData(){
   try {
+    // clear previous validation highlights when saving
+    clearErrorBorders();
+    updatePreStartChecklist();
+
     const tn = document.getElementById('tournamentName');
     const td = document.getElementById('tournamentDate');
     const c1 = document.getElementById('court1');
@@ -1987,6 +2063,82 @@ function removeDraft(){
 
 function normalizePlayerKey(name){
   return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+let tournamentLocked = false;
+
+function setTournamentLocked(locked){
+  tournamentLocked = !!locked;
+  ['pairCount','roundCount','roundLimit','roundLimitCustom','courtCount'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.disabled = tournamentLocked;
+  });
+  const btn = document.getElementById('editSettingsBtn');
+  if(btn) btn.style.display = tournamentLocked ? 'inline-block' : 'none';
+}
+
+function clearErrorBorders(){
+  document.querySelectorAll('.error-border').forEach(el=>el.classList.remove('error-border'));
+}
+
+function highlightEmptyPlayers(){
+  clearErrorBorders();
+  const missing = [];
+  const count = getPairCount();
+  for(let idx=1; idx<=count; idx++){
+    const a = document.getElementById(`team${idx}a`);
+    const b = document.getElementById(`team${idx}b`);
+    if(!a || !b || !stripPlayerBadge(a.value) || !stripPlayerBadge(b.value)){
+      if(a) a.classList.add('error-border');
+      if(b) b.classList.add('error-border');
+      missing.push(idx);
+    }
+  }
+  const status = document.getElementById('startStatus');
+  if(status) status.textContent = missing.length ? 'Заполните всех игроков' : '';
+}
+
+function highlightEmptyScores(){
+  clearErrorBorders();
+  const missing = [];
+  rounds.forEach((round,r)=>{
+    round.forEach((m,i)=>{
+      const a = document.getElementById(`a-${r}-${i}`);
+      const b = document.getElementById(`b-${r}-${i}`);
+      if(!a || !b || a.value === "" || b.value === ""){
+        if(a) a.classList.add('error-border');
+        if(b) b.classList.add('error-border');
+        missing.push(`${r}-${i}`);
+      }
+    });
+  });
+  // playoff
+  ['playoff-a-sf1','playoff-b-sf1','playoff-a-sf2','playoff-b-sf2','playoff-a-final','playoff-b-final','playoff-a-3rd','playoff-b-3rd'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && el.value === "") el.classList.add('error-border');
+  });
+  const status = document.getElementById('calculateStatus') || document.getElementById('startStatus');
+  if(status) status.textContent = missing.length ? 'Заполнены не все результаты' : '';
+}
+
+function updatePreStartChecklist(){
+  const el = document.getElementById('preStartChecklist');
+  if(!el) return;
+  const checks = [];
+  const pairCount = getPairCount();
+  checks.push({ok: !!pairCount, text: `${pairCount} пары`});
+  const roundCount = getRoundCount();
+  checks.push({ok: !!roundCount, text: `${roundCount} круга`});
+  const roundLimit = getRoundLimit();
+  checks.push({ok: !!roundLimit, text: `до ${roundLimit}`});
+  const courtCount = getCourtCount();
+  checks.push({ok: !!courtCount, text: `${courtCount} корта`});
+  let playersFilled = canStartTournament();
+  checks.push({ok: playersFilled, text: 'все игроки заполнены'});
+
+  const allOk = checks.every(c=>c.ok);
+  el.innerHTML = `<strong>Проверьте перед стартом:</strong><br>` + checks.map(c=>`<div class="${c.ok? 'ok':'miss'}">— ${c.text}</div>`).join('');
+  el.style.color = allOk ? '#9ca3af' : '';
 }
 
 function canStartTournament(){
@@ -2348,6 +2500,62 @@ function editHistoryTournament(id){
   alert('Турнир загружен для редактирования. После изменений нажмите «Сохранить турнир».');
 }
 
+function showTournamentCompletedCard(){
+  const name = getTournamentNameValue();
+  const date = getTournamentDateDisplay();
+  const pairCount = getPairCount();
+  const roundCount = getRoundCount();
+  const courtCount = getCourtCount();
+  const roundLimit = getRoundLimit();
+  const finalPlaces = getFinalPlaces();
+  
+  if(!finalPlaces || finalPlaces.length < 4){
+    return;
+  }
+
+  const medals = ['🥇','🥈','🥉','4️⃣'];
+  const placesHtml = finalPlaces.map((place,idx)=>`
+    <div style="margin:12px 0;">
+      <div style="font-size:18px;font-weight:700;">${medals[idx]} ${idx === 0 ? '1 место' : idx === 1 ? '2 место' : idx === 2 ? '3 место' : '4 место'}</div>
+      <div style="font-size:16px;color:#ddd;">${escapeHtml(place)}</div>
+    </div>
+  `).join('');
+
+  const card = `
+    <div style="background:#1a1a1a;border:2px solid #b7ff2a;border-radius:16px;padding:24px;text-align:center;margin:20px 0;">
+      <div style="font-size:32px;font-weight:700;margin-bottom:8px;">🏆 ${escapeHtml(name)}</div>
+      <div style="font-size:14px;color:#aaa;margin-bottom:20px;">${escapeHtml(date || 'Дата не указана')}</div>
+      
+      <div style="background:#111;border-radius:12px;padding:16px;margin-bottom:20px;">
+        ${placesHtml}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:left;background:#111;border-radius:12px;padding:16px;font-size:14px;color:#bbb;">
+        <div><strong>👥 Пары</strong><br>${pairCount}</div>
+        <div><strong>🔄 Круги</strong><br>${roundCount}</div>
+        <div><strong>🎾 Лимит</strong><br>до ${roundLimit}</div>
+        <div><strong>🏟️ Корты</strong><br>${courtCount}</div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <button class="secondary" onclick="continueTournamentFlow()" style="margin-bottom:12px;">Закрыть результат</button>
+      </div>
+    </div>
+  `;
+
+  const resultsContainer = document.getElementById('results');
+  if(resultsContainer){
+    resultsContainer.insertAdjacentHTML('afterbegin', card);
+  }
+}
+
+function continueTournamentFlow(){
+  // Hide completion card to show save buttons
+  const card = document.querySelector('[style*="border: 2px solid #b7ff2a"]');
+  if(card) card.style.display = 'none';
+  showPostResultButtons();
+}
+
 function buildTournamentHistoryEntry(){
   const groupData = computeGroupStats();
   return {
@@ -2378,20 +2586,47 @@ async function saveTournament(){
   const entry = buildTournamentHistoryEntry();
   let saved = getLocalHistory();
 
-  if(editingTournamentId){
-    saved = saved.filter(item => item.id !== editingTournamentId);
+  // Prevent duplicate entries: try to find existing by stable snapshot
+  const currentKey = JSON.stringify(entry.editData || {});
+  let updated = false;
+  for(let i=0;i<saved.length;i++){
+    try {
+      const itemKey = JSON.stringify(saved[i].editData || {});
+      if(itemKey === currentKey){
+        // update existing record
+        entry.id = saved[i].id || entry.id;
+        entry._cloudId = saved[i]._cloudId || entry._cloudId;
+        saved[i] = entry;
+        updated = true;
+        break;
+      }
+    } catch(e){/* ignore */}
   }
-  saved.push(entry);
+
+  if(!updated){
+    if(editingTournamentId){
+      saved = saved.filter(item => item.id !== editingTournamentId);
+    }
+    saved.push(entry);
+  }
+
   localStorage.setItem(HISTORY_KEY, JSON.stringify(saved));
   currentHistory = [entry, ...currentHistory.filter(item => item.id !== entry.id)];
   removeDraft();
 
-  const cloudResult = await saveTournamentToCloud(entry, editingCloudId);
+  // Show completion card if all playoff places are filled
+  if(entry.finalPlaces && entry.finalPlaces.length === 4){
+    showTournamentCompletedCard();
+    hidePostResultButtons();
+  }
+
+  const cloudResult = await saveTournamentToCloud(entry, editingCloudId || entry._cloudId);
   if(cloudResult.ok){
-    alert(editingTournamentId ? 'Готово! Турнир обновлен в облаке' : 'Готово! Турнир сохранен в облако');
+    if(updated || editingTournamentId) alert('Готово! Турнир обновлен');
+    else alert('Готово! Турнир сохранен');
   } else {
     console.warn('Supabase save failed', cloudResult.error);
-    alert('Готово! Турнир сохранен локально. Облачная синхронизация будет выполнена позднее.');
+    alert('Турнир сохранен локально. Облако временно недоступно.');
   }
 
   editingTournamentId = null;
@@ -2406,17 +2641,10 @@ function clearTournament(){
   }
 }
 
-function computeEloRatings(){
-  // Placeholder for future ELO-style rating support.
-  return getRatingStats();
-}
-
-function getPlayerSeriesStats(){
-  // Placeholder for future series/streak computations.
-  return [];
-}
-
 async function initApp(){
+  // Clean up old/obsolete localStorage entries
+  cleanupOldLocalStorage();
+  
   refreshRounds();
   await loadTournamentHistory();
   loadPlayersList();
@@ -2426,6 +2654,43 @@ async function initApp(){
   hidePostResultButtons();
   updateStartTournamentState();
   updateCalculateResultsState();
+  updatePreStartChecklist();
+
+  const saveDraftNow = document.getElementById('saveDraftNowBtn');
+  if(saveDraftNow){
+    saveDraftNow.addEventListener('click', ()=>{
+      saveData();
+      updateDraftStatus();
+      // minimal feedback
+      alert('Черновик сохранён локально');
+    });
+  }
+
+  const editBtn = document.getElementById('editSettingsBtn');
+  if(editBtn){
+    editBtn.addEventListener('click', ()=>{
+      if(!confirm('Изменение настроек пересоздаст расписание и может удалить введенные счета. Продолжить?')) return;
+      // unlock and regenerate schedule, clear scores
+      setTournamentLocked(false);
+      // clear all score inputs
+      rounds.forEach((round,r)=>{
+        round.forEach((m,i)=>{
+          const a = document.getElementById(`a-${r}-${i}`);
+          const b = document.getElementById(`b-${r}-${i}`);
+          if(a) a.value = '';
+          if(b) b.value = '';
+        });
+      });
+      ['playoff-a-sf1','playoff-b-sf1','playoff-a-sf2','playoff-b-sf2','playoff-a-final','playoff-b-final','playoff-a-3rd','playoff-b-3rd'].forEach(id=>{
+        const el = document.getElementById(id);
+        if(el) el.value = '';
+      });
+      generateMatches();
+      saveData();
+      updatePreStartChecklist();
+      alert('Настройки разблокированы. Расписание пересоздано, счета очищены.');
+    });
+  }
 }
 
 initApp();
