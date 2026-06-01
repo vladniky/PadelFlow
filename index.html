@@ -75,6 +75,12 @@ button:disabled{opacity:.45;cursor:not-allowed;}
 .history-detail{background:#1f1f1f;border-radius:16px;padding:18px;margin-top:16px}
 .player-badges{display:none}
 .player-badge{font-size:14px;color:#ddd;display:inline-flex;align-items:center;gap:4px;background:#161616;padding:4px 8px;border-radius:999px;border:1px solid #2a2a2a}
+.home-screen{background:#161616;border:1px solid #2a2a2a;border-radius:20px;padding:26px 24px;margin-bottom:18px}
+.home-screen h1{font-size:48px;line-height:1.05;margin:0 0 12px}
+.home-screen p{color:#ccc;font-size:18px;line-height:1.6;margin-bottom:24px;max-width:860px}
+.home-screen .home-actions{display:grid;gap:12px}
+.home-screen .home-actions button{font-size:18px}
+@media (max-width:700px){.home-screen{padding:20px}.home-screen h1{font-size:36px}.home-screen p{font-size:16px}}
 .rating-table{width:100%;border-collapse:collapse;margin-top:12px}
 .rating-table th,.rating-table td{padding:10px 12px;border-bottom:1px solid #2a2a2a;text-align:left}
 .rating-table th{color:#ddd;font-weight:700;font-size:14px}
@@ -115,16 +121,32 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
 <body>
 
 <header class="app-header">
-  <div class="header-title" id="appHeader">PadelFlow</div>
-  <img src="icon-192.png" class="header-logo" alt="PadelFlow">
+  <div class="header-title" id="appHeader" onclick="showHomeScreen()" style="cursor:pointer">PadelFlow</div>
+  <img src="icon-192.png" class="header-logo" alt="PadelFlow" onclick="showHomeScreen()" style="cursor:pointer">
 </header>
 
-<div class="tabs">
+<div id="appSubtitle" style="display:none;text-align:center;margin-bottom:24px;color:#999;font-size:16px;line-height:1.5;max-width:700px;margin-left:auto;margin-right:auto;">
+  Парный Американо: пары, расписание, результаты и история игр.
+</div>
+
+<div id="homeScreen" class="home-screen" style="display:none;">
+  <div class="home-actions">
+    <button onclick="startNewTournamentFromHome()">Начать турнир</button>
+    <button id="continueDraftHomeBtn" class="secondary" onclick="continueDraftFromHome()" style="display:none">Продолжить турнир</button>
+    <button class="secondary" onclick="navigateHomeToTab('history')">История</button>
+    <button class="secondary" onclick="navigateHomeToTab('rating')">Рейтинг</button>
+  </div>
+</div>
+
+<div id="tabsBar" class="tabs">
   <button class="tab-button active" data-tab="tournament" onclick="switchTab('tournament')">Турнир</button>
   <button class="tab-button" data-tab="history" onclick="switchTab('history')">История</button>
   <button class="tab-button" data-tab="rating" onclick="switchTab('rating')">Рейтинг</button>
 </div>
-<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+<div id="goHomeBar" class="button-row" style="display:none;margin-bottom:12px;">
+  <button class="secondary" onclick="showHomeScreen()">На главную</button>
+</div>
+<div id="draftBar" style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
   <div id="draftStatus" class="small">Черновик не сохранен</div>
   <button id="saveDraftNowBtn" class="secondary" style="width:auto;padding:8px 12px;font-size:14px;">Сохранить сейчас</button>
 </div>
@@ -276,11 +298,17 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
 </div>
 
 <div id="tab-history" class="tab-content" style="display:none;">
+  <div class="button-row" style="margin-bottom:14px;">
+    <button class="secondary" onclick="showHomeScreen()">На главную</button>
+  </div>
   <div id="historyContainer"></div>
   <div id="historyDetail"></div>
 </div>
 
 <div id="tab-rating" class="tab-content" style="display:none;">
+  <div class="button-row" style="margin-bottom:14px;">
+    <button class="secondary" onclick="showHomeScreen()">На главную</button>
+  </div>
   <div id="ratingContainer"></div>
 </div>
 
@@ -557,20 +585,15 @@ function getTournamentDateDisplay(){
 function updateHeader(tab='tournament'){
   const header = document.getElementById('appHeader');
   if(!header) return;
-  if(tab === 'history'){
-    header.textContent = 'История турниров';
-    return;
-  }
-  if(tab === 'rating'){
-    header.textContent = 'Рейтинг игроков';
-    return;
-  }
-  const name = getTournamentNameValue();
-  const date = getTournamentDateDisplay();
-  header.textContent = date ? `${name} • ${date}` : name;
+  header.textContent = 'PadelFlow';
 }
 
 function switchTab(tab){
+  hideHomeScreen();
+  const tabsBar = document.getElementById('tabsBar');
+  if(tabsBar) tabsBar.style.display = 'flex';
+  const appSubtitle = document.getElementById('appSubtitle');
+  if(appSubtitle) appSubtitle.style.display = 'none';
   document.querySelectorAll('.tab-button').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab === tab));
   document.querySelectorAll('.tab-content').forEach(content=>{
     const show = content.id === `tab-${tab}`;
@@ -578,6 +601,8 @@ function switchTab(tab){
     content.style.display = show ? 'block' : 'none';
   });
   updateDraftVisibility(tab);
+  const homeBar = document.getElementById('goHomeBar');
+  if(homeBar) homeBar.style.display = tab === 'tournament' ? 'block' : 'none';
   updateHeader(tab);
   if(tab === 'history') renderHistory();
   if(tab === 'rating') renderRating();
@@ -2288,10 +2313,70 @@ function updateDraftStatus(){
 
 function updateDraftVisibility(tab){
   const isTournamentTab = tab === 'tournament';
-  const draftStatus = document.getElementById('draftStatus');
-  const saveDraftNowBtn = document.getElementById('saveDraftNowBtn');
-  if(draftStatus) draftStatus.style.display = isTournamentTab ? 'block' : 'none';
-  if(saveDraftNowBtn) saveDraftNowBtn.style.display = isTournamentTab ? 'inline-flex' : 'none';
+  const draftBar = document.getElementById('draftBar');
+  if(draftBar) draftBar.style.display = isTournamentTab ? 'flex' : 'none';
+}
+
+function updateHomeScreenContinueButton(){
+  const btn = document.getElementById('continueDraftHomeBtn');
+  if(!btn) return;
+  btn.style.display = getRawDraft() ? 'block' : 'none';
+}
+
+function showHomeScreen(){
+  const home = document.getElementById('homeScreen');
+  if(home) home.style.display = 'block';
+  const appSubtitle = document.getElementById('appSubtitle');
+  if(appSubtitle) appSubtitle.style.display = 'block';
+  const tabsBar = document.getElementById('tabsBar');
+  if(tabsBar) tabsBar.style.display = 'none';
+  const homeBar = document.getElementById('goHomeBar');
+  if(homeBar) homeBar.style.display = 'none';
+  const draftBar = document.getElementById('draftBar');
+  if(draftBar) draftBar.style.display = 'none';
+  document.querySelectorAll('.tab-content').forEach(content=>{
+    content.classList.remove('active');
+    content.style.display = 'none';
+  });
+  document.querySelectorAll('.tab-button').forEach(btn=>btn.classList.remove('active'));
+}
+
+function hideHomeScreen(){
+  const home = document.getElementById('homeScreen');
+  if(home) home.style.display = 'none';
+  const homeBar = document.getElementById('goHomeBar');
+  if(homeBar){
+    const activeTab = document.querySelector('.tab-button.active')?.dataset.tab || 'tournament';
+    homeBar.style.display = activeTab === 'tournament' ? 'block' : 'none';
+  }
+}
+
+function showTournamentTab(){
+  hideHomeScreen();
+  switchTab('tournament');
+  const homeBar = document.getElementById('goHomeBar');
+  if(homeBar) homeBar.style.display = 'block';
+}
+
+function startNewTournamentFromHome(){
+  startFreshTournament();
+  showTournamentTab();
+  updateHomeScreenContinueButton();
+}
+
+function continueDraftFromHome(){
+  const draft = getRawDraft();
+  if(draft){
+    hideHomeScreen();
+    restoreDraft(draft);
+  } else {
+    showTournamentTab();
+  }
+}
+
+function navigateHomeToTab(tab){
+  hideHomeScreen();
+  switchTab(tab);
 }
 
 function setTournamentStarted(value){
@@ -2327,11 +2412,9 @@ function discardDraftAndStartNew(){
 
 function loadDraftPrompt(){
   updateDraftStatus();
-  if(getRawDraft()){
-    showDraftModal();
-  } else {
-    loadData();
-  }
+  loadData();
+  showHomeScreen();
+  updateHomeScreenContinueButton();
 }
 
 function restoreDraft(draft){
