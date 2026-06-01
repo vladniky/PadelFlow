@@ -5,14 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PadelFlow</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
-body{margin:0;padding:16px;background:#111;color:white;font-family:Arial,sans-serif}
-input,select{width:100%;box-sizing:border-box;padding:14px;margin:6px 0;border:none;border-radius:12px;font-size:18px}
+body{margin:0;padding:16px;background:#111;color:white;font-family:'Inter',system-ui,sans-serif;font-weight:500}
+input,select,textarea,button{font-family:'Inter',system-ui,sans-serif}
+input,select,textarea{width:100%;box-sizing:border-box;padding:14px;margin:6px 0;border:none;border-radius:12px;font-size:18px;font-weight:500}
 button{width:100%;padding:16px;margin:12px 0;border:none;border-radius:14px;background:#b7ff2a;color:#071006;font-size:18px;font-weight:700}
 .secondary{background:#b7ff2a;color:#071006}
 .danger{background:#ef4444!important;color:#111!important}
 .app-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:24px}
-.header-title{font-size:42px;font-weight:bold;line-height:1.1;margin:0;max-width:calc(100% - 88px)}
+.header-title{font-size:42px;font-weight:800;line-height:1.1;margin:0;max-width:calc(100% - 88px)}
 .header-logo{width:64px;height:64px;border-radius:14px;object-fit:cover;flex-shrink:0;display:block}
 label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .settings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;align-items:start}
@@ -41,8 +45,8 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .tourney-container{background:#1a1a1a;padding:12px;border-radius:12px;margin-bottom:16px}
 .tourney-scroll{overflow:auto}
 .tourney-table{width:100%;border-collapse:collapse;min-width:900px}
-.tourney-table th,.tourney-table td{padding:8px 10px;border-bottom:1px solid #2a2a2a;text-align:center}
-.tourney-table th{font-weight:700;color:#ddd;font-size:14px}
+.tourney-table th,.tourney-table td{padding:8px 10px;border-bottom:1px solid #2a2a2a;text-align:center;font-weight:500}
+.tourney-table th{color:#ddd;font-size:14px}
 .cell-result{display:flex;flex-direction:column;align-items:center}
 .cell-result .points{font-weight:700;font-size:16px}
 .cell-result .outcome{font-size:13px;margin-top:4px}
@@ -63,27 +67,27 @@ button:disabled{opacity:.45;cursor:not-allowed;}
 .prestart-checklist .ok{color:#9ca3af}
 .draft-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 .draft-modal{background:#111;border:1px solid #2a2a2a;border-radius:18px;padding:24px;max-width:420px;width:100%;box-shadow:0 18px 60px rgba(0,0,0,.65)}
-.draft-modal-title{font-size:24px;font-weight:700;margin-bottom:12px}
+.draft-modal-title{font-size:24px;font-weight:800;margin-bottom:12px}
 .draft-modal-text{color:#ccc;margin-bottom:20px;line-height:1.5}
 .draft-modal-actions{display:flex;gap:12px;flex-wrap:wrap}
 .draft-modal-actions button{flex:1}
-.history-card{background:#1f1f1f;border:1px solid #2a2a2a;border-radius:16px;padding:18px;margin-bottom:14px;cursor:pointer;transition:background .2s,border .2s}
+.history-card{background:#1f1f1f;border:1px solid #2a2a2a;border-radius:16px;padding:16px 18px;margin-bottom:12px;cursor:pointer;transition:background .2s,border .2s}
 .history-card:hover{background:#272727}
 .history-card-open{border-color:#b7ff2a;box-shadow:0 0 0 1px rgba(183,255,42,.45)}
-.history-card-title{font-size:20px;font-weight:700;margin-bottom:8px}
-.history-card-meta{color:#aaa;font-size:14px;margin-bottom:10px}
+.history-card-title{font-size:22px;font-weight:800;margin-bottom:6px;line-height:1.1;color:#fff}
+.history-card-meta{color:rgba(255,255,255,.78);font-size:15px;margin:0}
 .history-detail{background:#1f1f1f;border-radius:16px;padding:18px;margin-top:16px}
 .player-badges{display:none}
 .player-badge{font-size:14px;color:#ddd;display:inline-flex;align-items:center;gap:4px;background:#161616;padding:4px 8px;border-radius:999px;border:1px solid #2a2a2a}
 .home-screen{background:#161616;border:1px solid #2a2a2a;border-radius:20px;padding:26px 24px;margin-bottom:18px}
-.home-screen h1{font-size:48px;line-height:1.05;margin:0 0 12px}
+.home-screen h1{font-size:48px;font-weight:800;line-height:1.05;margin:0 0 12px}
 .home-screen p{color:#ccc;font-size:18px;line-height:1.6;margin-bottom:24px;max-width:860px}
 .home-screen .home-actions{display:grid;gap:12px}
 .home-screen .home-actions button{font-size:18px}
 @media (max-width:700px){.home-screen{padding:20px}.home-screen h1{font-size:36px}.home-screen p{font-size:16px}}
 .rating-table{width:100%;border-collapse:collapse;margin-top:12px}
-.rating-table th,.rating-table td{padding:10px 12px;border-bottom:1px solid #2a2a2a;text-align:left}
-.rating-table th{color:#ddd;font-weight:700;font-size:14px}
+.rating-table th,.rating-table td{padding:10px 12px;border-bottom:1px solid #2a2a2a;text-align:left;font-weight:500}
+.rating-table th{color:#ddd;font-size:14px}
 .rating-controls{display:grid;grid-template-columns:minmax(180px,260px) 1fr;gap:12px;align-items:end;margin-bottom:12px}
 .rating-controls label{margin:0 0 8px}
 @media (max-width:700px){.rating-controls{grid-template-columns:1fr}}
@@ -327,6 +331,7 @@ const LEGACY_DRAFT_KEY = 'padelAmericanoData';
 let currentHistory = [];
 let openedHistoryId = null;
 let tournamentStarted = false;
+let playoffStarted = false;
 
 const roundTemplates = [
   [[0,3,1],[1,2,2]],
@@ -827,26 +832,11 @@ async function renderHistory(){
   }
 
   container.innerHTML = saved.map(item=>{
-    const winner = item.finalPlaces?.[0] || '-';
-    const second = item.finalPlaces?.[1] || '-';
-    const third = item.finalPlaces?.[2] || '-';
     const isOpen = String(openedHistoryId) === String(item.id);
-    const pairCount = item.pairCount || item?.editData?.pairCount || '-';
-    const roundCount = item.roundCount || item?.editData?.roundCount || '-';
-    const roundLimit = item.roundLimit || item?.editData?.roundLimit || '-';
     return `
       <div class="history-card ${isOpen ? 'history-card-open' : ''}" onclick="toggleHistoryDetail('${item.id}')">
         <div class="history-card-title">${escapeHtml(item.name)}</div>
-        <div style="margin:8px 0 12px;color:#bbb;font-size:15px;">
-          <div>🏆 <strong>${escapeHtml(getBadgedPlayer(winner))}</strong></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;color:#999;margin-bottom:8px;">
-          <div>📅 ${escapeHtml(item.date)}</div>
-          <div>👥 ${escapeHtml(String(pairCount))} пар</div>
-          <div>🔄 ${escapeHtml(String(roundCount))} круга</div>
-          <div>🎾 до ${escapeHtml(String(roundLimit))}</div>
-        </div>
-        <div class="small">🥇 ${escapeHtml(getBadgedPlayer(winner))} · 🥈 ${escapeHtml(getBadgedPlayer(second))} · 🥉 ${escapeHtml(getBadgedPlayer(third))}</div>
+        <div class="history-card-meta">${escapeHtml(item.date)}</div>
       </div>
       ${isOpen ? buildHistoryDetailHtml(item) : ''}
     `;
@@ -857,7 +847,7 @@ async function renderHistory(){
 
 function extractPlayoffBlock(dayText){
   const text = String(dayText || '');
-  const start = text.indexOf('🏆 Плей-офф');
+  const start = text.indexOf('Плей-офф');
   if(start === -1) return '';
   return text.slice(start).trim();
 }
@@ -924,15 +914,12 @@ function buildHistoryGroupPlacesHtml(item){
 
 function buildHistoryDetailHtml(item){
   const finalPlaces = Array.isArray(item.finalPlaces) ? item.finalPlaces : [];
-  const finalMedals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
   const finalHtml = finalPlaces.length
-    ? `<div class="small">${finalPlaces.map((place,index)=>`${finalMedals[index] || (index+1+'.')} ${escapeHtml(getBadgedPlayer(place||'-'))}`).join('<br>')}</div>`
+    ? `<div class="small">${finalPlaces.map((place,index)=>`${index+1}. ${escapeHtml(getBadgedPlayer(place||'-'))}`).join('<br>')}</div>`
     : `<div class="small">Турнир сохранен после группового этапа. Итоговые места недоступны.</div>`;
 
   const matchesHtml = buildHistoryMatchesHtml(item);
   const groupStatsHtml = buildHistoryGroupStatsHtml(item) || '<div class="small">Итоги группового этапа недоступны.</div>';
-  const groupPlacesHtml = buildHistoryGroupPlacesHtml(item) || '<div class="small">Итоговые места группового этапа недоступны.</div>';
-
   const playoffText = extractPlayoffBlock(item.dayText);
   const playoffLines = playoffText ? playoffText.split('\n').filter(Boolean) : [];
   const playoffHeading = playoffLines.length ? playoffLines.shift() : 'Плей-офф';
@@ -942,8 +929,8 @@ function buildHistoryDetailHtml(item){
   let activeLines = playoffBodyLines;
 
   playoffLines.forEach(line=>{
-    if(line.startsWith('🏆 Итоги плей-офф') || line.startsWith('🏅 Итог турнира') || line.startsWith('🏅 Итоговые места')){
-      playoffFooterHeading = '🏆 Итоги плей-офф';
+    if(line === 'Итоги плей-офф' || line === 'Итоговые места турнира'){
+      playoffFooterHeading = 'Итоги плей-офф';
       activeLines = playoffFooterLines;
       return;
     }
@@ -964,14 +951,11 @@ function buildHistoryDetailHtml(item){
       <div style="margin:16px 0 8px;font-weight:700">Итоги группового этапа</div>
       <div>${groupStatsHtml}</div>
 
-      <div style="margin:16px 0 8px;font-weight:700">Итоговые места группового этапа</div>
-      <div>${groupPlacesHtml}</div>
-
       <div style="margin:16px 0 8px;font-weight:700">${escapeHtml(playoffHeading)}</div>
       <div class="small">${playoffBody}</div>
       ${playoffFooterHeading ? `<div style="margin:16px 0 8px;font-weight:700">${escapeHtml(playoffFooterHeading)}</div><div class="small">${playoffFooter}</div>` : ''}
 
-      ${playoffText ? '' : `<div style="margin:16px 0 8px;font-weight:700">Итоговые места турнира</div>${finalHtml}`}
+      ${!playoffText && finalPlaces.length ? `<div style="margin:16px 0 8px;font-weight:700">Итоговые места турнира</div>${finalHtml}` : ''}
 
       <div class="button-row" style="margin-top:16px;">
         <button class="secondary" onclick="copyHistoryReport('${item.id}')">Скопировать отчет</button>
@@ -1265,6 +1249,26 @@ function getPlayersByIndex(idx){
     console.warn('getPlayersByIndex error:', e);
     return [];
   }
+}
+
+function getPlayersByTeamName(teamName){
+  const teams = getTeams();
+  const idx = teams.indexOf(teamName);
+  return idx >= 0 ? getPlayersByIndex(idx) : [];
+}
+
+function normalizeDateForInput(value){
+  if(!value) return '';
+  const trimmed = String(value).trim();
+  const ddmmyyyy = /^([0-3]?\d)\.([0-1]?\d)\.([0-9]{4})$/;
+  const iso = /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/;
+  if(iso.test(trimmed)) return trimmed;
+  const match = trimmed.match(ddmmyyyy);
+  if(match){
+    const [, day, month, year] = match;
+    return `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}`;
+  }
+  return trimmed;
 }
 
 function getCourtName(courtIndex){
@@ -1710,6 +1714,7 @@ html += `
 function startPlayoff(){
   const pairCount = getPairCount();
   if(pairCount !== 4 && pairCount !== 6) return;
+  playoffStarted = true;
   if(!roundsStats || roundsStats.length < pairCount){
     calculateResults();
   }
@@ -1973,6 +1978,8 @@ function tryRenderFinals(){
     `;
 
     loadPlayoffScores();
+    playoffStarted = true;
+    saveData();
     return;
   }
 
@@ -1997,6 +2004,8 @@ function tryRenderFinals(){
   </div>`;
 
   loadPlayoffScores();
+  playoffStarted = true;
+  saveData();
 }
 
 function playoffsCompleted(){
@@ -2038,46 +2047,93 @@ function getFinalPlaces(){
   return [finalWinner, finalLoser, thirdWinner, fourth];
 }
 
+function getPlayoffStats(){
+  const finalPlaces = getFinalPlaces();
+  const pairCount = getPairCount();
+  const stats = {};
+  
+  finalPlaces.forEach(team => {
+    stats[team] = { team, scored: 0, conceded: 0, delta: 0, wins: 0, losses: 0, draws: 0 };
+  });
+
+  if(pairCount === 6){
+    const playoffIds = ['q1','q2','q3','w12','w13','w23','l12','l13','l23'];
+    playoffIds.forEach(id => {
+      const teams = getPlayoffMatchTeams(id);
+      const score = getPlayoffMatchScore(id);
+      if(teams.length === 2 && score){
+        const [a, b] = teams;
+        if(stats[a]) {
+          stats[a].scored += score.a;
+          stats[a].conceded += score.b;
+          if(score.a > score.b) stats[a].wins++;
+          else if(score.a < score.b) stats[a].losses++;
+          else stats[a].draws++;
+        }
+        if(stats[b]) {
+          stats[b].scored += score.b;
+          stats[b].conceded += score.a;
+          if(score.b > score.a) stats[b].wins++;
+          else if(score.b < score.a) stats[b].losses++;
+          else stats[b].draws++;
+        }
+      }
+    });
+  } else {
+    const playoffIds = ['sf1','sf2','final','3rd'];
+    playoffIds.forEach(id => {
+      const teams = getPlayoffMatchTeams(id);
+      const score = getPlayoffMatchScore(id);
+      if(teams.length === 2 && score){
+        const [a, b] = teams;
+        if(stats[a]) {
+          stats[a].scored += score.a;
+          stats[a].conceded += score.b;
+          if(score.a > score.b) stats[a].wins++;
+          else if(score.a < score.b) stats[a].losses++;
+          else stats[a].draws++;
+        }
+        if(stats[b]) {
+          stats[b].scored += score.b;
+          stats[b].conceded += score.a;
+          if(score.b > score.a) stats[b].wins++;
+          else if(score.b < score.a) stats[b].losses++;
+          else stats[b].draws++;
+        }
+      }
+    });
+  }
+
+  Object.keys(stats).forEach(team => {
+    stats[team].delta = stats[team].scored - stats[team].conceded;
+  });
+
+  return stats;
+}
+
 function tryRenderTournamentTable(){
-  if(!playoffsCompleted() || !lastStats) return;
+  if(!playoffsCompleted()) return;
   const container = document.getElementById('tournament-table');
   if(!container) return;
 
-  const data = lastStats;
-  const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
   const finalPlaces = getFinalPlaces();
-  const pairCount = getPairCount();
+  const playoffStats = getPlayoffStats();
+  const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
 
-  let html = `<h2 style="text-align:center;margin-top:18px;">📋 Таблица турнира</h2>`;
+  let html = `<h2 style="text-align:center;margin-top:18px;">🏆 Итоги плей-офф</h2>`;
   html += `<div class="tourney-container"><div class="tourney-scroll"><table class="tourney-table"><thead><tr>`;
-  html += `<th>Место</th><th>Пара</th>`;
-  for(let r=0;r<rounds.length;r++) html += `<th>Р${r+1}</th>`;
-  html += pairCount === 6 ? `<th>1-й раунд</th><th>Фин. раунд</th>` : `<th>ПФ</th><th>Ф/3М</th>`;
-  html += `<th>Очки</th><th>Разница</th><th>В-П-Н</th>`;
+  html += `<th>Место</th><th>Пара</th><th>В-П-Н</th><th>Очки</th><th>Разница</th>`;
   html += `</tr></thead><tbody>`;
 
-  finalPlaces.forEach((team,index)=>{
-    const s = data.stats[team];
+  finalPlaces.forEach((team,index) => {
+    const s = playoffStats[team];
     if(!s) return;
     html += `<tr>`;
     html += `<td style="font-weight:700">${medals[index]} ${index+1}</td>`;
     html += `<td style="text-align:left;padding-left:12px"><strong>${team}</strong></td>`;
-
-    for(let r=0;r<rounds.length;r++){
-      const pr = s.rounds[r];
-      if(pr && pr.scored !== ''){
-        const cls = pr.outcome === 'П' ? 'outcome-win' : (pr.outcome === 'Н' ? 'outcome-draw' : 'outcome-loss');
-        html += `<td><div class="cell-result"><div class="points">${pr.scored}</div><div class="outcome ${cls}">${pr.outcome}</div></div></td>`;
-      } else {
-        html += `<td>-</td>`;
-      }
-    }
-
-    html += `<td>${getPlayoffScoreForTeam(team,'semi')}</td>`;
-    html += `<td>${getPlayoffScoreForTeam(team,'final')}</td>`;
+    html += `<td>${s.wins}-${s.losses}-${s.draws}</td>`;
     html += `<td>${s.scored}-${s.conceded}</td>`;
     html += `<td><span class="delta-value ${deltaClass(s.delta)}">${s.delta>0?'+':''}${s.delta}</span></td>`;
-    html += `<td>${s.wins}-${s.losses}-${s.draws}</td>`;
     html += `</tr>`;
   });
 
@@ -2175,6 +2231,7 @@ function saveData(){
       playoffLimitCustom: document.getElementById('playoffLimitCustom')?.value || '',
       roundCount: rc?.value || '2',
       tournamentStarted: tournamentStarted,
+      playoffStarted: playoffStarted,
       court1: c1?.value || '',
       court2: c2?.value || '',
       court3: c3?.value || '',
@@ -2251,6 +2308,7 @@ function startFreshTournament(){
   onRoundLimitChange();
   refreshRounds();
   setTournamentStarted(false);
+  playoffStarted = false;
   const matches = document.getElementById('matches');
   const results = document.getElementById('results');
   if(matches) matches.innerHTML = '';
@@ -2478,6 +2536,7 @@ function restoreDraft(draft){
   renderTeamInputBadges();
 
   setTournamentStarted(Boolean(snapshot.tournamentStarted));
+  playoffStarted = Boolean(snapshot.playoffStarted);
 
   if(tournamentStarted){
     generateMatches();
@@ -2494,13 +2553,16 @@ function restoreDraft(draft){
     }
 
     const hasPlayoffData = Object.keys(snapshot.scores || {}).some(key => key.startsWith('playoff-') && snapshot.scores[key] !== '');
-    if(hasPlayoffData){
-      startPlayoff();
-      setPlayoffLimitFromSnapshot(snapshot);
-      loadPlayoffScores();
-      tryRenderFinals();
-      loadPlayoffScores();
-      if(playoffsCompleted()) tryRenderTournamentTable();
+    if(hasPlayoffData || snapshot.playoffStarted){
+      playoffStarted = true;
+      if(!document.getElementById('playoff-section')){
+        startPlayoff();
+      } else {
+        setPlayoffLimitFromSnapshot(snapshot);
+        loadPlayoffScores();
+        tryRenderFinals();
+        if(playoffsCompleted()) tryRenderTournamentTable();
+      }
     }
   } else {
     const matches = document.getElementById('matches');
@@ -2656,8 +2718,8 @@ function buildGroupStageText(){
   const data = computeGroupStats();
   const name = getTournamentNameValue();
   const date = getTournamentDateDisplay();
-  let text = `🎾 ${name}${date ? ' • ' + date : ''}\n\n`;
-  text += "📋 История игр\n\n";
+  let text = `${name}${date ? ' • ' + date : ''}\n\n`;
+  text += "История игр\n\n";
 
   rounds.forEach((round,r)=>{
     text += `Раунд ${r+1}\n`;
@@ -2669,19 +2731,14 @@ function buildGroupStageText(){
     text += "\n";
   });
 
-  text += `📊 Итоги группового этапа\n\n`;
+  text += `Итоги группового этапа\n\n`;
   data.sorted.forEach((item,index)=>{
     const s = item[1];
-    text += `${index+1}. ${getBadgedTeam(item[0])} — ${s.wins}-${s.losses}-${s.draws} • ${s.scored}-${s.conceded} • ${s.delta>0?"+":""}${s.delta}\n`;
+    const delta = s.delta > 0 ? `+${s.delta}` : `${s.delta}`;
+    text += `${index+1}. ${getBadgedTeam(item[0])} — ${s.wins}-${s.losses}-${s.draws} • ${s.scored}-${s.conceded} • ${delta}\n`;
   });
 
-  text += `\n🏅 Итоговые места группового этапа\n\n`;
-  const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
-  data.sorted.forEach((item,index)=>{
-    text += `${medals[index]} ${getBadgedTeam(item[0])}\n`;
-  });
   text += "\n";
-
   return text;
 }
 
@@ -2691,7 +2748,7 @@ function buildDayText(){
   const pairCount = getPairCount();
   const finalData = getPlayoffFinalists();
   if(finalData){
-    text += `🏆 Плей-офф\n\n`;
+    text += `Плей-офф\n\n`;
 
     if(pairCount === 6){
       const qIds = ['q1','q2','q3'];
@@ -2707,7 +2764,7 @@ function buildDayText(){
 
       const winnerIds = ['w12','w13','w23'];
       if(winnerIds.some(id=>getPlayoffMatchScore(id))){
-        text += `🏆 Раунд за 1–3 места\n`;
+        text += `Раунд за 1–3 места\n`;
         winnerIds.forEach((id,index)=>{
           const teams = getPlayoffMatchTeams(id);
           const score = getPlayoffMatchScore(id);
@@ -2720,7 +2777,7 @@ function buildDayText(){
 
       const loserIds = ['l12','l13','l23'];
       if(loserIds.some(id=>getPlayoffMatchScore(id))){
-        text += `🎾 Раунд за 4–6 места\n`;
+        text += `Раунд за 4–6 места\n`;
         loserIds.forEach((id,index)=>{
           const teams = getPlayoffMatchTeams(id);
           const score = getPlayoffMatchScore(id);
@@ -2733,10 +2790,12 @@ function buildDayText(){
 
       const finalPlaces = getFinalPlaces();
       if(finalPlaces.length === 6){
-        text += `🏆 Итоги плей-офф\n\n`;
-        const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
+        text += `Итоги плей-офф\n\n`;
+        const stats = getPlayoffStats();
         finalPlaces.forEach((place,index)=>{
-          text += `${medals[index]} ${place}\n`;
+          const s = stats[place] || { wins:0, losses:0, draws:0, scored:0, conceded:0, delta:0 };
+          const delta = s.delta > 0 ? `+${s.delta}` : `${s.delta}`;
+          text += `${index+1}. ${place} — ${s.wins}-${s.losses}-${s.draws} • ${s.scored}-${s.conceded} • ${delta}\n`;
         });
       }
 
@@ -2751,21 +2810,23 @@ function buildDayText(){
 
     const third = getPlayoffMatchScore('3rd');
     if(third){
-      text += `🥉 Матч за 3 место\n${getBadgedPlayer(finalData.sf1Loser)} ${third.a}:${third.b} ${getBadgedPlayer(finalData.sf2Loser)}\n\n`;
+      text += `Матч за 3 место\n${getBadgedPlayer(finalData.sf1Loser)} ${third.a}:${third.b} ${getBadgedPlayer(finalData.sf2Loser)}\n\n`;
     }
 
     const final = getPlayoffMatchScore('final');
     if(final){
-      text += `🏆 Финал\n${getBadgedPlayer(finalData.sf1Winner)} ${final.a}:${final.b} ${getBadgedPlayer(finalData.sf2Winner)}\n\n`;
+      text += `Финал\n${getBadgedPlayer(finalData.sf1Winner)} ${final.a}:${final.b} ${getBadgedPlayer(finalData.sf2Winner)}\n\n`;
     }
 
     const finalPlaces = getFinalPlaces();
     if(finalPlaces.length === 4){
-      text += `🏆 Итоги плей-офф\n\n`;
-      text += `🥇 ${finalPlaces[0]}\n`;
-      text += `🥈 ${finalPlaces[1]}\n`;
-      text += `🥉 ${finalPlaces[2]}\n`;
-      text += `4️⃣ ${finalPlaces[3]}\n`;
+      const stats = getPlayoffStats();
+      text += `Итоги плей-офф\n\n`;
+      finalPlaces.forEach((place,index)=>{
+        const s = stats[place] || { wins:0, losses:0, draws:0, scored:0, conceded:0, delta:0 };
+        const delta = s.delta > 0 ? `+${s.delta}` : `${s.delta}`;
+        text += `${index+1}. ${place} — ${s.wins}-${s.losses}-${s.draws} • ${s.scored}-${s.conceded} • ${delta}\n`;
+      });
     }
   }
 
@@ -2791,22 +2852,21 @@ function buildCompactShareText(){
   const data = computeGroupStats();
   const name = getTournamentNameValue();
   const date = getTournamentDateDisplay();
-  let text = `🎾 ${name}${date ? ' • ' + date : ''}\n\n`;
-  text += `🏆 Итоги группового этапа\n\n`;
+  let text = `${name}${date ? ' • ' + date : ''}\n\n`;
+  text += `Итоги группового этапа\n\n`;
 
-  const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
   data.sorted.forEach((item,index)=>{
     const team = item[0];
     const s = item[1];
     const delta = s.delta === 0 ? '±0' : (s.delta > 0 ? `+${s.delta}` : `${s.delta}`);
-    text += `${medals[index]} ${team}\n`;
+    text += `${index+1}. ${team}\n`;
     text += `${s.wins}-${s.losses}-${s.draws} • ${delta} • ${s.scored}:${s.conceded}\n\n`;
   });
 
   const playoffFinalists = getPlayoffFinalists();
   if(playoffFinalists){
     const pairCount = getPairCount();
-    text += `🏆 Плей-офф\n\n`;
+    text += `Плей-офф\n\n`;
 
     if(pairCount === 6){
       ['q1','q2','q3'].forEach((id,index)=>{
@@ -2826,9 +2886,9 @@ function buildCompactShareText(){
 
     const finalPlaces = getFinalPlaces();
     if(finalPlaces.length){
-      text += `� Итоги плей-офф\n\n`;
+      text += `Итоги плей-офф\n\n`;
       finalPlaces.forEach((place,index)=>{
-        text += `${medals[index] || (index+1+'.')} ${place}\n`;
+        text += `${index+1}. ${place}\n`;
       });
     }
   }
@@ -2881,6 +2941,17 @@ function getPersonalStats(){
     return playerStats[name];
   }
 
+  function addMatchResult(players, scored, conceded){
+    players.forEach(p=>{
+      const s = ensure(p);
+      s.scored += scored;
+      s.conceded += conceded;
+      if(scored > conceded) s.wins++;
+      else if(scored < conceded) s.losses++;
+      else s.draws++;
+    });
+  }
+
   rounds.forEach((round,r)=>{
     round.forEach((m,i)=>{
       const aEl = document.getElementById(`a-${r}-${i}`);
@@ -2889,20 +2960,25 @@ function getPersonalStats(){
       const a = Number(aEl.value);
       const b = Number(bEl.value);
 
-      const playersA = getPlayersByIndex(m[0]);
-      const playersB = getPlayersByIndex(m[1]);
-
-      playersA.forEach(p=>{
-        const s = ensure(p);
-        s.scored += a; s.conceded += b;
-        if(a > b) s.wins++; else if(a < b) s.losses++; else s.draws++;
-      });
-      playersB.forEach(p=>{
-        const s = ensure(p);
-        s.scored += b; s.conceded += a;
-        if(b > a) s.wins++; else if(b < a) s.losses++; else s.draws++;
-      });
+      addMatchResult(getPlayersByIndex(m[0]), a, b);
+      addMatchResult(getPlayersByIndex(m[1]), b, a);
     });
+  });
+
+  const playoffMatchIds = getPairCount() === 4
+    ? ['sf1','sf2','final','3rd']
+    : getPairCount() === 6
+      ? ['q1','q2','q3','w12','w13','w23','l12','l13','l23']
+      : [];
+
+  playoffMatchIds.forEach(id=>{
+    const score = getPlayoffMatchScore(id);
+    if(!score) return;
+    const teams = getPlayoffMatchTeams(id);
+    if(teams.length !== 2) return;
+
+    addMatchResult(getPlayersByTeamName(teams[0]), score.a, score.b);
+    addMatchResult(getPlayersByTeamName(teams[1]), score.b, score.a);
   });
 
   Object.values(playerStats).forEach(s=>s.delta = s.scored - s.conceded);
@@ -2971,15 +3047,27 @@ function editHistoryTournament(id){
   editingTournamentId = item.id;
   editingCloudId = item._cloudId || null;
 
-  const pairCountValue = data.pairCount || item.pairCount || DEFAULT_PAIR_COUNT;
-  const courtCountValue = data.courtCount || item.courtCount || DEFAULT_COURT_COUNT;
-  const roundLimitValue = data.roundLimit || item.roundLimit || DEFAULT_ROUND_LIMIT;
+  const snapshot = {
+    ...item,
+    ...data
+  };
+
+  const tournamentNameValue = snapshot.name || snapshot.tournamentName || 'Американо';
+  const tournamentDateValue = normalizeDateForInput(snapshot.date || snapshot.tournamentDate || '');
+  const pairCountValue = snapshot.pairCount || item.pairCount || DEFAULT_PAIR_COUNT;
+  const courtCountValue = snapshot.courtCount || item.courtCount || DEFAULT_COURT_COUNT;
+  const roundLimitValue = snapshot.roundLimit || item.roundLimit || DEFAULT_ROUND_LIMIT;
   const roundLimitMode = ROUND_LIMIT_OPTIONS.includes(Number(roundLimitValue)) ? String(roundLimitValue) : 'custom';
   const roundLimitCustomValue = roundLimitMode === 'custom' ? String(roundLimitValue) : '';
 
-  ['tournamentName','tournamentDate','roundCount','court1','court2','court3','team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b','team5a','team5b','team6a','team6b'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el && data[id] !== undefined) el.value = data[id] || '';
+  const nameEl = document.getElementById('tournamentName');
+  if(nameEl) nameEl.value = tournamentNameValue;
+  const dateEl = document.getElementById('tournamentDate');
+  if(dateEl) dateEl.value = tournamentDateValue;
+
+  ['roundCount','court1','court2','court3','team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b','team5a','team5b','team6a','team6b'].forEach(fieldId=>{
+    const el = document.getElementById(fieldId);
+    if(el && snapshot[fieldId] !== undefined) el.value = snapshot[fieldId] || '';
   });
 
   const pairCountEl = document.getElementById('pairCount');
@@ -2995,29 +3083,39 @@ function editHistoryTournament(id){
   updatePairInputs();
   updateCourtFields();
   onRoundLimitChange();
+  setPlayoffLimitFromSnapshot(snapshot);
   refreshRounds();
   generateMatches();
-  if(data.scores){
-    Object.keys(data.scores).forEach(scoreId=>{
+
+  if(snapshot.scores){
+    Object.keys(snapshot.scores).forEach(scoreId=>{
       const el = document.getElementById(scoreId);
-      if(el) el.value = data.scores[scoreId];
+      if(el) el.value = snapshot.scores[scoreId] || '';
     });
   }
-  calculateResults();
-  const hasPlayoffScores = data.scores && Object.keys(data.scores).some(key => key.startsWith('playoff-') && data.scores[key] !== '');
-  if(hasPlayoffScores){
+
+  const shouldRestorePlayoff = snapshot.playoffStarted || (snapshot.scores && Object.keys(snapshot.scores).some(key => key.startsWith('playoff-') && snapshot.scores[key] !== ''));
+  if(shouldRestorePlayoff){
     startPlayoff();
-    Object.keys(data.scores).forEach(scoreId=>{
-      const el = document.getElementById(scoreId);
-      if(el) el.value = data.scores[scoreId];
-    });
+    if(snapshot.scores){
+      Object.keys(snapshot.scores).forEach(scoreId=>{
+        const el = document.getElementById(scoreId);
+        if(el) el.value = snapshot.scores[scoreId] || '';
+      });
+    }
     tryRenderFinals();
-    Object.keys(data.scores).forEach(scoreId=>{
-      const el = document.getElementById(scoreId);
-      if(el) el.value = data.scores[scoreId];
-    });
+    if(snapshot.scores){
+      Object.keys(snapshot.scores).forEach(scoreId=>{
+        const el = document.getElementById(scoreId);
+        if(el) el.value = snapshot.scores[scoreId] || '';
+      });
+    }
     tryRenderTournamentTable();
   }
+
+  renderTeamInputBadges();
+  saveData();
+  loadScores();
   updateHeader('tournament');
   alert('Турнир загружен для редактирования. После изменений нажмите «Сохранить турнир».');
 }
@@ -3109,6 +3207,10 @@ async function saveTournament(){
   savePlayersFromFields();
   const entry = buildTournamentHistoryEntry();
   let saved = getLocalHistory();
+
+  if(editingTournamentId){
+    entry._cloudId = editingCloudId || entry._cloudId;
+  }
 
   // Prevent duplicate entries: try to find existing by stable snapshot
   const currentKey = JSON.stringify(entry.editData || {});
