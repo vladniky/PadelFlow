@@ -129,10 +129,6 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
   <img src="icon-192.png" class="header-logo" alt="PadelFlow" onclick="showHomeScreen()" style="cursor:pointer">
 </header>
 
-<div id="appSubtitle" style="display:none;text-align:center;margin-bottom:24px;color:#999;font-size:16px;line-height:1.5;max-width:700px;margin-left:auto;margin-right:auto;">
-  Парный Американо: пары, расписание, результаты и история игр.
-</div>
-
 <div id="homeScreen" class="home-screen" style="display:none;">
   <div class="home-actions">
     <button onclick="startNewTournamentFromHome()">Начать турнир</button>
@@ -178,9 +174,10 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
   <div class="form-item">
     <label>Количество пар</label>
     <select id="pairCount" onchange="onPairCountChange(); saveData()">
+      <option value="" selected disabled>Выберите количество пар</option>
       <option value="2">2 пары / 4 игрока</option>
       <option value="3">3 пары / 6 игроков</option>
-      <option value="4" selected>4 пары / 8 игроков</option>
+      <option value="4">4 пары / 8 игроков</option>
       <option value="5">5 пар / 10 игроков</option>
       <option value="6">6 пар / 12 игроков</option>
     </select>
@@ -188,18 +185,20 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
   <div class="form-item">
     <label>Количество кругов</label>
     <select id="roundCount" onchange="saveData()">
+      <option value="" selected disabled>Выберите количество кругов</option>
       <option value="1">1 круг</option>
-      <option value="2" selected>2 круга</option>
+      <option value="2">2 круга</option>
       <option value="3">3 круга</option>
     </select>
   </div>
   <div class="form-item">
     <label>Играем до</label>
     <select id="roundLimit" onchange="onRoundLimitChange(); saveData()">
+      <option value="" selected disabled>Выберите лимит</option>
       <option value="21">21</option>
       <option value="24">24</option>
       <option value="27">27</option>
-      <option value="32" selected>32</option>
+      <option value="32">32</option>
       <option value="custom">Свой</option>
     </select>
     <input id="roundLimitCustom" type="number" min="1" placeholder="Свое число" value="32" style="display:none;margin-top:6px;" oninput="saveData()">
@@ -207,8 +206,9 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
   <div class="form-item">
     <label>Количество кортов</label>
     <select id="courtCount" onchange="onCourtCountChange(); saveData()">
+      <option value="" selected disabled>Выберите количество кортов</option>
       <option value="1">1 корт</option>
-      <option value="2" selected>2 корта</option>
+      <option value="2">2 корта</option>
       <option value="3">3 корта</option>
     </select>
   </div>
@@ -352,14 +352,14 @@ const PLAYOFF_LIMIT_OPTIONS = [15,21,24,27,32];
 
 function getPairCount(){
   const el = document.getElementById('pairCount');
-  const value = parseInt(el?.value || String(DEFAULT_PAIR_COUNT), 10);
-  return [2,3,4,5,6].includes(value) ? value : DEFAULT_PAIR_COUNT;
+  const value = parseInt(el?.value || '', 10);
+  return [2,3,4,5,6].includes(value) ? value : 0;
 }
 
 function getCourtCount(){
   const el = document.getElementById('courtCount');
-  const value = parseInt(el?.value || String(DEFAULT_COURT_COUNT), 10);
-  return [1,2,3].includes(value) ? value : DEFAULT_COURT_COUNT;
+  const value = parseInt(el?.value || '', 10);
+  return [1,2,3].includes(value) ? value : 0;
 }
 
 function getRoundLimitMode(){
@@ -369,13 +369,14 @@ function getRoundLimitMode(){
 
 function getRoundLimit(){
   const mode = getRoundLimitMode();
+  if(!mode) return 0;
   if(mode === 'custom'){
     const custom = document.getElementById('roundLimitCustom');
     const customValue = parseInt(custom?.value || '', 10);
-    return customValue > 0 ? customValue : DEFAULT_ROUND_LIMIT;
+    return customValue > 0 ? customValue : 0;
   }
   const value = parseInt(mode, 10);
-  return ROUND_LIMIT_OPTIONS.includes(value) ? value : DEFAULT_ROUND_LIMIT;
+  return ROUND_LIMIT_OPTIONS.includes(value) ? value : 0;
 }
 
 
@@ -435,8 +436,8 @@ function setPlayoffLimitFromSnapshot(snapshot){
 
 function getRoundCount(){
   const el = document.getElementById('roundCount');
-  const value = parseInt(el?.value || '2', 10);
-  return [1,2,3].includes(value) ? value : 2;
+  const value = parseInt(el?.value || '', 10);
+  return [1,2,3].includes(value) ? value : 0;
 }
 
 function buildRoundRobinRounds(pairCount, courtCount){
@@ -463,9 +464,11 @@ function buildRoundRobinRounds(pairCount, courtCount){
 }
 
 function buildRoundsByCount(pairCount, roundCount, courtCount){
-  const safePairCount = [2,3,4,5,6].includes(Number(pairCount)) ? Number(pairCount) : DEFAULT_PAIR_COUNT;
-  const safeRoundCount = [1,2,3].includes(Number(roundCount)) ? Number(roundCount) : 2;
-  const safeCourtCount = [1,2,3].includes(Number(courtCount)) ? Number(courtCount) : DEFAULT_COURT_COUNT;
+  const safePairCount = [2,3,4,5,6].includes(Number(pairCount)) ? Number(pairCount) : 0;
+  const safeRoundCount = [1,2,3].includes(Number(roundCount)) ? Number(roundCount) : 0;
+  const safeCourtCount = [1,2,3].includes(Number(courtCount)) ? Number(courtCount) : 0;
+
+  if(!safePairCount || !safeRoundCount || !safeCourtCount) return [];
 
   const baseRounds = buildRoundRobinRounds(safePairCount, safeCourtCount);
   const result = [];
@@ -499,10 +502,12 @@ function onRoundLimitChange(){
 
 function updatePairInputs(){
   const count = getPairCount();
+  const teamsGrid = document.querySelector('.teams-grid');
+  if(teamsGrid) teamsGrid.style.display = count ? 'grid' : 'none';
   for(let idx = 1; idx <= 6; idx++){
     const teamBlock = document.getElementById(`team${idx}`);
     if(teamBlock){
-      teamBlock.style.display = idx <= count ? 'block' : 'none';
+      teamBlock.style.display = count && idx <= count ? 'block' : 'none';
     }
   }
 }
@@ -597,8 +602,6 @@ function switchTab(tab){
   hideHomeScreen();
   const tabsBar = document.getElementById('tabsBar');
   if(tabsBar) tabsBar.style.display = 'flex';
-  const appSubtitle = document.getElementById('appSubtitle');
-  if(appSubtitle) appSubtitle.style.display = 'none';
   document.querySelectorAll('.tab-button').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab === tab));
   document.querySelectorAll('.tab-content').forEach(content=>{
     const show = content.id === `tab-${tab}`;
@@ -2221,15 +2224,15 @@ function saveData(){
     const data = {
       name: tn?.value || 'Американо',
       date: td?.value || '',
-      pairCount: pc?.value || String(DEFAULT_PAIR_COUNT),
-      courtCount: cc?.value || String(DEFAULT_COURT_COUNT),
+      pairCount: pc?.value || '',
+      courtCount: cc?.value || '',
       roundLimit: getRoundLimit(),
-      roundLimitMode: rl?.value || String(DEFAULT_ROUND_LIMIT),
+      roundLimitMode: rl?.value || '',
       roundLimitCustom: rlc?.value || '',
       playoffLimit: getPlayoffLimit(),
       playoffLimitMode: getPlayoffLimitMode(),
       playoffLimitCustom: document.getElementById('playoffLimitCustom')?.value || '',
-      roundCount: rc?.value || '2',
+      roundCount: rc?.value || '',
       tournamentStarted: tournamentStarted,
       playoffStarted: playoffStarted,
       court1: c1?.value || '',
@@ -2294,15 +2297,15 @@ function startFreshTournament(){
     if(el) el.value = '';
   });
   const pc = document.getElementById('pairCount');
-  if(pc) pc.value = String(DEFAULT_PAIR_COUNT);
+  if(pc) pc.value = '';
   const cc = document.getElementById('courtCount');
-  if(cc) cc.value = String(DEFAULT_COURT_COUNT);
+  if(cc) cc.value = '';
   const rc = document.getElementById('roundCount');
-  if(rc) rc.value = '2';
+  if(rc) rc.value = '';
   const rl = document.getElementById('roundLimit');
-  if(rl) rl.value = String(DEFAULT_ROUND_LIMIT);
+  if(rl) rl.value = '';
   const rlc = document.getElementById('roundLimitCustom');
-  if(rlc){ rlc.value = String(DEFAULT_ROUND_LIMIT); rlc.style.display = 'none'; }
+  if(rlc){ rlc.value = ''; rlc.style.display = 'none'; }
   updatePairInputs();
   updateCourtFields();
   onRoundLimitChange();
@@ -2384,8 +2387,6 @@ function updateHomeScreenContinueButton(){
 function showHomeScreen(){
   const home = document.getElementById('homeScreen');
   if(home) home.style.display = 'block';
-  const appSubtitle = document.getElementById('appSubtitle');
-  if(appSubtitle) appSubtitle.style.display = 'block';
   const tabsBar = document.getElementById('tabsBar');
   if(tabsBar) tabsBar.style.display = 'none';
   const homeBar = document.getElementById('goHomeBar');
@@ -2659,25 +2660,28 @@ function highlightEmptyScores(){
 function updatePreStartChecklist(){
   const el = document.getElementById('preStartChecklist');
   if(!el) return;
-  const checks = [];
   const pairCount = getPairCount();
-  checks.push({ok: !!pairCount, text: `${pairCount} пары`});
   const roundCount = getRoundCount();
-  checks.push({ok: !!roundCount, text: `${roundCount} круга`});
   const roundLimit = getRoundLimit();
-  checks.push({ok: !!roundLimit, text: `до ${roundLimit}`});
   const courtCount = getCourtCount();
-  checks.push({ok: !!courtCount, text: `${courtCount} корта`});
-  let playersFilled = canStartTournament();
-  checks.push({ok: playersFilled, text: 'все игроки заполнены'});
+  const playersFilled = pairCount ? playersAreFilled() : false;
+
+  const checks = [
+    {ok: !!pairCount, text: pairCount ? `${pairCount} пары` : 'выберите количество пар'},
+    {ok: !!roundCount, text: roundCount ? `${roundCount} круга` : 'выберите количество кругов'},
+    {ok: !!roundLimit, text: roundLimit ? `до ${roundLimit}` : 'выберите лимит очков'},
+    {ok: !!courtCount, text: courtCount ? `${courtCount} корта` : 'выберите количество кортов'},
+    {ok: playersFilled, text: playersFilled ? 'все игроки заполнены' : 'заполните всех игроков'}
+  ];
 
   const allOk = checks.every(c=>c.ok);
   el.innerHTML = `<strong>Проверьте перед стартом:</strong><br>` + checks.map(c=>`<div class="${c.ok? 'ok':'miss'}">— ${c.text}</div>`).join('');
   el.style.color = allOk ? '#9ca3af' : '';
 }
 
-function canStartTournament(){
+function playersAreFilled(){
   const count = getPairCount();
+  if(!count) return false;
   for(let idx=1; idx<=count; idx++){
     const a = document.getElementById(`team${idx}a`);
     const b = document.getElementById(`team${idx}b`);
@@ -2688,12 +2692,25 @@ function canStartTournament(){
   return true;
 }
 
+function canStartTournament(){
+  return Boolean(getPairCount() && getRoundCount() && getRoundLimit() && getCourtCount() && playersAreFilled());
+}
+
+function getStartStatusText(){
+  if(!getPairCount()) return 'Выберите количество пар';
+  if(!getRoundCount()) return 'Выберите количество кругов';
+  if(!getRoundLimit()) return 'Выберите лимит очков';
+  if(!getCourtCount()) return 'Выберите количество кортов';
+  if(!playersAreFilled()) return 'Заполните всех игроков';
+  return '';
+}
+
 function updateStartTournamentState(){
   const btn = document.getElementById('startTournamentBtn');
   const status = document.getElementById('startStatus');
   const valid = canStartTournament();
   if(btn) btn.disabled = !valid;
-  if(status) status.textContent = valid ? '' : 'Заполните всех игроков';
+  if(status) status.textContent = valid ? '' : getStartStatusText();
 }
 
 function canCalculateResults(){
