@@ -114,6 +114,13 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
   .score{gap:8px}
   input{font-size:16px}
   button{font-size:16px}
+  .match .teams{
+    font-size:13px;
+    line-height:1.25;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
 }
 </style>
 <link rel="manifest" href="manifest.json">
@@ -332,6 +339,8 @@ let currentHistory = [];
 let openedHistoryId = null;
 let tournamentStarted = false;
 let playoffStarted = false;
+let autoHistorySaveTimer = null;
+
 
 const roundTemplates = [
   [[0,3,1],[1,2,2]],
@@ -839,7 +848,7 @@ async function renderHistory(){
     return `
       <div class="history-card ${isOpen ? 'history-card-open' : ''}" onclick="toggleHistoryDetail('${item.id}')">
         <div class="history-card-title">${escapeHtml(item.name)}</div>
-        <div class="history-card-meta">${escapeHtml(item.date)}</div>
+        <div class="history-card-meta">${escapeHtml(item.date)}${item.status === 'in_progress' ? ' · Не завершен' : ''}</div>
       </div>
       ${isOpen ? buildHistoryDetailHtml(item) : ''}
     `;
@@ -1497,7 +1506,7 @@ function generateMatches(){
         html += `
       <div class="match">
         <div class="court">${getCourtName(m[2])}</div>
-        <div class="teams">${teams[m[0]]} 🆚 ${teams[m[1]]}</div>
+        <div class="teams">${teams[m[0]]} vs ${teams[m[1]]}</div>
         <div class="score">
           <input type="number" id="a-${r}-${i}" placeholder="0" min="0" max="${limit}" oninput="autoFill(${r},${i},'a')">
           <input type="number" id="b-${r}-${i}" placeholder="0" min="0" max="${limit}" oninput="autoFill(${r},${i},'b')">
@@ -1703,6 +1712,7 @@ html += `
     html += `
     <div id="group-action-buttons" class="button-row">
       ${pairCount === 4 || pairCount === 6 ? `<button class="secondary" onclick="startPlayoff()">Играть плей-офф</button>` : ``}
+      <button class="secondary" onclick="finishWithoutPlayoff()">Завершить без плей-офф</button>
       <button class="secondary" onclick="saveTournament()">Сохранить турнир</button>
     </div>
     <div id="playoff-section"></div>
@@ -1711,6 +1721,38 @@ html += `
 
   document.getElementById('results').innerHTML = html;
   lastResultsText = buildDayText();
+  saveData();
+}
+
+
+function finishWithoutPlayoff(){
+  playoffStarted = false;
+  document.querySelectorAll('input[id^="playoff-a-"], input[id^="playoff-b-"]').forEach(input=>{
+    input.value = '';
+  });
+  const section = document.getElementById('playoff-section');
+  if(section) section.innerHTML = '';
+  const finals = document.getElementById('playoff-finals');
+  if(finals) finals.innerHTML = '';
+  const table = document.getElementById('tournament-table');
+  if(table) table.innerHTML = '';
+  saveData();
+  saveTournament();
+}
+
+function cancelPlayoff(){
+  if(!confirm('Отменить плей-офф? Результаты плей-офф будут удалены.')) return;
+  playoffStarted = false;
+  document.querySelectorAll('input[id^="playoff-a-"], input[id^="playoff-b-"]').forEach(input=>{
+    input.value = '';
+  });
+  const section = document.getElementById('playoff-section');
+  if(section) section.innerHTML = '';
+  const finals = document.getElementById('playoff-finals');
+  if(finals) finals.innerHTML = '';
+  const table = document.getElementById('tournament-table');
+  if(table) table.innerHTML = '';
+  calculateResults();
   saveData();
 }
 
@@ -1770,7 +1812,7 @@ function showPlayoff(){
     const matchesHtml = firstRound.map((m,index)=>`
       <div class="match">
         <div class="court">${m.label} · ${getCourtName(((index) % getCourtCount()) + 1)}</div>
-        <div class="teams">${m.a} 🆚 ${m.b}</div>
+        <div class="teams">${m.a} vs ${m.b}</div>
         <div class="score">
           <input type="number" id="playoff-a-${m.id}" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('a','${m.id}')">
           <input type="number" id="playoff-b-${m.id}" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('b','${m.id}')">
@@ -1783,6 +1825,9 @@ function showPlayoff(){
     ${playoffLimitHtml}
     <h3 style="text-align:center;margin-top:16px;">Первый раунд</h3>
     ${matchesHtml}
+    <div class="button-row">
+      <button class="danger" onclick="cancelPlayoff()">Отменить плей-офф</button>
+    </div>
     <div id="playoff-finals"></div>
     <div id="tournament-table"></div>
     `;
@@ -1795,7 +1840,7 @@ function showPlayoff(){
   ${playoffLimitHtml}
   <div class="match">
     <div class="court">Полуфинал 1 · ${getCourtName(1)}</div>
-    <div class="teams">${roundsStats[0]} 🆚 ${roundsStats[3]}</div>
+    <div class="teams">${roundsStats[0]} vs ${roundsStats[3]}</div>
     <div class="score">
       <input type="number" id="playoff-a-sf1" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('a','sf1')">
       <input type="number" id="playoff-b-sf1" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('b','sf1')">
@@ -1803,11 +1848,14 @@ function showPlayoff(){
   </div>
   <div class="match">
     <div class="court">Полуфинал 2 · ${getCourtName(Math.min(2, getCourtCount()))}</div>
-    <div class="teams">${roundsStats[1]} 🆚 ${roundsStats[2]}</div>
+    <div class="teams">${roundsStats[1]} vs ${roundsStats[2]}</div>
     <div class="score">
       <input type="number" id="playoff-a-sf2" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('a','sf2')">
       <input type="number" id="playoff-b-sf2" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('b','sf2')">
     </div>
+  </div>
+  <div class="button-row">
+    <button class="danger" onclick="cancelPlayoff()">Отменить плей-офф</button>
   </div>
   <div id="playoff-finals"></div>
   <div id="tournament-table"></div>
@@ -1965,7 +2013,7 @@ function tryRenderFinals(){
     const renderMatch = (m,index)=>`
       <div class="match">
         <div class="court">${m.label} · ${getCourtName(((index) % getCourtCount()) + 1)}</div>
-        <div class="teams">${m.a} 🆚 ${m.b}</div>
+        <div class="teams">${m.a} vs ${m.b}</div>
         <div class="score">
           <input type="number" id="playoff-a-${m.id}" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('a','${m.id}')">
           <input type="number" id="playoff-b-${m.id}" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('b','${m.id}')">
@@ -1990,7 +2038,7 @@ function tryRenderFinals(){
   <h3 style="text-align:center;margin-top:16px;">🏆 Финал</h3>
   <div class="match">
     <div class="court">Финал · ${getCourtName(1)}</div>
-    <div class="teams">${finalData.sf1Winner} 🆚 ${finalData.sf2Winner}</div>
+    <div class="teams">${finalData.sf1Winner} vs ${finalData.sf2Winner}</div>
     <div class="score">
       <input type="number" id="playoff-a-final" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('a','final')">
       <input type="number" id="playoff-b-final" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('b','final')">
@@ -1999,7 +2047,7 @@ function tryRenderFinals(){
   <h3 style="text-align:center;margin-top:8px;">🥉 Матч за 3 место</h3>
   <div class="match">
     <div class="court">За 3 место · ${getCourtName(Math.min(2, getCourtCount()))}</div>
-    <div class="teams">${finalData.sf1Loser} 🆚 ${finalData.sf2Loser}</div>
+    <div class="teams">${finalData.sf1Loser} vs ${finalData.sf2Loser}</div>
     <div class="score">
       <input type="number" id="playoff-a-3rd" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('a','3rd')">
       <input type="number" id="playoff-b-3rd" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('b','3rd')">
@@ -2282,6 +2330,7 @@ function saveData(){
     updateDraftStatus();
     updateStartTournamentState();
     updateCalculateResultsState();
+    autoSaveTournamentProgress();
   } catch(e){
     console.warn('saveData error:', e);
   }
@@ -3007,6 +3056,49 @@ function getPersonalStats(){
 }
 
 
+
+function canAutoSaveTournamentProgress(){
+  return Boolean(tournamentStarted && getPairCount() && getRoundCount() && getRoundLimit() && getCourtCount());
+}
+
+function autoSaveTournamentProgress(){
+  if(!canAutoSaveTournamentProgress()) return;
+  window.clearTimeout(autoHistorySaveTimer);
+  autoHistorySaveTimer = window.setTimeout(()=>{
+    try {
+      upsertTournamentProgressToHistory('in_progress');
+    } catch(e){
+      console.warn('autoSaveTournamentProgress error:', e);
+    }
+  }, 250);
+}
+
+function upsertTournamentProgressToHistory(status='in_progress'){
+  if(!canAutoSaveTournamentProgress()) return null;
+
+  if(!editingTournamentId){
+    editingTournamentId = String(Date.now());
+  }
+
+  const entry = buildTournamentHistoryEntry(status);
+  entry.id = editingTournamentId;
+  if(editingCloudId) entry._cloudId = editingCloudId;
+
+  let saved = getLocalHistory();
+  const index = saved.findIndex(item => String(item.id) === String(entry.id));
+  if(index >= 0){
+    entry._cloudId = saved[index]._cloudId || entry._cloudId;
+    saved[index] = {...saved[index], ...entry};
+  } else {
+    saved.push(entry);
+  }
+
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(saved));
+  currentHistory = [entry, ...currentHistory.filter(item => String(item.id) !== String(entry.id))];
+  updateHomeScreenContinueButton();
+  return entry;
+}
+
 function getCurrentTournamentSnapshot(){
   const scores = {};
   rounds.forEach((round,r)=>{
@@ -3050,6 +3142,7 @@ function getCurrentTournamentSnapshot(){
     team6a: document.getElementById('team6a')?.value || '',
     team6b: document.getElementById('team6b')?.value || '',
     tournamentStarted: tournamentStarted,
+    playoffStarted: playoffStarted,
     scores
   };
 }
@@ -3193,7 +3286,7 @@ function continueTournamentFlow(){
   showPostResultButtons();
 }
 
-function buildTournamentHistoryEntry(){
+function buildTournamentHistoryEntry(status='completed'){
   const groupData = computeGroupStats();
   const playoffPlaces = getFinalPlaces();
   const finalPlacesForEntry = playoffPlaces.length ? playoffPlaces : groupData.sorted.map(item=>item[0]);
@@ -3206,6 +3299,7 @@ function buildTournamentHistoryEntry(){
     roundLimit: getRoundLimit(),
     roundCount: getRoundCount(),
     savedAt: new Date().toISOString(),
+    status: status,
     teams: getTeams(),
     editData: getCurrentTournamentSnapshot(),
     groupText: buildGroupStageText(),
@@ -3229,21 +3323,29 @@ async function saveTournament(){
     entry._cloudId = editingCloudId || entry._cloudId;
   }
 
-  // Prevent duplicate entries: try to find existing by stable snapshot
-  const currentKey = JSON.stringify(entry.editData || {});
+  // Prevent duplicate entries: update by tournament id first, then fall back to matching snapshot.
   let updated = false;
-  for(let i=0;i<saved.length;i++){
-    try {
-      const itemKey = JSON.stringify(saved[i].editData || {});
-      if(itemKey === currentKey){
-        // update existing record
-        entry.id = saved[i].id || entry.id;
-        entry._cloudId = saved[i]._cloudId || entry._cloudId;
-        saved[i] = entry;
-        updated = true;
-        break;
-      }
-    } catch(e){/* ignore */}
+  const existingIndexById = saved.findIndex(item => String(item.id) === String(entry.id));
+  if(existingIndexById >= 0){
+    entry._cloudId = saved[existingIndexById]._cloudId || entry._cloudId;
+    saved[existingIndexById] = entry;
+    updated = true;
+  }
+
+  if(!updated){
+    const currentKey = JSON.stringify(entry.editData || {});
+    for(let i=0;i<saved.length;i++){
+      try {
+        const itemKey = JSON.stringify(saved[i].editData || {});
+        if(itemKey === currentKey){
+          entry.id = saved[i].id || entry.id;
+          entry._cloudId = saved[i]._cloudId || entry._cloudId;
+          saved[i] = entry;
+          updated = true;
+          break;
+        }
+      } catch(e){/* ignore */}
+    }
   }
 
   if(!updated){
