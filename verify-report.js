@@ -38,8 +38,7 @@ function setup(pairCount){
     setId(`team${i}a`, `A${i}`);
     setId(`team${i}b`, `B${i}`);
   }
-  sandbox.refreshRounds();
-  const rounds = sandbox.rounds;
+  const rounds = sandbox.refreshRounds();
   for(let r=0;r<rounds.length;r++){
     for(let m=0;m<rounds[r].length;m++){
       setId(`a-${r}-${m}`, 10+r+m);

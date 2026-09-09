@@ -155,6 +155,7 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
 </div>
 <div id="draftBar" style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
   <div id="draftStatus" class="small">Черновик не сохранен</div>
+  <div id="cloudStatus" class="small" style="color:#888;"></div>
   <button id="saveDraftNowBtn" class="secondary" style="width:auto;padding:8px 12px;font-size:14px;">Сохранить сейчас</button>
 </div>
 <div id="draftModalOverlay" class="draft-modal-overlay">
@@ -312,6 +313,11 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
   <div class="button-row" style="margin-bottom:14px;">
     <button class="secondary" onclick="showHomeScreen()">На главную</button>
   </div>
+  <div class="button-row" style="margin-bottom:14px;">
+    <button class="secondary" onclick="exportHistoryBackup()">Скачать бэкап</button>
+    <button class="secondary" onclick="triggerHistoryImport()">Восстановить из файла</button>
+  </div>
+  <input type="file" id="historyImportInput" accept="application/json,.json" style="display:none" onchange="importHistoryFile(event)">
   <div id="historyContainer"></div>
   <div id="historyDetail"></div>
 </div>
@@ -340,6 +346,9 @@ let openedHistoryId = null;
 let tournamentStarted = false;
 let playoffStarted = false;
 let autoHistorySaveTimer = null;
+let cloudProgressTimer = null;
+let lastCloudProgressAt = 0;
+const CLOUD_PROGRESS_MIN_INTERVAL = 15000;
 
 
 const roundTemplates = [
@@ -358,6 +367,8 @@ const DEFAULT_COURT_COUNT = 2;
 const DEFAULT_ROUND_LIMIT = 32;
 const ROUND_LIMIT_OPTIONS = [21,24,27,32];
 const PLAYOFF_LIMIT_OPTIONS = [15,21,24,27,32];
+let pendingPlayoffLimitMode = null;
+let pendingPlayoffLimitCustom = null;
 
 function getPairCount(){
   const el = document.getElementById('pairCount');
@@ -391,14 +402,16 @@ function getRoundLimit(){
 
 function getPlayoffLimitMode(){
   const el = document.getElementById('playoffLimit');
-  return el?.value || '27';
+  if(el && el.value) return el.value;
+  // Селект еще не отрисован (восстановление черновика/истории) — берем значение из снапшота.
+  return pendingPlayoffLimitMode || '27';
 }
 
 function getPlayoffLimit(){
   const mode = getPlayoffLimitMode();
   if(mode === 'custom'){
     const custom = document.getElementById('playoffLimitCustom');
-    const customValue = parseInt(custom?.value || '', 10);
+    const customValue = parseInt((custom && custom.value) || pendingPlayoffLimitCustom || '', 10);
     return customValue > 0 ? customValue : 27;
   }
   const value = parseInt(mode, 10);
@@ -420,6 +433,22 @@ function onPlayoffLimitChange(){
 
 function setPlayoffLimitFromSnapshot(snapshot){
   if(!snapshot) return;
+
+  // Сначала запоминаем лимит в переменных: showPlayoff() читает его до отрисовки селекта.
+  if(snapshot.playoffLimitMode === 'custom'){
+    pendingPlayoffLimitMode = 'custom';
+    pendingPlayoffLimitCustom = String(snapshot.playoffLimitCustom || snapshot.playoffLimit || 27);
+  } else if(PLAYOFF_LIMIT_OPTIONS.includes(Number(snapshot.playoffLimitMode))){
+    pendingPlayoffLimitMode = String(snapshot.playoffLimitMode);
+    pendingPlayoffLimitCustom = null;
+  } else if(PLAYOFF_LIMIT_OPTIONS.includes(Number(snapshot.playoffLimit))){
+    pendingPlayoffLimitMode = String(snapshot.playoffLimit);
+    pendingPlayoffLimitCustom = null;
+  } else if(Number(snapshot.playoffLimit) > 0){
+    pendingPlayoffLimitMode = 'custom';
+    pendingPlayoffLimitCustom = String(snapshot.playoffLimit);
+  }
+
   const playoffLimitEl = document.getElementById('playoffLimit');
   const playoffLimitCustomEl = document.getElementById('playoffLimitCustom');
   if(playoffLimitEl){
@@ -693,10 +722,13 @@ async function saveTournamentToCloud(tournament, cloudId = null){
     } else {
       response = await supabaseClient
         .from('tournaments')
-        .insert([{ name: tournament.name, date: tournament.date, data: tournament }]);
+        .insert([{ name: tournament.name, date: tournament.date, data: tournament }])
+        .select('id')
+        .single();
     }
-    const { error } = response;
-    return error ? { ok: false, error } : { ok: true };
+    const { data, error } = response;
+    if(error) return { ok: false, error };
+    return { ok: true, cloudId: cloudId || data?.id || null };
   } catch(err){
     return { ok: false, error: err };
   }
@@ -1726,6 +1758,7 @@ html += `
 
 
 function finishWithoutPlayoff(){
+  if(!confirm('Завершить турнир без плей-офф? Результаты группового этапа будут сохранены в историю.')) return;
   playoffStarted = false;
   document.querySelectorAll('input[id^="playoff-a-"], input[id^="playoff-b-"]').forEach(input=>{
     input.value = '';
@@ -2605,14 +2638,17 @@ function restoreDraft(draft){
     const hasPlayoffData = Object.keys(snapshot.scores || {}).some(key => key.startsWith('playoff-') && snapshot.scores[key] !== '');
     if(hasPlayoffData || snapshot.playoffStarted){
       playoffStarted = true;
-      if(!document.getElementById('playoff-section')){
-        startPlayoff();
-      } else {
-        setPlayoffLimitFromSnapshot(snapshot);
-        loadPlayoffScores();
-        tryRenderFinals();
-        if(playoffsCompleted()) tryRenderTournamentTable();
-      }
+      setPlayoffLimitFromSnapshot(snapshot);
+      const playoffRendered = Boolean(
+        document.getElementById('playoff-a-sf1') || document.getElementById('playoff-a-q1')
+      );
+      if(!playoffRendered) startPlayoff();
+      setPlayoffLimitFromSnapshot(snapshot);
+      applyPlayoffScoresFromSnapshot(snapshot);
+      tryRenderFinals();
+      applyPlayoffScoresFromSnapshot(snapshot);
+      if(playoffsCompleted()) tryRenderTournamentTable();
+      saveData();
     }
   } else {
     const matches = document.getElementById('matches');
@@ -2778,6 +2814,16 @@ function updateCalculateResultsState(){
 
 function loadPlayoffScores(){
   loadScores();
+}
+
+function applyPlayoffScoresFromSnapshot(snapshot){
+  const scores = snapshot?.scores;
+  if(!scores) return;
+  Object.keys(scores).forEach(id=>{
+    if(!id.startsWith('playoff-')) return;
+    const el = document.getElementById(id);
+    if(el) el.value = scores[id] || '';
+  });
 }
 
 function buildGroupStageText(){
@@ -3061,12 +3107,86 @@ function canAutoSaveTournamentProgress(){
   return Boolean(tournamentStarted && getPairCount() && getRoundCount() && getRoundLimit() && getCourtCount());
 }
 
+function hasAnyScoreEntered(){
+  let any = false;
+  rounds.forEach((round,r)=>{
+    round.forEach((m,i)=>{
+      const a = document.getElementById(`a-${r}-${i}`);
+      const b = document.getElementById(`b-${r}-${i}`);
+      if((a && a.value !== '') || (b && b.value !== '')) any = true;
+    });
+  });
+  return any;
+}
+
+function updateCloudStatus(state){
+  const el = document.getElementById('cloudStatus');
+  if(!el) return;
+  if(!supabaseClient){
+    el.textContent = '· облако недоступно';
+    el.style.color = '#888';
+    return;
+  }
+  if(state === 'ok'){
+    const dt = new Date();
+    el.textContent = `· в облаке: ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    el.style.color = '#9ca3af';
+  } else if(state === 'error'){
+    el.textContent = '· облако недоступно, сохранено локально';
+    el.style.color = '#ef4444';
+  } else {
+    el.textContent = '';
+  }
+}
+
+function scheduleCloudProgressSave(){
+  if(!supabaseClient) return;
+  window.clearTimeout(cloudProgressTimer);
+  const since = Date.now() - lastCloudProgressAt;
+  const delay = since >= CLOUD_PROGRESS_MIN_INTERVAL ? 1500 : (CLOUD_PROGRESS_MIN_INTERVAL - since);
+  cloudProgressTimer = window.setTimeout(()=>{ pushProgressToCloud(); }, delay);
+}
+
+async function pushProgressToCloud(){
+  if(!supabaseClient) return;
+  if(typeof navigator !== 'undefined' && navigator.onLine === false) return;
+  if(!canAutoSaveTournamentProgress() || !hasAnyScoreEntered()) return;
+  if(!editingTournamentId) return;
+
+  const entry = getLocalHistory().find(item => String(item.id) === String(editingTournamentId));
+  if(!entry) return;
+
+  lastCloudProgressAt = Date.now();
+  try {
+    const result = await saveTournamentToCloud(entry, editingCloudId || entry._cloudId || null);
+    if(result.ok){
+      if(result.cloudId){
+        editingCloudId = result.cloudId;
+        const saved = getLocalHistory();
+        const index = saved.findIndex(item => String(item.id) === String(entry.id));
+        if(index >= 0){
+          saved[index]._cloudId = result.cloudId;
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(saved));
+        }
+      }
+      updateCloudStatus('ok');
+    } else {
+      console.warn('pushProgressToCloud failed', result.error);
+      updateCloudStatus('error');
+    }
+  } catch(e){
+    console.warn('pushProgressToCloud error:', e);
+    updateCloudStatus('error');
+  }
+}
+
 function autoSaveTournamentProgress(){
   if(!canAutoSaveTournamentProgress()) return;
   window.clearTimeout(autoHistorySaveTimer);
   autoHistorySaveTimer = window.setTimeout(()=>{
     try {
       upsertTournamentProgressToHistory('in_progress');
+      scheduleCloudProgressSave();
     } catch(e){
       console.warn('autoSaveTournamentProgress error:', e);
     }
@@ -3153,6 +3273,15 @@ function editHistoryTournament(id){
     alert('Для этого турнира редактирование недоступно: нет сохраненных исходных данных.');
     return;
   }
+
+  // Защита от потери активного турнира: черновик один, и он будет перезаписан.
+  const currentDraft = getRawDraft();
+  const draftIsLive = Boolean(currentDraft?.snapshot?.tournamentStarted);
+  const sameTournament = String(editingTournamentId || '') === String(item.id);
+  if(draftIsLive && !sameTournament){
+    if(!confirm('Сейчас идет незавершенный турнир. Он уже сохранен в истории, но текущий черновик будет заменен турниром из истории. Продолжить?')) return;
+  }
+
   const data = item.editData;
   editingTournamentId = item.id;
   editingCloudId = item._cloudId || null;
@@ -3361,6 +3490,17 @@ async function saveTournament(){
 
   // Show completion card if all playoff places are filled
   const cloudResult = await saveTournamentToCloud(entry, editingCloudId || entry._cloudId);
+  if(cloudResult.ok && cloudResult.cloudId){
+    // Запоминаем id облачной строки, иначе повторное сохранение создаст дубль турнира.
+    entry._cloudId = cloudResult.cloudId;
+    const persisted = getLocalHistory();
+    const persistedIndex = persisted.findIndex(item => String(item.id) === String(entry.id));
+    if(persistedIndex >= 0){
+      persisted[persistedIndex]._cloudId = cloudResult.cloudId;
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(persisted));
+    }
+    currentHistory = [entry, ...currentHistory.filter(item => String(item.id) !== String(entry.id))];
+  }
   if(cloudResult.ok){
     if(updated || editingTournamentId) alert('Готово! Турнир обновлен');
     else alert('Готово! Турнир сохранен');
@@ -3432,8 +3572,37 @@ async function initApp(){
       alert('Настройки разблокированы. Расписание пересоздано, счета очищены.');
     });
   }
+
+  // Телефон блокируется или приложение уходит в фон — фиксируем состояние немедленно.
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'hidden'){
+      try {
+        saveData();
+        if(canAutoSaveTournamentProgress()){
+          upsertTournamentProgressToHistory('in_progress');
+          pushProgressToCloud();
+        }
+      } catch(e){
+        console.warn('visibilitychange save error:', e);
+      }
+    }
+  });
+
+  window.addEventListener('pagehide', ()=>{
+    try { saveData(); } catch(e){ console.warn('pagehide save error:', e); }
+  });
+
+  updateCloudStatus('');
 }
 
+function registerServiceWorker(){
+  if(!('serviceWorker' in navigator)) return;
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW register failed', e));
+  });
+}
+
+registerServiceWorker();
 initApp();
 </script>
 </body>
