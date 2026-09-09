@@ -183,7 +183,7 @@ function check(name, cond, extra){
   check('нет упоминания плей-офф там, где его не было',
         !detailText.includes('Плей-офф') && !detailText.includes('плей-офф'), detailText.slice(0,400));
 
-  console.log('\n== 10. Индивидуальный турнир: 8 игроков, 5 раундов ==');
+  console.log('\n== 10. Индивидуальный: 8 игроков, 2 корта, 1 круг ==');
   await page.click('.tab-button[data-tab="tournament"]');
   await page.waitForTimeout(300);
   await page.click('#goHomeBar button:has-text("На главную")');
@@ -196,8 +196,8 @@ function check(name, cond, extra){
   await page.waitForTimeout(300);
   check('появился выбор количества игроков', await page.isVisible('#playerCountField'));
   check('выбор пар скрыт', !(await page.isVisible('#pairCountField')));
-  check('появился выбор раундов', await page.isVisible('#individualRoundCountField'));
-  check('выбор кругов скрыт', !(await page.isVisible('#roundCountField')));
+  check('появился выбор кругов', await page.isVisible('#individualCircleCountField'));
+  check('парный выбор кругов скрыт', !(await page.isVisible('#roundCountField')));
   await page.selectOption('#playerCount','8');
   await page.waitForTimeout(300);
   const courtOpts = await page.evaluate(()=>Array.from(document.getElementById('courtCount').options)
@@ -206,7 +206,11 @@ function check(name, cond, extra){
         courtOpts.find(o=>o.v==='3')?.off === true, JSON.stringify(courtOpts));
   check('1 и 2 корта доступны',
         courtOpts.find(o=>o.v==='1')?.off === false && courtOpts.find(o=>o.v==='2')?.off === false);
-  await page.selectOption('#individualRoundCount','5');
+  const circleLabels = await page.evaluate(()=>Array.from(document.getElementById('individualCircleCount').options)
+      .filter(o=>o.value).map(o=>o.textContent));
+  check('в кругах видно число игр', circleLabels[0] === '1 круг · 7 игр', JSON.stringify(circleLabels));
+  check('склонение работает', circleLabels[1] === '2 круга · 14 игр', JSON.stringify(circleLabels));
+  await page.selectOption('#individualCircleCount','1');
   await page.selectOption('#roundLimit','24');
   await page.selectOption('#courtCount','2');
   await page.fill('#court1','2'); await page.fill('#court2','6');
@@ -234,7 +238,7 @@ function check(name, cond, extra){
   await page.click('#startTournamentBtn');
   await page.waitForTimeout(500);
   const soloMatches = await page.locator('#matches .match').count();
-  check('создано 10 матчей (5 раундов x 2 корта)', soloMatches === 10, 'получено ' + soloMatches);
+  check('1 круг на 8 игроков / 2 корта = 7 раундов = 14 матчей', soloMatches === 14, 'получено ' + soloMatches);
   const firstCard = await page.locator('#matches .match').first().innerText();
   check('в карточке двое против двоих', (firstCard.match(/ · /g) || []).length === 2, firstCard.replace(/\n/g,' | '));
 
@@ -252,9 +256,9 @@ function check(name, cond, extra){
     return {played, dupPartners: Object.values(partners).filter(v=>v>1).length, names};
   });
   const counts = Object.values(rotation.played);
-  check('каждый игрок играет ровно 5 матчей',
-        counts.length === 8 && counts.every(c=>c===5), JSON.stringify(rotation.played));
-  check('ни одной повторной пары партнёров', rotation.dupPartners === 0, 'повторов ' + rotation.dupPartners);
+  check('каждый сыграл ровно 7 матчей — круг закрыт',
+        counts.length === 8 && counts.every(c=>c===7), JSON.stringify(rotation.played));
+  check('каждый сыграл в паре с каждым ровно раз', rotation.dupPartners === 0, 'повторов ' + rotation.dupPartners);
 
   const soloInputs = await page.evaluate(()=>Array.from(document.querySelectorAll('#matches input[id^="a-"]')).map(e=>e.id));
   let sSeed = 0;
@@ -281,7 +285,7 @@ function check(name, cond, extra){
     const d = computeGroupStats();
     return d.sorted.reduce((acc,x)=>acc+x[1].scored,0);
   });
-  check('сумма очков всех игроков = 10 матчей x 24 x 2 игрока', sumScored === 10*24*2, 'получено ' + sumScored);
+  check('сумма очков всех игроков = 14 матчей x 24 x 2 игрока', sumScored === 14*24*2, 'получено ' + sumScored);
 
   console.log('\n== 11. Индивидуальный: перезагрузка и восстановление ==');
   const soloFirst = await page.inputValue('#a-0-0');
@@ -293,10 +297,10 @@ function check(name, cond, extra){
         (await page.evaluate(()=>document.getElementById('tournamentFormat').value)) === 'individual');
   check('количество игроков восстановлено',
         (await page.evaluate(()=>document.getElementById('playerCount').value)) === '8');
-  check('количество раундов восстановлено',
-        (await page.evaluate(()=>document.getElementById('individualRoundCount').value)) === '5');
+  check('количество кругов восстановлено',
+        (await page.evaluate(()=>document.getElementById('individualCircleCount').value)) === '1');
   check('счёт первого матча восстановлен', (await page.inputValue('#a-0-0')) === soloFirst);
-  check('матчей по-прежнему 10', (await page.locator('#matches .match').count()) === 10);
+  check('матчей по-прежнему 14', (await page.locator('#matches .match').count()) === 14);
   check('таблица пересчиталась на 8 строк',
         (await page.locator('#results .tourney-table tbody tr').count()) === 8);
   const cardAfter = await page.locator('#matches .match').first().innerText();
@@ -332,7 +336,7 @@ function check(name, cond, extra){
   await page.fill('#tournamentDate','2026-09-11');
   await page.selectOption('#tournamentFormat','individual');
   await page.selectOption('#playerCount','8');
-  await page.selectOption('#individualRoundCount','6');
+  await page.selectOption('#individualCircleCount','1');
   await page.selectOption('#roundLimit','21');
   await page.selectOption('#courtCount','1');
   await page.fill('#court1','2');
@@ -342,15 +346,16 @@ function check(name, cond, extra){
   }
   await page.waitForTimeout(400);
   const checklist = await page.locator('#preStartChecklist').innerText();
-  check('чеклист говорит сколько матчей у каждого', checklist.includes('каждый сыграет 3 матчей'), checklist.replace(/\n/g,' | '));
+  check('чеклист: тот же круг растянут на 14 раундов', checklist.includes('14 раундов'), checklist.replace(/\n/g,' | '));
+  check('чеклист: игр столько же, сколько на двух кортах', checklist.includes('каждый сыграет 7 матчей'), checklist.replace(/\n/g,' | '));
   check('чеклист говорит про отдых', checklist.includes('отдыхают по 4 за раунд'), checklist.replace(/\n/g,' | '));
 
   await page.click('#startTournamentBtn');
   await page.waitForTimeout(500);
-  check('6 раундов по одному матчу = 6 матчей',
-        (await page.locator('#matches .match').count()) === 6);
+  check('14 раундов по одному матчу = 14 матчей',
+        (await page.locator('#matches .match').count()) === 14);
   const restLines = await page.locator('#matches .resting').count();
-  check('в каждом раунде показано кто отдыхает', restLines === 6, 'получено ' + restLines);
+  check('в каждом раунде показано кто отдыхает', restLines === 14, 'получено ' + restLines);
   const firstRest = await page.locator('#matches .resting').first().innerText();
   check('отдыхают ровно четверо', firstRest.replace('Отдыхают: ','').split(',').length === 4, firstRest);
 
@@ -361,8 +366,27 @@ function check(name, cond, extra){
     return played;
   });
   const pc = Object.values(soloPlan);
-  check('каждый из восьмерых сыграет по 3 матча',
-        pc.length === 8 && pc.every(v=>v===3), JSON.stringify(soloPlan));
+  check('на одном корте круг тот же: по 7 матчей каждому',
+        pc.length === 8 && pc.every(v=>v===7), JSON.stringify(soloPlan));
+
+  console.log('\n== 13b. Четыре игрока: круг = 3 игры ==');
+  await page.click('#goHomeBar button:has-text("На главную")');
+  await page.waitForTimeout(300);
+  await page.click('#homeScreen button:has-text("Начать турнир")');
+  await page.waitForTimeout(400);
+  await page.selectOption('#tournamentFormat','individual');
+  await page.selectOption('#playerCount','4');
+  await page.waitForTimeout(300);
+  const fourLabels = await page.evaluate(()=>Array.from(document.getElementById('individualCircleCount').options)
+      .filter(o=>o.value).map(o=>o.textContent));
+  check('1 круг = 3 игры', fourLabels[0] === '1 круг · 3 игры', JSON.stringify(fourLabels));
+  check('2 круга = 6 игр', fourLabels[1] === '2 круга · 6 игр', JSON.stringify(fourLabels));
+  check('3 круга = 9 игр', fourLabels[2] === '3 круга · 9 игр', JSON.stringify(fourLabels));
+  const fourCourts = await page.evaluate(()=>Array.from(document.getElementById('courtCount').options)
+      .filter(o=>o.value).map(o=>({v:o.value, off:o.disabled || o.hidden})));
+  check('при 4 игроках доступен только 1 корт',
+        fourCourts.filter(o=>!o.off).length === 1 && fourCourts.find(o=>o.v==='1').off === false,
+        JSON.stringify(fourCourts));
 
   console.log('\n== 14. Мобильная вёрстка 390px ==');
   const overflow = await page.evaluate(()=>document.documentElement.scrollWidth - document.documentElement.clientWidth);
