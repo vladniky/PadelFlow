@@ -177,9 +177,11 @@ function check(name, cond, extra){
   const detailText = await page.locator('#historyContainer .history-detail').innerText();
   check('в карточке истории есть название', detailText.includes('Тестовый турнир'));
   check('в карточке истории есть итоги группы', detailText.includes('Итоги группового этапа'));
-  check('кнопки бэкапа истории на месте',
-        (await page.locator('button:has-text("Скачать бэкап")').count()) === 1 &&
-        (await page.locator('button:has-text("Восстановить из файла")').count()) === 1);
+  check('кнопок бэкапа больше нет',
+        (await page.locator('button:has-text("Скачать бэкап")').count()) === 0 &&
+        (await page.locator('button:has-text("Восстановить из файла")').count()) === 0);
+  check('нет упоминания плей-офф там, где его не было',
+        !detailText.includes('Плей-офф') && !detailText.includes('плей-офф'), detailText.slice(0,400));
 
   console.log('\n== 10. Индивидуальный турнир: 8 игроков, 5 раундов ==');
   await page.click('.tab-button[data-tab="tournament"]');
@@ -197,6 +199,13 @@ function check(name, cond, extra){
   check('появился выбор раундов', await page.isVisible('#individualRoundCountField'));
   check('выбор кругов скрыт', !(await page.isVisible('#roundCountField')));
   await page.selectOption('#playerCount','8');
+  await page.waitForTimeout(300);
+  const courtOpts = await page.evaluate(()=>Array.from(document.getElementById('courtCount').options)
+      .filter(o=>o.value).map(o=>({v:o.value, off:o.disabled || o.hidden})));
+  check('при 8 игроках 3 корта недоступны',
+        courtOpts.find(o=>o.v==='3')?.off === true, JSON.stringify(courtOpts));
+  check('1 и 2 корта доступны',
+        courtOpts.find(o=>o.v==='1')?.off === false && courtOpts.find(o=>o.v==='2')?.off === false);
   await page.selectOption('#individualRoundCount','5');
   await page.selectOption('#roundLimit','24');
   await page.selectOption('#courtCount','2');
@@ -263,6 +272,8 @@ function check(name, cond, extra){
   check('в таблице 8 строк — по игроку', soloRows === 8, 'получено ' + soloRows);
   const resultsText = await page.locator('#results').innerText();
   check('заголовок "Итоги турнира"', resultsText.includes('Итоги турнира'));
+  check('в итогах нет эмодзи', !/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]|\u{FE0F}/u.test(resultsText),
+        (resultsText.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu)||[]).join(''));
   check('колонка называется "Игрок"', resultsText.includes('Игрок'));
   check('нет кнопки плей-офф', (await page.locator('button:has-text("Играть плей-офф")').count()) === 0);
   check('есть кнопка "Завершить турнир"', (await page.locator('button:has-text("Завершить турнир")').count()) === 1);
@@ -310,7 +321,50 @@ function check(name, cond, extra){
   check('в истории игр видны временные пары', (soloDetail.match(/ · /g) || []).length > 4);
   check('в итогах перечислены игроки', soloDetail.includes('Никита') && soloDetail.includes('Алена'));
 
-  console.log('\n== 13. Мобильная вёрстка 390px ==');
+  console.log('\n== 13. Индивидуальный на одном корте: 8 игроков, 4 играют, 4 отдыхают ==');
+  await page.click('.tab-button[data-tab="tournament"]');
+  await page.waitForTimeout(300);
+  await page.click('#goHomeBar button:has-text("На главную")');
+  await page.waitForTimeout(300);
+  await page.click('#homeScreen button:has-text("Начать турнир")');
+  await page.waitForTimeout(400);
+  await page.fill('#tournamentName','Соло один корт');
+  await page.fill('#tournamentDate','2026-09-11');
+  await page.selectOption('#tournamentFormat','individual');
+  await page.selectOption('#playerCount','8');
+  await page.selectOption('#individualRoundCount','6');
+  await page.selectOption('#roundLimit','21');
+  await page.selectOption('#courtCount','1');
+  await page.fill('#court1','2');
+  for(let i=0;i<8;i++){
+    const block = Math.floor(i/2)+1, side = i%2===0 ? 'a' : 'b';
+    await page.fill(`#team${block}${side}`, solo[i]);
+  }
+  await page.waitForTimeout(400);
+  const checklist = await page.locator('#preStartChecklist').innerText();
+  check('чеклист говорит сколько матчей у каждого', checklist.includes('каждый сыграет 3 матчей'), checklist.replace(/\n/g,' | '));
+  check('чеклист говорит про отдых', checklist.includes('отдыхают по 4 за раунд'), checklist.replace(/\n/g,' | '));
+
+  await page.click('#startTournamentBtn');
+  await page.waitForTimeout(500);
+  check('6 раундов по одному матчу = 6 матчей',
+        (await page.locator('#matches .match').count()) === 6);
+  const restLines = await page.locator('#matches .resting').count();
+  check('в каждом раунде показано кто отдыхает', restLines === 6, 'получено ' + restLines);
+  const firstRest = await page.locator('#matches .resting').first().innerText();
+  check('отдыхают ровно четверо', firstRest.replace('Отдыхают: ','').split(',').length === 4, firstRest);
+
+  const soloPlan = await page.evaluate(()=>{
+    const names = getTeams();
+    const played = {};
+    rounds.forEach(rd=>rd.forEach(m=>[...m[0],...m[1]].forEach(i=>{played[names[i]]=(played[names[i]]||0)+1;})));
+    return played;
+  });
+  const pc = Object.values(soloPlan);
+  check('каждый из восьмерых сыграет по 3 матча',
+        pc.length === 8 && pc.every(v=>v===3), JSON.stringify(soloPlan));
+
+  console.log('\n== 14. Мобильная вёрстка 390px ==');
   const overflow = await page.evaluate(()=>document.documentElement.scrollWidth - document.documentElement.clientWidth);
   check('нет горизонтального скролла', overflow <= 0, 'overflow ' + overflow + 'px');
 

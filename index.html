@@ -38,6 +38,7 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .teams{font-size:18px;font-weight:bold;margin-bottom:14px}
 .score{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .small{color:#aaa;font-size:15px}
+.resting{color:#8a8a8a;font-size:14px;text-align:center;margin:-6px 0 18px}
 .delta-value{font-weight:700}
 .delta-pos{color:#b7ff2a}
 .delta-neg{color:#ef4444}
@@ -219,6 +220,15 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
       <option value="7">7 раундов</option>
       <option value="8">8 раундов</option>
       <option value="9">9 раундов</option>
+      <option value="10">10 раундов</option>
+      <option value="11">11 раундов</option>
+      <option value="12">12 раундов</option>
+      <option value="13">13 раундов</option>
+      <option value="14">14 раундов</option>
+      <option value="15">15 раундов</option>
+      <option value="16">16 раундов</option>
+      <option value="17">17 раундов</option>
+      <option value="18">18 раундов</option>
     </select>
   </div>
   <div class="form-item">
@@ -335,11 +345,6 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
   <div class="button-row" style="margin-bottom:14px;">
     <button class="secondary" onclick="showHomeScreen()">На главную</button>
   </div>
-  <div class="button-row" style="margin-bottom:14px;">
-    <button class="secondary" onclick="exportHistoryBackup()">Скачать бэкап</button>
-    <button class="secondary" onclick="triggerHistoryImport()">Восстановить из файла</button>
-  </div>
-  <input type="file" id="historyImportInput" accept="application/json,.json" style="display:none" onchange="importHistoryFile(event)">
   <div id="historyContainer"></div>
   <div id="historyDetail"></div>
 </div>
@@ -385,47 +390,141 @@ const PLAYOFF_LIMIT_OPTIONS = [15,21,24,27,32];
 let pendingPlayoffLimitMode = null;
 let pendingPlayoffLimitCustom = null;
 
-// Расписания индивидуального Американо (партнёры меняются каждый раунд).
-// Сгенерированы офлайн и зашиты таблицей: расписание обязано быть одинаковым
-// при каждой перезагрузке, иначе после восстановления черновика поедут матчи.
+// Расписания индивидуального Американо: [игроков][кортов] -> раунды.
+// Раунд = временной слот: ровно (корты x 4) человек на кортах, остальные отдыхают.
+// Таблицы сгенерированы офлайн и зашиты: расписание обязано совпадать после
+// перезагрузки страницы, иначе поедут уже введённые счета.
 const INDIVIDUAL_ROTATIONS = {
-  4: [
-    [[[0,1],[2,3]]],
-    [[[0,2],[1,3]]],
-    [[[0,3],[1,2]]],
-    [[[0,1],[2,3]]],
-    [[[0,2],[1,3]]],
-    [[[0,3],[1,2]]],
-    [[[0,1],[2,3]]],
-    [[[0,2],[1,3]]],
-    [[[0,3],[1,2]]]
-  ],
-  8: [
-    [[[0,1],[5,7]],[[6,2],[4,3]]],
-    [[[7,1],[4,6]],[[0,5],[3,2]]],
-    [[[2,5],[7,6]],[[4,1],[0,3]]],
-    [[[2,7],[1,3]],[[0,4],[6,5]]],
-    [[[7,4],[0,2]],[[5,3],[1,6]]],
-    [[[6,0],[1,2]],[[5,4],[3,7]]],
-    [[[7,0],[3,6]],[[1,5],[4,2]]],
-    [[[7,4],[3,1]],[[0,2],[6,5]]],
-    [[[5,0],[3,7]],[[2,6],[1,4]]]
-  ],
-  12: [
-    [[[0,9],[2,1]],[[11,3],[10,8]],[[7,4],[6,5]]],
-    [[[9,5],[8,0]],[[2,4],[10,11]],[[7,6],[3,1]]],
-    [[[10,3],[0,1]],[[8,2],[6,4]],[[9,11],[7,5]]],
-    [[[4,11],[9,1]],[[7,8],[2,10]],[[3,6],[0,5]]],
-    [[[5,2],[1,10]],[[4,8],[7,0]],[[9,3],[11,6]]],
-    [[[4,10],[8,1]],[[11,7],[0,6]],[[5,3],[2,9]]],
-    [[[0,10],[9,6]],[[1,7],[8,11]],[[2,3],[5,4]]],
-    [[[9,4],[10,6]],[[7,2],[0,3]],[[11,1],[5,8]]],
-    [[[5,1],[7,10]],[[6,2],[9,8]],[[11,0],[4,3]]]
-  ]
+  4: {
+    1: [
+        [[[2,1],[0,3]]],
+        [[[3,2],[0,1]]],
+        [[[2,0],[1,3]]],
+        [[[1,2],[3,0]]],
+        [[[0,1],[2,3]]],
+        [[[1,3],[2,0]]],
+        [[[3,1],[0,2]]],
+        [[[3,2],[1,0]]],
+        [[[1,2],[0,3]]],
+        [[[0,3],[1,2]]],
+        [[[0,1],[2,3]]],
+        [[[1,3],[2,0]]],
+        [[[3,1],[0,2]]],
+        [[[2,3],[0,1]]],
+        [[[1,2],[0,3]]],
+        [[[2,3],[0,1]]],
+        [[[1,2],[3,0]]],
+        [[[0,2],[3,1]]]
+    ]
+  },
+  8: {
+    1: [
+        [[[3,4],[2,1]]],
+        [[[5,6],[7,0]]],
+        [[[4,7],[0,3]]],
+        [[[6,1],[5,2]]],
+        [[[4,1],[7,6]]],
+        [[[3,2],[0,5]]],
+        [[[2,0],[7,1]]],
+        [[[6,4],[3,5]]],
+        [[[3,6],[0,1]]],
+        [[[7,2],[5,4]]],
+        [[[4,2],[0,6]]],
+        [[[3,1],[7,5]]],
+        [[[5,1],[4,0]]],
+        [[[7,3],[6,2]]],
+        [[[3,6],[0,4]]],
+        [[[7,1],[5,2]]],
+        [[[3,4],[5,1]]],
+        [[[7,2],[0,6]]]
+    ],
+    2: [
+        [[[7,2],[0,3]],[[1,5],[6,4]]],
+        [[[4,1],[7,0]],[[3,2],[5,6]]],
+        [[[2,6],[4,7]],[[3,5],[0,1]]],
+        [[[0,5],[6,7]],[[4,2],[1,3]]],
+        [[[3,7],[1,6]],[[0,4],[5,2]]],
+        [[[6,0],[1,2]],[[5,7],[4,3]]],
+        [[[4,5],[1,7]],[[0,2],[3,6]]],
+        [[[4,7],[6,0]],[[2,3],[5,1]]],
+        [[[3,0],[4,6]],[[2,1],[5,7]]],
+        [[[4,1],[2,6]],[[5,3],[0,7]]],
+        [[[6,7],[2,5]],[[4,0],[3,1]]],
+        [[[6,5],[4,3]],[[7,1],[0,2]]],
+        [[[7,3],[2,4]],[[6,1],[5,0]]],
+        [[[4,5],[2,7]],[[3,6],[0,1]]],
+        [[[7,2],[6,1]],[[5,4],[0,3]]],
+        [[[5,2],[4,0]],[[7,1],[3,6]]],
+        [[[6,2],[3,5]],[[7,4],[0,1]]],
+        [[[2,4],[6,0]],[[3,1],[5,7]]]
+    ]
+  },
+  12: {
+    1: [
+        [[[9,4],[5,10]]],
+        [[[0,3],[2,8]]],
+        [[[6,11],[7,1]]],
+        [[[0,9],[1,11]]],
+        [[[5,2],[6,8]]],
+        [[[4,10],[3,7]]],
+        [[[4,7],[0,8]]],
+        [[[3,2],[9,11]]],
+        [[[6,5],[1,10]]],
+        [[[4,8],[1,9]]],
+        [[[6,10],[11,0]]],
+        [[[3,5],[2,7]]],
+        [[[5,8],[11,3]]],
+        [[[1,2],[7,10]]],
+        [[[4,0],[9,6]]],
+        [[[11,2],[4,1]]],
+        [[[0,6],[8,3]]],
+        [[[10,9],[5,7]]]
+    ],
+    2: [
+        [[[10,6],[0,4]],[[7,3],[2,1]]],
+        [[[8,11],[5,9]],[[2,0],[4,1]]],
+        [[[7,9],[6,5]],[[10,8],[3,11]]],
+        [[[11,5],[2,3]],[[8,7],[0,10]]],
+        [[[9,1],[4,6]],[[0,7],[3,8]]],
+        [[[5,1],[4,11]],[[9,6],[2,10]]],
+        [[[2,5],[0,8]],[[9,10],[1,7]]],
+        [[[3,4],[11,6]],[[8,5],[1,10]]],
+        [[[6,7],[2,11]],[[3,0],[4,9]]],
+        [[[5,7],[6,1]],[[11,10],[0,9]]],
+        [[[3,8],[4,2]],[[6,0],[1,11]]],
+        [[[7,2],[4,10]],[[5,3],[9,8]]],
+        [[[3,6],[10,5]],[[9,11],[8,1]]],
+        [[[2,0],[7,4]],[[3,1],[8,6]]],
+        [[[0,11],[9,2]],[[5,4],[7,10]]],
+        [[[8,4],[6,2]],[[3,9],[0,1]]],
+        [[[11,7],[5,10]],[[6,1],[2,8]]],
+        [[[5,0],[3,10]],[[7,4],[11,9]]]
+    ],
+    3: [
+        [[[10,1],[8,9]],[[6,5],[11,4]],[[2,0],[3,7]]],
+        [[[6,10],[0,3]],[[1,11],[2,4]],[[7,9],[8,5]]],
+        [[[2,11],[0,8]],[[5,10],[6,1]],[[3,9],[4,7]]],
+        [[[3,6],[7,8]],[[9,1],[11,0]],[[4,5],[2,10]]],
+        [[[0,5],[8,3]],[[6,9],[2,1]],[[4,10],[7,11]]],
+        [[[3,2],[11,10]],[[5,7],[1,0]],[[8,6],[4,9]]],
+        [[[11,6],[1,7]],[[0,10],[8,4]],[[9,2],[5,3]]],
+        [[[9,11],[0,7]],[[2,8],[4,6]],[[1,5],[10,3]]],
+        [[[9,10],[7,6]],[[0,4],[5,2]],[[3,11],[8,1]]],
+        [[[4,2],[7,10]],[[11,8],[5,9]],[[6,0],[1,3]]],
+        [[[10,8],[7,2]],[[9,0],[4,1]],[[3,6],[5,11]]],
+        [[[5,8],[6,2]],[[0,11],[7,10]],[[9,1],[4,3]]],
+        [[[8,2],[11,1]],[[5,6],[7,0]],[[3,9],[4,10]]],
+        [[[6,9],[0,2]],[[3,10],[8,11]],[[7,4],[1,5]]],
+        [[[10,2],[0,1]],[[8,9],[11,5]],[[6,7],[4,3]]],
+        [[[7,5],[1,2]],[[8,3],[9,4]],[[0,6],[10,11]]],
+        [[[9,5],[6,10]],[[1,4],[0,8]],[[11,2],[3,7]]],
+        [[[1,7],[10,8]],[[9,0],[6,2]],[[4,5],[11,3]]]
+    ]
+  }
 };
 
 const INDIVIDUAL_PLAYER_OPTIONS = [4,8,12];
-const INDIVIDUAL_ROUND_OPTIONS = [3,4,5,6,7,8,9];
+const INDIVIDUAL_ROUND_OPTIONS = [3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];
 
 function getTournamentFormat(){
   const value = document.getElementById('tournamentFormat')?.value || '';
@@ -456,9 +555,16 @@ function getEffectiveRoundCount(){
   return isIndividual() ? getIndividualRoundCount() : getRoundCount();
 }
 
+// Больше матчей одновременно, чем кортов, быть не может: 8 игроков на 3 кортах не играют.
+function getMaxCourtsForFormat(){
+  if(!isIndividual()) return 3;
+  const players = getPlayerCount();
+  return players ? players / 4 : 3;
+}
+
 function buildIndividualRounds(playerCount, roundCount, courtCount){
-  const table = INDIVIDUAL_ROTATIONS[playerCount];
   const safeCourts = [1,2,3].includes(Number(courtCount)) ? Number(courtCount) : 0;
+  const table = INDIVIDUAL_ROTATIONS[playerCount]?.[safeCourts];
   if(!table || !roundCount || !safeCourts) return [];
   const total = Math.min(Number(roundCount), table.length);
   const result = [];
@@ -466,10 +572,42 @@ function buildIndividualRounds(playerCount, roundCount, courtCount){
     result.push(table[r].map((match, matchIndex)=>[
       match[0].slice(),
       match[1].slice(),
-      ((r + matchIndex) % safeCourts) + 1
+      matchIndex + 1
     ]));
   }
   return result;
+}
+
+// Кто не выходит на корт в этом раунде.
+function getRestingPlayers(round){
+  if(!isIndividual() || !round) return [];
+  const names = getTeams();
+  const onCourt = new Set();
+  round.forEach(m=>{
+    if(Array.isArray(m[0])) m[0].forEach(i=>onCourt.add(i));
+    if(Array.isArray(m[1])) m[1].forEach(i=>onCourt.add(i));
+  });
+  return names.filter((_, i)=>!onCourt.has(i));
+}
+
+// Сколько матчей достанется каждому при текущих настройках.
+function getIndividualPlan(){
+  if(!isIndividual()) return null;
+  const players = getPlayerCount();
+  const courts = getCourtCount();
+  const roundCount = getIndividualRoundCount();
+  if(!players || !courts || !roundCount) return null;
+  const list = buildIndividualRounds(players, roundCount, courts);
+  if(!list.length) return null;
+  const played = new Array(players).fill(0);
+  list.forEach(round=>round.forEach(m=>{
+    [...(m[0]||[]), ...(m[1]||[])].forEach(i=>{ played[i] = (played[i] || 0) + 1; });
+  }));
+  return {
+    resting: players - courts * 4,
+    minMatches: Math.min(...played),
+    maxMatches: Math.max(...played)
+  };
 }
 
 // Сторона матча: в парном это индекс пары, в индивидуальном — пара индексов игроков.
@@ -687,6 +825,23 @@ function updatePairInputs(){
 }
 
 // Пока формат не выбран, не показываем ни пары, ни игроков — форма не пугает при входе.
+function updateCourtOptionsForFormat(){
+  const select = document.getElementById('courtCount');
+  if(!select) return;
+  const max = getMaxCourtsForFormat();
+  Array.from(select.options).forEach(option=>{
+    const value = parseInt(option.value, 10);
+    if(!value) return;
+    const allowed = value <= max;
+    option.disabled = !allowed;
+    option.hidden = !allowed;
+  });
+  if(parseInt(select.value, 10) > max){
+    select.value = '';
+    updateCourtFields();
+  }
+}
+
 function updateFormatFields(){
   const chosen = Boolean(getTournamentFormat());
   const individual = isIndividual();
@@ -702,6 +857,7 @@ function updateFormatFields(){
 
 function onFormatChange(){
   updateFormatFields();
+  updateCourtOptionsForFormat();
   updatePairInputs();
   refreshRounds();
   const matchesContainer = document.getElementById('matches');
@@ -711,6 +867,7 @@ function onFormatChange(){
 }
 
 function onPlayerCountChange(){
+  updateCourtOptionsForFormat();
   updatePairInputs();
   refreshRounds();
   const matchesContainer = document.getElementById('matches');
@@ -1104,24 +1261,18 @@ function buildHistoryGroupStatsHtml(item){
 }
 
 function buildHistoryGroupPlacesHtml(item){
-  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
   return (item.groupStandings || []).map((s,index)=>
-    `<div class="small">${medals[index] || `${index+1}.`} ${escapeHtml(getBadgedTeam(s.team))}</div>`
+    `<div class="small">${index+1}. ${escapeHtml(getBadgedTeam(s.team))}</div>`
   ).join('');
 }
 
 
 function buildHistoryDetailHtml(item){
-  const finalPlaces = Array.isArray(item.finalPlaces) ? item.finalPlaces : [];
-  const finalHtml = finalPlaces.length
-    ? `<div class="small">${finalPlaces.map((place,index)=>`${index+1}. ${escapeHtml(getBadgedPlayer(place||'-'))}`).join('<br>')}</div>`
-    : `<div class="small">Турнир сохранен после группового этапа. Итоговые места недоступны.</div>`;
-
   const matchesHtml = buildHistoryMatchesHtml(item);
   const groupStatsHtml = buildHistoryGroupStatsHtml(item) || '<div class="small">Итоги недоступны.</div>';
   const playoffText = extractPlayoffBlock(item.dayText);
   const playoffLines = playoffText ? playoffText.split('\n').filter(Boolean) : [];
-  const playoffHeading = playoffLines.length ? playoffLines.shift() : 'Плей-офф';
+  const playoffHeading = playoffLines.length ? playoffLines.shift() : '';
   let playoffFooterHeading = '';
   const playoffBodyLines = [];
   const playoffFooterLines = [];
@@ -1136,8 +1287,14 @@ function buildHistoryDetailHtml(item){
     activeLines.push(line);
   });
 
-  const playoffBody = playoffBodyLines.length ? playoffBodyLines.map(line=>escapeHtml(line)).join('<br>') : 'Плей-офф не игрался или не был сохранен.';
-  const playoffFooter = playoffFooterLines.length ? playoffFooterLines.map(line=>escapeHtml(line)).join('<br>') : '';
+  const playoffBody = playoffBodyLines.map(line=>escapeHtml(line)).join('<br>');
+  const playoffFooter = playoffFooterLines.map(line=>escapeHtml(line)).join('<br>');
+  // Плей-офф не игрался — про него в отчёте вообще ничего не пишем.
+  const playoffHtml = playoffText
+    ? `<div style="margin:16px 0 8px;font-weight:700">${escapeHtml(playoffHeading || 'Плей-офф')}</div>
+       <div class="small">${playoffBody}</div>
+       ${playoffFooterHeading ? `<div style="margin:16px 0 8px;font-weight:700">${escapeHtml(playoffFooterHeading)}</div><div class="small">${playoffFooter}</div>` : ''}`
+    : '';
 
   return `
     <div class="history-detail" id="history-detail-${escapeHtml(item.id)}">
@@ -1150,11 +1307,7 @@ function buildHistoryDetailHtml(item){
       <div style="margin:16px 0 8px;font-weight:700">${getHistoryFormat(item) === 'individual' ? 'Итоги турнира' : 'Итоги группового этапа'}</div>
       <div>${groupStatsHtml}</div>
 
-      <div style="margin:16px 0 8px;font-weight:700">${escapeHtml(playoffHeading)}</div>
-      <div class="small">${playoffBody}</div>
-      ${playoffFooterHeading ? `<div style="margin:16px 0 8px;font-weight:700">${escapeHtml(playoffFooterHeading)}</div><div class="small">${playoffFooter}</div>` : ''}
-
-      ${!playoffText && finalPlaces.length ? `<div style="margin:16px 0 8px;font-weight:700">Итоговые места турнира</div>${finalHtml}` : ''}
+      ${playoffHtml}
 
       <div class="button-row" style="margin-top:16px;">
         <button class="secondary" onclick="copyHistoryReport('${item.id}')">Скопировать отчет</button>
@@ -1194,55 +1347,8 @@ async function deleteHistoryTournament(id){
   if(detail) detail.innerHTML = '';
 }
 
-function exportHistoryBackup(){
-  const key = 'padelFlowTournamentHistory';
-  const data = localStorage.getItem(key) || '[]';
-  const blob = new Blob([data], {type: 'application/json;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'padelflow-backup.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
 
-function triggerHistoryImport(){
-  const input = document.getElementById('historyImportInput');
-  if(input) input.click();
-}
 
-function importHistoryFile(event){
-  const file = event.target.files && event.target.files[0];
-  if(!file) return;
-  if(!confirm('Заменить текущую историю турниров?')){
-    event.target.value = '';
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = function(e){
-    try {
-      const text = e.target.result;
-      const parsed = JSON.parse(text);
-      if(!Array.isArray(parsed)) throw new Error('Invalid format');
-      localStorage.setItem('padelFlowTournamentHistory', JSON.stringify(parsed));
-      currentHistory = parsed;
-      loadPlayersList();
-      renderHistory();
-      alert('История успешно восстановлена');
-    } catch(err){
-      alert('Ошибка импорта файла');
-    } finally {
-      event.target.value = '';
-    }
-  };
-  reader.onerror = function(){
-    alert('Ошибка импорта файла');
-    event.target.value = '';
-  };
-  reader.readAsText(file, 'UTF-8');
-}
 
 function stripPlayerBadge(name){
   // Удаляет медали (🥇 🥈 🥉) из начала строки и нормализует
@@ -1548,13 +1654,10 @@ function generateMatches(){
 
     rounds.forEach((round,r)=>{
       html += `<h2 style="text-align:center;">Раунд ${r+1}</h2>`;
-      // Если матчей в раунде больше, чем кортов, они играются по очереди — нумеруем их.
-      const sequential = round.length > getCourtCount();
       round.forEach((m,i)=>{
-        const courtLabel = sequential ? `${getCourtName(m[2])} · игра ${i+1}` : getCourtName(m[2]);
         html += `
       <div class="match">
-        <div class="court">${escapeHtml(courtLabel)}</div>
+        <div class="court">${escapeHtml(getCourtName(m[2]))}</div>
         <div class="teams">${escapeHtml(getMatchSideLabel(m[0]))} vs ${escapeHtml(getMatchSideLabel(m[1]))}</div>
         <div class="score">
           <input type="number" id="a-${r}-${i}" placeholder="0" min="0" max="${limit}" oninput="autoFill(${r},${i},'a')">
@@ -1562,6 +1665,10 @@ function generateMatches(){
         </div>
       </div>`;
       });
+      const resting = getRestingPlayers(round);
+      if(resting.length){
+        html += `<div class="resting">Отдыхают: ${escapeHtml(resting.join(', '))}</div>`;
+      }
     });
 
     html += `<div class="button-row"><button id="calculateResultsBtn" onclick="calculateResults()" disabled>Посчитать результаты</button></div><div id="calculateStatus" class="small" style="margin-top:8px;"></div>`;
@@ -1703,7 +1810,7 @@ function calculateResults(){
 
   const individual = isIndividual();
  let html = `
-<h2 style="text-align:center;">📊 ${individual ? 'Итоги турнира' : 'Итоги группового этапа'}</h2>
+<h2 style="text-align:center;">${individual ? 'Итоги турнира' : 'Итоги группового этапа'}</h2>
 
 <div class="tourney-container">
   <div class="tourney-scroll">
@@ -1720,8 +1827,6 @@ function calculateResults(){
       <tbody>
 `;
 
-const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
-
 data.sorted.forEach((item,index)=>{
   const name = item[0];
   const s = item[1];
@@ -1730,7 +1835,7 @@ data.sorted.forEach((item,index)=>{
 
   html += `
     <tr>
-      <td><strong>${medals[index] || ''} ${index+1}</strong></td>
+      <td><strong>${index+1}</strong></td>
       <td style="text-align:left;"><strong>${escapeHtml(name)}</strong></td>
       <td>${s.wins}-${s.losses}-${s.draws}</td>
       <td>${s.scored}-${s.conceded}</td>
@@ -1865,7 +1970,7 @@ function showPlayoff(){
     `).join('');
 
     return `
-    <h2 style="text-align:center;">🏆 Плей-офф</h2>
+    <h2 style="text-align:center;">Плей-офф</h2>
     ${playoffLimitHtml}
     <h3 style="text-align:center;margin-top:16px;">Первый раунд</h3>
     ${matchesHtml}
@@ -1880,7 +1985,7 @@ function showPlayoff(){
   if(pairCount !== 4) return "";
 
   return `
-  <h2 style="text-align:center;">🏆 Плей-офф</h2>
+  <h2 style="text-align:center;">Плей-офф</h2>
   ${playoffLimitHtml}
   <div class="match">
     <div class="court">Полуфинал 1 · ${getCourtName(1)}</div>
@@ -2066,9 +2171,9 @@ function tryRenderFinals(){
     `;
 
     container.innerHTML = `
-      <h3 style="text-align:center;margin-top:16px;">🏆 Финальный раунд за 1–3 места</h3>
+      <h3 style="text-align:center;margin-top:16px;">Финальный раунд за 1–3 места</h3>
       ${finalRound.map(renderMatch).join('')}
-      <h3 style="text-align:center;margin-top:16px;">🎾 Раунд за 4–6 места</h3>
+      <h3 style="text-align:center;margin-top:16px;">Раунд за 4–6 места</h3>
       ${lowerRound.map(renderMatch).join('')}
     `;
 
@@ -2079,7 +2184,7 @@ function tryRenderFinals(){
   }
 
   container.innerHTML = `
-  <h3 style="text-align:center;margin-top:16px;">🏆 Финал</h3>
+  <h3 style="text-align:center;margin-top:16px;">Финал</h3>
   <div class="match">
     <div class="court">Финал · ${getCourtName(1)}</div>
     <div class="teams">${finalData.sf1Winner} vs ${finalData.sf2Winner}</div>
@@ -2088,7 +2193,7 @@ function tryRenderFinals(){
       <input type="number" id="playoff-b-final" placeholder="0" min="0" max="${limit}" oninput="autoFillPlayoff('b','final')">
     </div>
   </div>
-  <h3 style="text-align:center;margin-top:8px;">🥉 Матч за 3 место</h3>
+  <h3 style="text-align:center;margin-top:8px;">Матч за 3 место</h3>
   <div class="match">
     <div class="court">За 3 место · ${getCourtName(Math.min(2, getCourtCount()))}</div>
     <div class="teams">${finalData.sf1Loser} vs ${finalData.sf2Loser}</div>
@@ -2213,9 +2318,7 @@ function tryRenderTournamentTable(){
 
   const finalPlaces = getFinalPlaces();
   const playoffStats = getPlayoffStats();
-  const medals = ["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
-
-  let html = `<h2 style="text-align:center;margin-top:18px;">🏆 Итоги плей-офф</h2>`;
+  let html = `<h2 style="text-align:center;margin-top:18px;">Итоги плей-офф</h2>`;
   html += `<div class="tourney-container"><div class="tourney-scroll"><table class="tourney-table"><thead><tr>`;
   html += `<th>Место</th><th>Пара</th><th>В-П-Н</th><th>Очки</th><th>Разница</th>`;
   html += `</tr></thead><tbody>`;
@@ -2224,7 +2327,7 @@ function tryRenderTournamentTable(){
     const s = playoffStats[team];
     if(!s) return;
     html += `<tr>`;
-    html += `<td style="font-weight:700">${medals[index]} ${index+1}</td>`;
+    html += `<td style="font-weight:700">${index+1}</td>`;
     html += `<td style="text-align:left;padding-left:12px"><strong>${team}</strong></td>`;
     html += `<td>${s.wins}-${s.losses}-${s.draws}</td>`;
     html += `<td>${s.scored}-${s.conceded}</td>`;
@@ -2411,6 +2514,7 @@ function startFreshTournament(){
   const rlc = document.getElementById('roundLimitCustom');
   if(rlc){ rlc.value = ''; rlc.style.display = 'none'; }
   updateFormatFields();
+  updateCourtOptionsForFormat();
   updatePairInputs();
   updateCourtFields();
   onRoundLimitChange();
@@ -2432,6 +2536,7 @@ function loadData(){
   // Новый запуск должен начинаться с пустых полей.
   updateHeader('tournament');
   updateFormatFields();
+  updateCourtOptionsForFormat();
   updatePairInputs();
   updateCourtFields();
   onRoundLimitChange();
@@ -2649,6 +2754,7 @@ function restoreDraft(draft){
   }
 
   updateFormatFields();
+  updateCourtOptionsForFormat();
   updatePairInputs();
   updateCourtFields();
   onRoundLimitChange();
@@ -2806,6 +2912,15 @@ function updatePreStartChecklist(){
       ? 'заполните всех игроков'
       : (duplicates ? 'игроки не должны повторяться' : 'все игроки заполнены')}
   ];
+
+  const plan = getIndividualPlan();
+  if(plan){
+    const matchesText = plan.minMatches === plan.maxMatches
+      ? `${plan.minMatches}`
+      : `${plan.minMatches}–${plan.maxMatches}`;
+    const restText = plan.resting > 0 ? `, отдыхают по ${plan.resting} за раунд` : '';
+    checks.push({ok: true, text: `каждый сыграет ${matchesText} матчей${restText}`});
+  }
 
   const allOk = checks.every(c=>c.ok);
   el.innerHTML = `<strong>Проверьте перед стартом:</strong><br>` + checks.map(c=>`<div class="${c.ok? 'ok':'miss'}">— ${c.text}</div>`).join('');
@@ -3380,6 +3495,7 @@ function editHistoryTournament(id){
 
   switchTab('tournament');
   updateFormatFields();
+  updateCourtOptionsForFormat();
   updatePairInputs();
   updateCourtFields();
   onRoundLimitChange();
@@ -3420,61 +3536,7 @@ function editHistoryTournament(id){
   alert('Турнир загружен для редактирования. После изменений нажмите «Сохранить турнир».');
 }
 
-function showTournamentCompletedCard(){
-  const name = getTournamentNameValue();
-  const date = getTournamentDateDisplay();
-  const pairCount = getPairCount();
-  const roundCount = getRoundCount();
-  const courtCount = getCourtCount();
-  const roundLimit = getRoundLimit();
-  const finalPlaces = getFinalPlaces();
-  
-  if(!finalPlaces || finalPlaces.length < 4){
-    return;
-  }
 
-  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
-  const placesHtml = finalPlaces.map((place,idx)=>`
-    <div style="margin:12px 0;">
-      <div style="font-size:18px;font-weight:700;">${medals[idx] || (idx+1+'.')} ${idx+1} место</div>
-      <div style="font-size:16px;color:#ddd;">${escapeHtml(place)}</div>
-    </div>
-  `).join('');
-
-  const card = `
-    <div style="background:#1a1a1a;border:2px solid #b7ff2a;border-radius:16px;padding:24px;text-align:center;margin:20px 0;">
-      <div style="font-size:32px;font-weight:700;margin-bottom:8px;">🏆 ${escapeHtml(name)}</div>
-      <div style="font-size:14px;color:#aaa;margin-bottom:20px;">${escapeHtml(date || 'Дата не указана')}</div>
-      
-      <div style="background:#111;border-radius:12px;padding:16px;margin-bottom:20px;">
-        ${placesHtml}
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:left;background:#111;border-radius:12px;padding:16px;font-size:14px;color:#bbb;">
-        <div><strong>👥 Пары</strong><br>${pairCount}</div>
-        <div><strong>🔄 Круги</strong><br>${roundCount}</div>
-        <div><strong>🎾 Лимит</strong><br>до ${roundLimit}</div>
-        <div><strong>🏟️ Корты</strong><br>${courtCount}</div>
-      </div>
-
-      <div style="margin-top:20px;">
-        <button class="secondary" onclick="continueTournamentFlow()" style="margin-bottom:12px;">Закрыть результат</button>
-      </div>
-    </div>
-  `;
-
-  const resultsContainer = document.getElementById('results');
-  if(resultsContainer){
-    resultsContainer.insertAdjacentHTML('afterbegin', card);
-  }
-}
-
-function continueTournamentFlow(){
-  // Hide completion card to show save buttons
-  const card = document.querySelector('[style*="border: 2px solid #b7ff2a"]');
-  if(card) card.style.display = 'none';
-  showPostResultButtons();
-}
 
 function buildTournamentHistoryEntry(status='completed'){
   const groupData = computeGroupStats();
