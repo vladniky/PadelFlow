@@ -145,7 +145,38 @@ function check(name, cond, extra){
   });
   check('service worker зарегистрирован', swState !== 'none', swState);
 
-  console.log('\n== 8. Мобильная вёрстка 390px ==');
+  console.log('\n== 8. Рейтинг удалён ==');
+  const tabCount = await page.locator('#tabsBar .tab-button').count();
+  check('во вкладках осталось 2 кнопки (Турнир, История)', tabCount === 2, 'получено ' + tabCount);
+  check('нет вкладки Рейтинг', (await page.locator('[data-tab="rating"]').count()) === 0);
+  check('нет контейнера рейтинга', (await page.locator('#ratingContainer').count()) === 0);
+  const ratingFns = await page.evaluate(()=>['renderRating','getRatingStats','sortRatingList','buildRatingText','getPlayerBadge']
+      .filter(n=>typeof window[n] === 'function'));
+  check('функции рейтинга удалены', ratingFns.length === 0, JSON.stringify(ratingFns));
+  await page.click('#goHomeBar button:has-text("На главную")');
+  await page.waitForTimeout(300);
+  check('на главной нет кнопки Рейтинг',
+        (await page.locator('#homeScreen button:has-text("Рейтинг")').count()) === 0);
+  await page.click('#continueDraftHomeBtn');
+  await page.waitForTimeout(800);
+
+  console.log('\n== 9. Сохранение турнира и История ==');
+  await page.click('button:has-text("Сохранить турнир")');
+  await page.waitForTimeout(1500);
+  await page.click('.tab-button[data-tab="history"]');
+  await page.waitForTimeout(800);
+  check('турнир появился в Истории',
+        (await page.locator('#historyContainer .history-card').count()) >= 1);
+  await page.click('#historyContainer .history-card');
+  await page.waitForTimeout(500);
+  const detailText = await page.locator('#historyContainer .history-detail').innerText();
+  check('в карточке истории есть название', detailText.includes('Тестовый турнир'));
+  check('в карточке истории есть итоги группы', detailText.includes('Итоги группового этапа'));
+  check('кнопки бэкапа истории на месте',
+        (await page.locator('button:has-text("Скачать бэкап")').count()) === 1 &&
+        (await page.locator('button:has-text("Восстановить из файла")').count()) === 1);
+
+  console.log('\n== 10. Мобильная вёрстка 390px ==');
   const overflow = await page.evaluate(()=>document.documentElement.scrollWidth - document.documentElement.clientWidth);
   check('нет горизонтального скролла', overflow <= 0, 'overflow ' + overflow + 'px');
 
