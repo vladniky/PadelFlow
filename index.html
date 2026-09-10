@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 body{margin:0;padding:16px;background:#111;color:white;font-family:'Inter',system-ui,sans-serif;font-weight:500}
 input,select,textarea,button{font-family:'Inter',system-ui,sans-serif}
@@ -117,25 +117,185 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
     text-overflow:ellipsis;
   }
 }
+
+/* Courtline premium interface */
+:root{
+  --ink:#06110e;
+  --ground:#e8eadf;
+  --paper:#f5f5ed;
+  --surface:#fff;
+  --surface-2:#edf0e8;
+  --panel:#0a211b;
+  --panel-2:#0f3027;
+  --lime:#c8f24a;
+  --lime-deep:#91b91c;
+  --chalk:#f7f7ed;
+  --muted:#647169;
+  --muted-dark:#9eafa6;
+  --line:#d4d9d0;
+  --line-dark:rgba(232,244,237,.14);
+  --coral:#f36f56;
+  --shadow:0 22px 60px rgba(12,35,27,.12);
+  --display:'Barlow Condensed','Arial Narrow',sans-serif;
+  --body:'Manrope',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;background:var(--ground)}
+body{
+  min-height:100vh;
+  margin:0;
+  padding:0;
+  overflow-x:hidden;
+  background:
+    radial-gradient(circle at 82% 4%,rgba(200,242,74,.1),transparent 23rem),
+    var(--ground);
+  color:var(--ink);
+  font-family:var(--body);
+  font-weight:600;
+}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;background-image:linear-gradient(rgba(6,17,14,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(6,17,14,.025) 1px,transparent 1px);background-size:32px 32px}
+button,input,select,textarea{font-family:var(--body)}
+button,input,select,textarea{-webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--lime-deep);outline-offset:3px}
+button{cursor:pointer}
+[hidden]{display:none!important}
+button:disabled{cursor:not-allowed;filter:saturate(.35)}
+.app-shell{min-height:100vh;display:grid;grid-template-columns:248px minmax(0,1fr);position:relative}
+.app-sidebar{position:sticky;top:0;height:100vh;z-index:30;display:flex;flex-direction:column;padding:28px 22px;background:var(--panel);color:var(--chalk);border-right:1px solid rgba(255,255,255,.04)}
+.brand-button{width:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:var(--chalk);display:flex;align-items:center;gap:12px;text-align:left;box-shadow:none}
+.brand-button:hover{transform:none;background:transparent}
+.brand-mark{width:44px;height:44px;flex:0 0 44px;border:1px solid rgba(200,242,74,.55);border-radius:50%;display:grid;place-items:center;position:relative;color:var(--lime);font:800 18px/1 var(--display);letter-spacing:-.04em}
+.brand-mark:before,.brand-mark:after{content:"";position:absolute;inset:6px;border:1px solid rgba(200,242,74,.22);border-radius:50%}
+.brand-mark:after{inset:13px -2px;transform:rotate(-28deg);border-left-color:transparent;border-right-color:transparent}
+.brand-word{font:800 27px/1 var(--display);text-transform:uppercase;letter-spacing:.035em}.brand-word span{color:var(--lime)}
+.sidebar-session{margin-top:34px;padding:14px;border:1px solid var(--line-dark);border-radius:4px;background:rgba(255,255,255,.035)}
+.sidebar-kicker{color:var(--lime);font:600 10px/1 var(--mono);letter-spacing:.13em;text-transform:uppercase}
+.sidebar-title{margin-top:7px;font-size:13px;font-weight:800}.sidebar-meta{margin-top:4px;color:var(--muted-dark);font-size:11px;line-height:1.45}
+.sidebar-nav{display:grid;gap:4px;margin-top:30px}
+.sidebar-nav button{width:100%;min-height:48px;margin:0;padding:0 14px;border:0;border-left:2px solid transparent;border-radius:0;background:transparent;color:var(--muted-dark);box-shadow:none;display:flex;align-items:center;gap:12px;text-align:left;font-size:13px;font-weight:800}
+.sidebar-nav button:hover,.sidebar-nav button.active{transform:none;color:var(--chalk);border-color:var(--lime);background:linear-gradient(90deg,rgba(200,242,74,.12),transparent)}
+.nav-index{width:22px;color:var(--lime);font:600 11px/1 var(--mono)}
+.sidebar-foot{margin-top:auto;display:flex;align-items:center;gap:9px;padding:12px 4px 0;color:var(--muted-dark);font-size:11px}
+.sidebar-foot:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 4px rgba(200,242,74,.1)}
+.app-main{min-width:0;padding:32px clamp(24px,4vw,62px) 64px}
+.app-header{align-items:center;margin:0 0 25px;padding-bottom:18px;border-bottom:1px solid rgba(6,17,14,.11)}
+.header-copy{min-width:0}.header-kicker{margin-bottom:5px;color:var(--muted);font:600 10px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.header-title{max-width:none;color:var(--ink);font:800 clamp(42px,6vw,72px)/.84 var(--display);letter-spacing:-.02em;text-transform:uppercase}
+.header-logo{display:none}
+.header-status{display:flex;align-items:center;gap:8px;color:var(--muted);font:600 10px/1 var(--mono);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.header-status:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--lime-deep);box-shadow:0 0 0 4px rgba(145,185,28,.13)}
+.home-screen{position:relative;isolation:isolate;overflow:hidden;min-height:min(620px,calc(100vh - 150px));margin:0;padding:clamp(32px,7vw,88px);border:0;border-radius:8px;background:var(--panel);color:var(--chalk);box-shadow:var(--shadow);display:flex!important;align-items:flex-end}
+.home-screen[style*="display: none"],.home-screen[style*="display:none"]{display:none!important}
+.home-screen:before{content:"PADEL";position:absolute;right:-.03em;top:-.08em;z-index:-1;color:rgba(200,242,74,.045);font:800 clamp(150px,27vw,390px)/.8 var(--display);letter-spacing:-.07em}
+.home-screen:after{content:"";position:absolute;z-index:-1;width:min(48vw,590px);aspect-ratio:1;border:1px solid rgba(200,242,74,.12);border-radius:50%;right:-14%;bottom:-45%;box-shadow:0 0 0 76px rgba(200,242,74,.025),0 0 0 152px rgba(200,242,74,.02)}
+.home-intro{max-width:720px}.home-eyebrow{margin-bottom:16px;color:var(--lime);font:600 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.home-screen h1{margin:0;color:var(--chalk);font:800 clamp(60px,10vw,122px)/.78 var(--display);letter-spacing:-.035em;text-transform:uppercase;text-wrap:balance}
+.home-screen p{max-width:590px;margin:25px 0 34px;color:var(--muted-dark);font-size:14px;line-height:1.7}
+.home-screen .home-actions{max-width:680px;grid-template-columns:1.25fr 1fr 1fr;gap:10px}
+.home-screen .home-actions button{margin:0;min-width:0}
+.tabs{top:0;margin:0 0 24px;padding:8px;background:rgba(245,245,237,.92);border:1px solid var(--line);border-radius:6px;backdrop-filter:blur(14px)}
+.tab-button{min-width:120px;min-height:44px;margin:0;padding:10px 16px;border:0;border-radius:3px;background:transparent;color:var(--muted);box-shadow:none;font:800 12px/1 var(--body);text-transform:uppercase;letter-spacing:.055em}
+.tab-button:hover{transform:none;background:var(--surface-2);color:var(--ink)}
+.tab-button.active{background:var(--panel);color:var(--chalk);box-shadow:none}
+.tab-content{animation:courtline-enter .28s ease both}@keyframes courtline-enter{from{opacity:.4;transform:translateY(7px)}to{opacity:1;transform:none}}
+#goHomeBar{margin:0 0 14px!important}#goHomeBar button{width:auto;margin:0;padding:10px 14px;background:transparent;color:var(--muted);border:1px solid var(--line)}
+#draftBar{min-height:46px;margin:0 0 18px!important;padding:9px 12px;border:1px solid var(--line);border-radius:4px;background:var(--surface)}
+#draftBar:before{content:"LIVE";color:var(--lime-deep);font:600 9px/1 var(--mono);letter-spacing:.1em}
+#draftStatus,#cloudStatus{font:600 10px/1.35 var(--mono)!important;color:var(--muted)!important}
+#saveDraftNowBtn,#editSettingsBtn{margin:0 0 0 auto!important;border:1px solid var(--line)!important;background:var(--surface-2)!important;color:var(--ink)!important}
+.settings-grid,.courts-grid,.teams-grid{gap:12px;margin-bottom:18px;padding:25px;border:1px solid var(--line);border-radius:8px;background:var(--surface);position:relative}
+.settings-grid{grid-template-columns:repeat(3,minmax(0,1fr));padding-top:58px}.settings-grid:before{content:"01  ·  Параметры турнира";position:absolute;left:25px;top:25px;color:var(--ink);font:700 23px/1 var(--display);text-transform:uppercase}.settings-grid:after{content:"Настройка";position:absolute;right:25px;top:28px;color:var(--lime-deep);font:600 9px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.courts-grid{padding-top:58px}.courts-grid:before{content:"02  ·  Корты";position:absolute;left:25px;top:25px;color:var(--ink);font:700 23px/1 var(--display);text-transform:uppercase}
+.teams-grid{padding-top:58px}.teams-grid:before{content:"03  ·  Участники";position:absolute;left:25px;top:25px;color:var(--ink);font:700 23px/1 var(--display);text-transform:uppercase}
+.form-item label,.team>label{margin:0 0 8px;color:var(--muted);font:600 9px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+input,select,textarea{width:100%;height:49px;margin:0;padding:0 14px;border:1px solid var(--line);border-radius:2px;background:var(--paper);color:var(--ink);font-size:14px;font-weight:700;transition:border-color .15s,box-shadow .15s,background .15s}
+textarea{height:auto;padding-block:12px}
+input:hover,select:hover,textarea:hover{border-color:#aab4aa}input:focus,select:focus,textarea:focus{outline:0;border-color:var(--lime-deep);background:var(--surface);box-shadow:0 0 0 3px rgba(145,185,28,.12)}
+input::placeholder,textarea::placeholder{color:#929d95;font-weight:600}select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 17px) 21px,calc(100% - 12px) 21px;background-size:5px 5px;background-repeat:no-repeat;padding-right:34px}
+.team-inputs{gap:8px}.player-badges{margin-top:7px;gap:5px;flex-wrap:wrap}.player-badge{border-color:var(--line);background:var(--surface-2);color:var(--muted);font:600 10px/1 var(--mono)}
+button{min-height:50px;margin:12px 0;padding:0 22px;border:0;border-radius:2px;background:var(--lime);color:#0b1a10;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.055em;box-shadow:none;transition:transform .15s,filter .15s,background .15s}
+button:hover{filter:brightness(1.03);transform:translateY(-1px)}button:active{transform:translateY(0)}
+.secondary{background:var(--panel);color:var(--chalk)}.danger{background:transparent!important;color:var(--coral)!important;border:1px solid rgba(243,111,86,.55)!important}
+#startTournamentBtn{margin:2px 0 0;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));font-size:13px}
+.prestart-checklist{margin:12px 0;padding:18px 20px;border-left:3px solid var(--lime-deep);background:rgba(255,255,255,.45);color:var(--muted);font-size:12px;line-height:1.75}.prestart-checklist strong{color:var(--ink);font:700 19px/1.5 var(--display);text-transform:uppercase}.prestart-checklist .ok{color:var(--muted)}.prestart-checklist .ok:before{content:"✓ ";color:var(--lime-deep)}.prestart-checklist .miss{color:var(--coral)}
+.round-section{margin-top:28px}.round-heading{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:12px;padding-bottom:11px;border-bottom:1px solid var(--line)}
+.round-heading h2{margin:0;color:var(--ink);font:700 30px/1 var(--display);text-transform:uppercase}.round-heading span{color:var(--muted);font:600 9px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.round-matches{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.round-matches .resting{grid-column:1/-1}
+.match,.result-card{position:relative;overflow:hidden;margin:0;padding:22px;border:1px solid var(--line);border-radius:6px;background:var(--surface);box-shadow:none}
+.match:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--lime-deep)}
+.match .court{margin:0 0 12px;color:var(--lime-deep);font:600 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase}.match .teams{min-height:44px;margin:0 0 16px;color:var(--ink);font:700 clamp(19px,2vw,25px)/1.05 var(--display);text-transform:uppercase;text-wrap:balance}
+.score{position:relative;grid-template-columns:1fr 1fr;gap:9px}.score:after{content:":";position:absolute;left:50%;top:50%;z-index:2;transform:translate(-50%,-50%);color:var(--lime-deep);font:600 14px/1 var(--mono);pointer-events:none}.score input{height:64px;padding:0 12px;background:var(--panel);border-color:var(--line-dark);color:var(--chalk);font:600 28px/1 var(--mono);text-align:center;font-variant-numeric:tabular-nums}.score input:focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(200,242,74,.12)}
+.resting{margin:0;padding:12px;border:1px dashed var(--line);color:var(--muted);font:600 10px/1.45 var(--mono);text-transform:uppercase}
+.button-row{gap:10px;margin:16px 0}.button-row button{min-width:170px;margin:0}
+#calculateStatus,#startStatus{color:var(--coral);font:600 10px/1.4 var(--mono)}
+#results>h2,#playoff-section>h2,#playoff-finals>h3,#tournament-table>h2{margin:34px 0 16px!important;color:var(--ink);font:700 clamp(30px,4vw,46px)/.95 var(--display);text-align:left!important;text-transform:uppercase}
+#results>h2:before,#playoff-section>h2:before{content:"Результаты";display:block;margin-bottom:8px;color:var(--lime-deep);font:600 9px/1 var(--mono);letter-spacing:.12em}
+.tourney-container{margin:0 0 18px;padding:0;border:1px solid var(--line);border-radius:7px;background:var(--surface);overflow:hidden}.tourney-scroll{overflow-x:auto}.tourney-table{min-width:660px}.tourney-table th,.tourney-table td{padding:16px 18px;border-bottom:1px solid var(--line);color:var(--ink);font:600 11px/1.3 var(--mono);font-variant-numeric:tabular-nums}.tourney-table th{color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase}.tourney-table td:nth-child(2){font-family:var(--body)}.tourney-table tbody tr:first-child{background:linear-gradient(90deg,rgba(200,242,74,.16),transparent 70%)}
+.delta-pos{color:var(--lime-deep)}.delta-neg{color:var(--coral)}.delta-zero{color:var(--muted)}
+.history-card{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;margin:0 0 10px;padding:21px 58px 21px 22px;border:1px solid var(--line);border-radius:3px;background:var(--surface);transition:transform .16s,border-color .16s}.history-card:after{content:"→";position:absolute;right:22px;color:var(--lime-deep);font:600 18px/1 var(--mono)}.history-card:hover{transform:translateY(-2px);border-color:var(--lime-deep);background:var(--surface)}.history-card-open{border-color:var(--lime-deep);box-shadow:inset 3px 0 var(--lime-deep)}
+.history-card-title{margin:0;color:var(--ink);font:700 26px/1 var(--display);text-transform:uppercase}.history-card-meta{margin-top:7px;color:var(--muted);font:600 10px/1.5 var(--mono);text-transform:uppercase}
+.history-detail{margin:-11px 0 16px;padding:24px;border:1px solid var(--line);border-top:0;border-radius:0 0 6px 6px;background:var(--surface-2);line-height:1.6}.history-detail>.history-card-title{font-size:35px}.history-detail .small{padding:5px 0;color:var(--muted);font-size:12px;border-bottom:1px solid rgba(100,113,105,.12)}
+.draft-modal-overlay{background:rgba(4,13,10,.72);backdrop-filter:blur(9px)}.draft-modal{max-width:480px;padding:30px;border:1px solid var(--line-dark);border-radius:7px;background:var(--panel);color:var(--chalk);box-shadow:0 28px 90px rgba(0,0,0,.45)}.draft-modal-title{font:700 34px/1 var(--display);text-transform:uppercase}.draft-modal-text{color:var(--muted-dark);font-size:13px}.draft-modal-actions button{min-width:150px}
+.autocomplete-menu{border-color:var(--line);border-radius:4px;background:var(--surface);box-shadow:var(--shadow)}.autocomplete-item{border-color:var(--line);color:var(--ink);font-size:13px}.autocomplete-item:hover,.autocomplete-item.active{background:rgba(200,242,74,.2);color:var(--ink)}.autocomplete-empty{color:var(--muted)}
+.mobile-nav{display:none}
+.error-border{border-color:var(--coral)!important;box-shadow:0 0 0 3px rgba(243,111,86,.12)!important}
+@media(max-width:1050px){.app-shell{grid-template-columns:84px minmax(0,1fr)}.app-sidebar{padding:24px 14px}.brand-word,.sidebar-session,.sidebar-nav button span:last-child,.sidebar-foot span{display:none}.brand-button,.sidebar-nav button,.sidebar-foot{justify-content:center}.sidebar-nav button{padding:0}.nav-index{width:auto}.settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){
+  body{padding:0}.app-shell{display:block}.app-sidebar{display:none}.app-main{padding:20px 16px calc(96px + env(safe-area-inset-bottom))}.app-header{margin-bottom:18px}.header-title{font-size:45px}.header-status{font-size:8px}
+  .tabs{top:8px;margin-bottom:16px}.tab-button{min-width:0;font-size:10px}.home-screen{min-height:calc(100vh - 135px);padding:27px 21px}.home-screen h1{font-size:58px}.home-screen p{font-size:13px}.home-screen .home-actions{grid-template-columns:1fr}
+  .settings-grid,.courts-grid,.teams-grid{grid-template-columns:1fr!important;padding:58px 18px 18px}.settings-grid:before,.courts-grid:before,.teams-grid:before{left:18px;top:22px;font-size:21px}.settings-grid:after{display:none}.team-inputs{grid-template-columns:1fr 1fr}
+  #draftBar{flex-wrap:wrap}#draftBar #saveDraftNowBtn{width:100%!important;margin:4px 0 0!important}.round-matches{grid-template-columns:1fr}.match{padding:18px}.match .teams{min-height:auto;font-size:22px;white-space:normal;overflow:visible}.score input{height:58px}.button-row{display:grid}.button-row button{width:100%;min-width:0}.history-card{padding:18px 48px 18px 16px}.history-card-title{font-size:22px}.history-card:after{right:17px}.history-detail{padding:18px}
+  .mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:45;display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:7px 10px calc(7px + env(safe-area-inset-bottom));border-top:1px solid var(--line-dark);background:var(--panel)}.mobile-nav button{height:49px;min-height:49px;margin:0;padding:0;border:0;background:transparent;color:var(--muted-dark);font:600 8px/1 var(--mono);box-shadow:none}.mobile-nav button:hover,.mobile-nav button.active{transform:none;color:var(--lime)}
+}
+@media(max-width:430px){.header-title{font-size:40px}.header-status span{display:none}.team-inputs{grid-template-columns:1fr}.round-heading h2{font-size:27px}.score input{font-size:24px}.tourney-table{min-width:610px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 <link rel="manifest" href="manifest.json">
 
-<meta name="theme-color" content="#b7ff1a">
+<meta name="theme-color" content="#0a211b">
 
 <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
-
+<div class="app-shell">
+<aside class="app-sidebar" aria-label="Основная навигация">
+  <button class="brand-button" type="button" onclick="showHomeScreen()" aria-label="PadelFlow — на главную">
+    <span class="brand-mark">PF</span>
+    <span class="brand-word">Padel<span>Flow</span></span>
+  </button>
+  <div class="sidebar-session">
+    <div class="sidebar-kicker">Courtline</div>
+    <div class="sidebar-title">Турнирный центр</div>
+    <div class="sidebar-meta">Расписание, счёт и история в одном месте</div>
+  </div>
+  <nav class="sidebar-nav">
+    <button type="button" data-side-tab="tournament" onclick="switchTab('tournament')"><span class="nav-index">01</span><span>Турнир</span></button>
+    <button type="button" data-side-tab="history" onclick="switchTab('history')"><span class="nav-index">02</span><span>История</span></button>
+    <button type="button" data-side-home onclick="showHomeScreen()"><span class="nav-index">03</span><span>Главная</span></button>
+  </nav>
+  <div class="sidebar-foot"><span>Офлайн-режим готов</span></div>
+</aside>
+<main class="app-main">
 <header class="app-header">
-  <div class="header-title" id="appHeader" onclick="showHomeScreen()" style="cursor:pointer">PadelFlow</div>
+  <div class="header-copy">
+    <div class="header-kicker">Клубный турнирный менеджер</div>
+    <div class="header-title" id="appHeader" onclick="showHomeScreen()" style="cursor:pointer">PadelFlow</div>
+  </div>
+  <div class="header-status"><span>Данные сохраняются автоматически</span></div>
   <img src="icon-192.png" class="header-logo" alt="PadelFlow" onclick="showHomeScreen()" style="cursor:pointer">
 </header>
 
 <div id="homeScreen" class="home-screen" style="display:none;">
-  <div class="home-actions">
-    <button onclick="startNewTournamentFromHome()">Начать турнир</button>
-    <button id="continueDraftHomeBtn" class="secondary" onclick="continueDraftFromHome()" style="display:none">Продолжить турнир</button>
-    <button class="secondary" onclick="navigateHomeToTab('history')">История</button>
+  <div class="home-intro">
+    <div class="home-eyebrow">Игра начинается здесь</div>
+    <h1>Ваш турнир.<br>Чёткий ритм.</h1>
+    <p>Создайте сетку, ведите счёт прямо у корта и сохраните полную историю игрового дня — даже без стабильного интернета.</p>
+    <div class="home-actions">
+      <button onclick="startNewTournamentFromHome()">Начать турнир</button>
+      <button id="continueDraftHomeBtn" class="secondary" onclick="continueDraftFromHome()" style="display:none">Продолжить турнир</button>
+      <button class="secondary" onclick="navigateHomeToTab('history')">История</button>
+    </div>
   </div>
 </div>
 
@@ -334,6 +494,13 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
   </div>
   <div id="historyContainer"></div>
   <div id="historyDetail"></div>
+</div>
+<nav class="mobile-nav" aria-label="Мобильная навигация">
+  <button type="button" onclick="switchTab('tournament')">Турнир</button>
+  <button type="button" onclick="showHomeScreen()">Главная</button>
+  <button type="button" onclick="switchTab('history')">История</button>
+</nav>
+</main>
 </div>
 
 <script>
@@ -1150,6 +1317,16 @@ function updateHeader(tab='tournament'){
   header.textContent = 'PadelFlow';
 }
 
+function updateNavigationState(tab){
+  document.querySelectorAll('[data-side-tab]').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.sideTab === tab);
+  });
+  document.querySelectorAll('[data-side-home]').forEach(btn=>btn.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav button').forEach((btn,index)=>{
+    btn.classList.toggle('active', (tab === 'tournament' && index === 0) || (tab === 'history' && index === 2));
+  });
+}
+
 function switchTab(tab){
   hideHomeScreen();
   const tabsBar = document.getElementById('tabsBar');
@@ -1161,6 +1338,7 @@ function switchTab(tab){
     content.style.display = show ? 'block' : 'none';
   });
   updateDraftVisibility(tab);
+  updateNavigationState(tab);
   const homeBar = document.getElementById('goHomeBar');
   if(homeBar) homeBar.style.display = tab === 'tournament' ? 'block' : 'none';
   updateHeader(tab);
@@ -1833,7 +2011,7 @@ function generateMatches(){
     let html = "";
 
     rounds.forEach((round,r)=>{
-      html += `<h2 style="text-align:center;">Раунд ${r+1}</h2>`;
+      html += `<section class="round-section"><div class="round-heading"><h2>Раунд ${r+1}</h2><span>${round.length} ${pluralGames(round.length)} · до ${limit}</span></div><div class="round-matches">`;
       round.forEach((m,i)=>{
         html += `
       <div class="match">
@@ -1849,6 +2027,7 @@ function generateMatches(){
       if(resting.length){
         html += `<div class="resting">Отдыхают: ${escapeHtml(resting.join(', '))}</div>`;
       }
+      html += `</div></section>`;
     });
 
     html += `<div class="button-row"><button id="calculateResultsBtn" onclick="calculateResults()" disabled>Посчитать результаты</button></div><div id="calculateStatus" class="small" style="margin-top:8px;"></div>`;
@@ -2789,6 +2968,9 @@ function showHomeScreen(){
     content.style.display = 'none';
   });
   document.querySelectorAll('.tab-button').forEach(btn=>btn.classList.remove('active'));
+  document.querySelectorAll('[data-side-tab]').forEach(btn=>btn.classList.remove('active'));
+  document.querySelectorAll('[data-side-home]').forEach(btn=>btn.classList.add('active'));
+  document.querySelectorAll('.mobile-nav button').forEach((btn,index)=>btn.classList.toggle('active', index === 1));
 }
 
 function hideHomeScreen(){
