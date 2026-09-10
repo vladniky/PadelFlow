@@ -3,8 +3,8 @@
   "short_name": "PadelFlow",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#e8eadf",
-  "theme_color": "#0a211b",
+  "background_color": "#f2f4f1",
+  "theme_color": "#18241f",
   "orientation": "portrait",
   "icons": [
     {
