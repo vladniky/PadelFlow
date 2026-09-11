@@ -31,6 +31,8 @@ function check(name, cond, extra){
   const ctx = await browser.newContext({ viewport:{width:390,height:844} });
   const page = await ctx.newPage();
   page.on('pageerror', e=>{ console.log('  PAGEERROR: ' + e.message); fails.push('pageerror: '+e.message); });
+  const externalRequests = [];
+  page.on('request', r=>{ if(!r.url().startsWith('http://localhost:8099')) externalRequests.push(r.url()); });
   page.on('dialog', d=>d.accept());
 
   await page.goto('http://localhost:8099/index.html');
@@ -150,30 +152,144 @@ function check(name, cond, extra){
   });
   check('service worker зарегистрирован', swState !== 'none', swState);
 
-  console.log('\n== 8. Рейтинг удалён ==');
-  const tabCount = await page.locator('#tabsBar .tab-button').count();
-  check('во вкладках осталось 2 кнопки (Турнир, История)', tabCount === 2, 'получено ' + tabCount);
+  console.log('\n== 8. Навигация без дублей ==');
+  check('верхних табов нет', (await page.locator('#tabsBar').count()) === 0);
+  check('кнопки "На главную" на странице турнира нет', (await page.locator('#goHomeBar').count()) === 0);
+  check('нижний остров виден на телефоне', await page.isVisible('.mobile-nav'));
+  check('в острове ровно 3 кнопки', (await page.locator('.mobile-nav button').count()) === 3);
+  check('сайдбар на телефоне скрыт', !(await page.isVisible('.app-sidebar')));
+  check('чеклиста перед стартом нет', (await page.locator('#preStartChecklist').count()) === 0);
   check('нет вкладки Рейтинг', (await page.locator('[data-tab="rating"]').count()) === 0);
-  check('нет контейнера рейтинга', (await page.locator('#ratingContainer').count()) === 0);
-  const ratingFns = await page.evaluate(()=>['renderRating','getRatingStats','sortRatingList','buildRatingText','getPlayerBadge']
-      .filter(n=>typeof window[n] === 'function'));
-  check('функции рейтинга удалены', ratingFns.length === 0, JSON.stringify(ratingFns));
-  await page.click('#goHomeBar button:has-text("На главную")');
+  const strayHome = await page.locator('button:has-text("На главную")').count();
+  check('кнопка "На главную" нигде не дублируется', strayHome === 0, 'найдено ' + strayHome);
+
+  console.log('\n== 8b. Критерий определения мест ==');
+  const byDelta = await page.evaluate(()=>computeGroupStats().sorted.map(x=>x[0]));
+  await page.selectOption('#rankingMode','wins');
+  await page.waitForTimeout(600);
+  const winsOrderOk = await page.evaluate(()=>{
+    const st = computeGroupStats().sorted.map(x=>x[1]);
+    return st.every((v,i)=> i===0 || st[i-1].wins >= v.wins);
+  });
+  check('порядок по победам корректен', winsOrderOk);
+  check('подпись под таблицей говорит критерий',
+        (await page.locator('.ranking-note').innerText()).includes('побед'));
+  await page.selectOption('#rankingMode','delta');
+  await page.waitForTimeout(600);
+  const backToDelta = await page.evaluate(()=>computeGroupStats().sorted.map(x=>x[0]));
+  check('возврат к разнице очков восстанавливает порядок',
+        JSON.stringify(backToDelta) === JSON.stringify(byDelta));
+  check('подпись вернулась к разнице',
+        (await page.locator('.ranking-note').innerText()).includes('разнице'));
+
+  console.log('\n== 8c. Шапка убрана, история только локальная ==');
+  check('шапки с названием нет', (await page.locator('.app-header').count()) === 0);
+  const pageText = await page.locator('.app-main').innerText();
+  check('слогана "Турниры без лишней суеты" нет', !pageText.includes('лишней суеты'), pageText.slice(0,200));
+  check('надписи "Данные сохраняются автоматически" нет', !pageText.includes('сохраняются автоматически'));
+  check('статус хранения говорит про устройство',
+        (await page.locator('#storageNote').innerText()).includes('устройстве'));
+  const cloudRefs = await page.evaluate(()=>({
+    client: typeof window.supabaseClient,
+    save: typeof window.saveTournamentToCloud,
+    push: typeof window.pushProgressToCloud,
+    status: document.getElementById('cloudStatus') ? 'есть' : 'нет'
+  }));
+  check('облачного кода в приложении не осталось',
+        cloudRefs.client === 'undefined' && cloudRefs.save === 'undefined' &&
+        cloudRefs.push === 'undefined' && cloudRefs.status === 'нет', JSON.stringify(cloudRefs));
+  check('ни одного запроса наружу за сессию', externalRequests.length === 0, JSON.stringify(externalRequests));
+
+  console.log('\n== 8d. Нижний остров не перекрывает контент ==');
+  await page.evaluate(()=>window.scrollTo({top: document.body.scrollHeight, behavior:'instant'}));
+  await page.waitForTimeout(500);
+  const clash = await page.evaluate(()=>{
+    const nav = document.querySelector('.mobile-nav');
+    if(!nav || getComputedStyle(nav).display === 'none') return {skip:true};
+    const navTop = nav.getBoundingClientRect().top;
+    let worst = null;
+    document.querySelectorAll('.app-main button, .app-main input, .app-main select').forEach(el=>{
+      if(el.closest('.mobile-nav')) return;   // сам остров, очевидно, поверх
+      const r = el.getBoundingClientRect();
+      if(r.height === 0) return;
+      const over = r.bottom - navTop;
+      if(over > 0 && (!worst || over > worst.over)){
+        worst = {over: Math.round(over), what: (el.textContent||el.id||el.tagName).trim().slice(0,30)};
+      }
+    });
+    return {skip:false, worst};
+  });
+  check('в самом низу страницы ничего не уходит под остров',
+        clash.skip || !clash.worst, JSON.stringify(clash));
+
+  console.log('\n== 8e. Размер текста на кнопках ==');
+  const fonts = await page.evaluate(()=>{
+    const px = sel => { const el = document.querySelector(sel); return el ? parseFloat(getComputedStyle(el).fontSize) : 0; };
+    return {nav: px('.mobile-nav button'), start: px('#startTournamentBtn'), any: px('.button-row button')};
+  });
+  check('кнопки нижнего острова не меньше 13px', fonts.nav >= 13, JSON.stringify(fonts));
+  check('обычные кнопки не меньше 15px', fonts.any >= 15, JSON.stringify(fonts));
+
+  console.log('\n== 8f. Поле счёта без мигающей каретки ==');
+  const caret = await page.evaluate(()=>getComputedStyle(document.querySelector('.score input')).caretColor);
+  check('каретка спрятана', /transparent|rgba\(0, 0, 0, 0\)/.test(caret), caret);
+
+  await page.click('.mobile-nav button:has-text("Главная")');
   await page.waitForTimeout(300);
-  check('на главной нет кнопки Рейтинг',
-        (await page.locator('#homeScreen button:has-text("Рейтинг")').count()) === 0);
+  check('на главной нет кнопки История (она в навигации)',
+        (await page.locator('#homeScreen button:has-text("История")').count()) === 0);
+  check('на главной заголовок — просто название',
+        (await page.locator('#homeScreen h1').innerText()).trim() === 'PadelFlow');
+  const homeText = await page.locator('#homeScreen').innerText();
+  check('слоганов на главной нет',
+        !homeText.includes('Чёткий ритм') && !homeText.includes('Игра начинается здесь'), homeText.replace(/\n/g,' | '));
+  check('про офлайн в описании не обещаем', !homeText.includes('интернет'));
+  check('описания на главной нет', (await page.locator('#homeScreen p').count()) === 0);
   await page.click('#continueDraftHomeBtn');
   await page.waitForTimeout(800);
 
-  console.log('\n== 9. Сохранение турнира и История ==');
-  await page.click('button:has-text("Сохранить турнир")');
+  console.log('\n== 8g. Лишнее убрано ==');
+  const resultsKicker = await page.evaluate(()=>{
+    const h = document.querySelector('#results > h2');
+    return h ? getComputedStyle(h,'::before').content : 'нет заголовка';
+  });
+  check('надписи "Результаты" над итогами нет', !/Результаты/.test(resultsKicker), resultsKicker);
+  check('кнопки "Изменить настройки" нет', (await page.locator('#editSettingsBtn').count()) === 0);
+  check('базы имён нет: datalist удалён', (await page.locator('#playersList').count()) === 0);
+  check('меню автодополнения нет', (await page.locator('#playerAutocompleteMenu').count()) === 0);
+  const nameFns = await page.evaluate(()=>['getAllPlayers','loadPlayersList','savePlayersFromFields','setupPlayerAutocomplete']
+      .filter(n=>typeof window[n] === 'function'));
+  check('функции базы имён удалены', nameFns.length === 0, JSON.stringify(nameFns));
+  check('ключ playersList не остаётся в хранилище',
+        (await page.evaluate(()=>localStorage.getItem('playersList'))) === null);
+
+  console.log('\n== 8h. Заголовок раунда показывает корт ==');
+  const headingSpan = await page.locator('#matches .round-heading span').first().innerText();
+  check('справа от "Раунд 1" — корт', headingSpan.includes('Корт'), headingSpan);
+  check('старого "N игр · до X" нет', !headingSpan.includes('до '), headingSpan);
+  const headSizes = await page.evaluate(()=>{
+    const h = document.querySelector('.round-heading h2'), s = document.querySelector('.round-heading span');
+    return {h: getComputedStyle(h).fontSize, s: getComputedStyle(s).fontSize};
+  });
+  check('шрифт корта как у "Раунд 1"', headSizes.h === headSizes.s, JSON.stringify(headSizes));
+
+  console.log('\n== 9. Одна кнопка завершения и История ==');
+  check('кнопки "Сохранить турнир" рядом с завершением нет',
+        (await page.locator('#group-action-buttons button:has-text("Сохранить турнир")').count()) === 0);
+  const finishBtns = await page.locator('#group-action-buttons button').allInnerTexts();
+  check('в ряду только плей-офф и завершение', finishBtns.length === 2, JSON.stringify(finishBtns));
+  await page.click('button:has-text("Завершить без плей-офф")');
   await page.waitForTimeout(1500);
-  await page.click('.tab-button[data-tab="history"]');
-  await page.waitForTimeout(800);
+  check('после завершения сразу открыта вкладка История',
+        await page.isVisible('#tab-history'));
+  check('вкладка турнира закрыта', !(await page.isVisible('#tab-tournament')));
   check('турнир появился в Истории',
         (await page.locator('#historyContainer .history-card').count()) >= 1);
-  await page.click('#historyContainer .history-card');
-  await page.waitForTimeout(500);
+  check('карточка сразу раскрыта, без лишнего тапа',
+        (await page.locator('#historyContainer .history-detail').count()) === 1);
+  check('раскрыт именно завершённый турнир',
+        (await page.locator('#historyContainer .history-card-open').count()) === 1);
+  check('страница прокручена к началу', (await page.evaluate(()=>window.scrollY)) < 30);
   const detailText = await page.locator('#historyContainer .history-detail').innerText();
   check('в карточке истории есть название', detailText.includes('Тестовый турнир'));
   check('в карточке истории есть итоги группы', detailText.includes('Итоги группового этапа'));
@@ -184,9 +300,9 @@ function check(name, cond, extra){
         !detailText.includes('Плей-офф') && !detailText.includes('плей-офф'), detailText.slice(0,400));
 
   console.log('\n== 10. Индивидуальный: 8 игроков, 2 корта, 1 круг ==');
-  await page.click('.tab-button[data-tab="tournament"]');
+  await page.click('.mobile-nav button:has-text("Турнир")');
   await page.waitForTimeout(300);
-  await page.click('#goHomeBar button:has-text("На главную")');
+  await page.click('.mobile-nav button:has-text("Главная")');
   await page.waitForTimeout(300);
   await page.click('#homeScreen button:has-text("Начать турнир")');
   await page.waitForTimeout(400);
@@ -309,16 +425,23 @@ function check(name, cond, extra){
   console.log('\n== 12. Индивидуальный: сохранение в историю ==');
   await page.click('button:has-text("Завершить турнир")');
   await page.waitForTimeout(1800);
-  await page.click('.tab-button[data-tab="history"]');
-  await page.waitForTimeout(800);
+  check('индивидуальный турнир тоже уводит в Историю', await page.isVisible('#tab-history'));
+  check('и его карточка раскрыта',
+        (await page.locator('#historyContainer .history-card-open').count()) === 1);
   const cards = await page.locator('#historyContainer .history-card').count();
   check('в истории ровно два турнира, без дублей', cards === 2, 'получено ' + cards);
   const soloCount = await page.locator('#historyContainer .history-card', {hasText:'Американо соло'}).count();
   check('индивидуальный турнир записан один раз', soloCount === 1, 'получено ' + soloCount);
   const unfinished = await page.locator('#historyContainer .history-card-meta', {hasText:'Не завершен'}).count();
   check('нет зависших записей "Не завершен"', unfinished === 0, 'получено ' + unfinished);
-  await page.locator('#historyContainer .history-card', {hasText:'Американо соло'}).first().click();
-  await page.waitForTimeout(600);
+  // не только вид, но и сам статус в хранилище: отложенный автосейв не должен его переписать
+  const statuses = await page.evaluate(()=>JSON.parse(localStorage.getItem('padelFlowTournamentHistory')||'[]')
+      .map(t=>({name:t.name, status:t.status})));
+  check('статус в хранилище — completed у обоих',
+        statuses.length === 2 && statuses.every(t=>t.status === 'completed'), JSON.stringify(statuses));
+  const firstCardText = await page.locator('#historyContainer .history-card').first().innerText();
+  check('сверху последний турнир (10.09)', firstCardText.includes('Американо соло'), firstCardText.replace(/\n/g,' | '));
+  // карточка уже раскрыта после завершения — второй клик её бы свернул
   const soloDetail = await page.locator('#historyContainer .history-detail').innerText();
   check('карточка открылась с названием', soloDetail.includes('Американо соло'));
   check('в истории заголовок "Итоги турнира"', soloDetail.includes('Итоги турнира'));
@@ -326,9 +449,9 @@ function check(name, cond, extra){
   check('в итогах перечислены игроки', soloDetail.includes('Никита') && soloDetail.includes('Алена'));
 
   console.log('\n== 13. Индивидуальный на одном корте: 8 игроков, 4 играют, 4 отдыхают ==');
-  await page.click('.tab-button[data-tab="tournament"]');
+  await page.click('.mobile-nav button:has-text("Турнир")');
   await page.waitForTimeout(300);
-  await page.click('#goHomeBar button:has-text("На главную")');
+  await page.click('.mobile-nav button:has-text("Главная")');
   await page.waitForTimeout(300);
   await page.click('#homeScreen button:has-text("Начать турнир")');
   await page.waitForTimeout(400);
@@ -345,10 +468,6 @@ function check(name, cond, extra){
     await page.fill(`#team${block}${side}`, solo[i]);
   }
   await page.waitForTimeout(400);
-  const checklist = await page.locator('#preStartChecklist').innerText();
-  check('чеклист: тот же круг растянут на 14 раундов', checklist.includes('14 раундов'), checklist.replace(/\n/g,' | '));
-  check('чеклист: игр столько же, сколько на двух кортах', checklist.includes('каждый сыграет 7 матчей'), checklist.replace(/\n/g,' | '));
-  check('чеклист говорит про отдых', checklist.includes('отдыхают по 4 за раунд'), checklist.replace(/\n/g,' | '));
 
   await page.click('#startTournamentBtn');
   await page.waitForTimeout(500);
@@ -356,6 +475,8 @@ function check(name, cond, extra){
         (await page.locator('#matches .match').count()) === 14);
   const restLines = await page.locator('#matches .resting').count();
   check('в каждом раунде показано кто отдыхает', restLines === 14, 'получено ' + restLines);
+  check('при одном матче корт не дублируется в карточке',
+        (await page.locator('#matches .match .court').count()) === 0);
   const firstRest = await page.locator('#matches .resting').first().innerText();
   check('отдыхают ровно четверо', firstRest.replace('Отдыхают: ','').split(',').length === 4, firstRest);
 
@@ -370,7 +491,7 @@ function check(name, cond, extra){
         pc.length === 8 && pc.every(v=>v===7), JSON.stringify(soloPlan));
 
   console.log('\n== 13b. Четыре игрока: круг = 3 игры ==');
-  await page.click('#goHomeBar button:has-text("На главную")');
+  await page.click('.mobile-nav button:has-text("Главная")');
   await page.waitForTimeout(300);
   await page.click('#homeScreen button:has-text("Начать турнир")');
   await page.waitForTimeout(400);
