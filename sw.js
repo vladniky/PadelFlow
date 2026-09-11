@@ -1,6 +1,6 @@
 // PadelFlow service worker — офлайн на корте.
 // При изменении index.html поднимайте версию, чтобы у всех подтянулась новая сборка.
-const CACHE = 'padelflow-v7';
+const CACHE = 'padelflow-v9';
 const SHELL = [
   './',
   './index.html',
@@ -29,10 +29,6 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   if(request.method !== 'GET') return;
-
-  const url = new URL(request.url);
-  // Запросы к Supabase никогда не кэшируем — это живые данные.
-  if(url.hostname.endsWith('supabase.co')) return;
 
   // Саму страницу берем из сети, но при её отсутствии отдаем кэш.
   if(request.mode === 'navigate'){

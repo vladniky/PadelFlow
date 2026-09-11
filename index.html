@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PadelFlow</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 body{margin:0;padding:16px;background:#111;color:white;font-family:'Inter',system-ui,sans-serif;font-weight:500}
 input,select,textarea,button{font-family:'Inter',system-ui,sans-serif}
@@ -12,9 +11,9 @@ input,select,textarea{width:100%;box-sizing:border-box;padding:14px;margin:6px 0
 button{width:100%;padding:16px;margin:12px 0;border:none;border-radius:14px;background:#b7ff2a;color:#071006;font-size:18px;font-weight:700}
 .secondary{background:#b7ff2a;color:#071006}
 .danger{background:#ef4444!important;color:#111!important}
-.app-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:24px}
-.header-title{font-size:42px;font-weight:800;line-height:1.1;margin:0;max-width:calc(100% - 88px)}
-.header-logo{width:64px;height:64px;border-radius:14px;object-fit:cover;flex-shrink:0;display:block}
+
+
+
 label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .settings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;align-items:start}
 .settings-grid input,
@@ -60,9 +59,6 @@ label{display:block;margin-top:10px;color:#aaa;font-size:14px}
 .tab-content.active{display:block}
 button:disabled{opacity:.45;cursor:not-allowed;}
 .error-border{box-shadow:0 0 0 2px rgba(239,68,68,0.9) inset; border-radius:12px}
-.prestart-checklist{background:transparent;color:#aaa;padding:8px 0;margin-bottom:8px;font-size:14px}
-.prestart-checklist .miss{color:#ef4444}
-.prestart-checklist .ok{color:#9ca3af}
 .draft-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 .draft-modal{background:#111;border:1px solid #2a2a2a;border-radius:18px;padding:24px;max-width:420px;width:100%;box-shadow:0 18px 60px rgba(0,0,0,.65)}
 .draft-modal-title{font-size:24px;font-weight:800;margin-bottom:12px}
@@ -75,19 +71,19 @@ button:disabled{opacity:.45;cursor:not-allowed;}
 .history-card-title{font-size:22px;font-weight:800;margin-bottom:6px;line-height:1.1;color:#fff}
 .history-card-meta{color:rgba(255,255,255,.78);font-size:15px;margin:0}
 .history-detail{background:#1f1f1f;border-radius:16px;padding:18px;margin-top:16px}
-.player-badges{display:none}
-.player-badge{font-size:14px;color:#ddd;display:inline-flex;align-items:center;gap:4px;background:#161616;padding:4px 8px;border-radius:999px;border:1px solid #2a2a2a}
+
+
 .home-screen{background:#161616;border:1px solid #2a2a2a;border-radius:20px;padding:26px 24px;margin-bottom:18px}
 .home-screen h1{font-size:48px;font-weight:800;line-height:1.05;margin:0 0 12px}
-.home-screen p{color:#ccc;font-size:18px;line-height:1.6;margin-bottom:24px;max-width:860px}
+
 .home-screen .home-actions{display:grid;gap:12px}
 .home-screen .home-actions button{font-size:18px}
-@media (max-width:700px){.home-screen{padding:20px}.home-screen h1{font-size:36px}.home-screen p{font-size:16px}}
-.autocomplete-menu{position:fixed;z-index:9999;background:#181818;border:1px solid #3a3a3a;border-radius:14px;box-shadow:0 14px 34px rgba(0,0,0,.45);overflow:hidden;max-height:260px;overflow-y:auto;display:none}
-.autocomplete-item{padding:12px 14px;cursor:pointer;font-size:16px;border-bottom:1px solid #252525}
-.autocomplete-item:last-child{border-bottom:none}
-.autocomplete-item:hover,.autocomplete-item.active{background:#263315;color:#dfff30}
-.autocomplete-empty{padding:12px 14px;color:#888;font-size:14px}
+@media (max-width:700px){.home-screen{padding:20px}.home-screen h1{font-size:36px}}
+
+
+
+
+
 input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,255,42,.12)}
 @media (min-width:701px) and (max-width:980px){
   .settings-grid{grid-template-columns:repeat(2,1fr)}
@@ -97,9 +93,9 @@ input:focus{outline:2px solid rgba(183,255,42,.7);box-shadow:0 0 0 4px rgba(183,
 }
 @media (max-width:700px){
   body{padding:12px}
-  .app-header{align-items:center;margin-bottom:18px}
-  .header-title{font-size:34px;max-width:calc(100% - 112px)}
-  .header-logo{width:48px;height:48px}
+  
+  
+  
   .settings-grid{grid-template-columns:1fr}
   .courts-grid{grid-template-columns:1fr!important}
   .teams-grid,.team-inputs{grid-template-columns:1fr}
@@ -176,20 +172,20 @@ button:disabled{cursor:not-allowed;filter:saturate(.35)}
 .sidebar-foot{margin-top:auto;display:flex;align-items:center;gap:9px;padding:12px 4px 0;color:var(--muted-dark);font-size:11px}
 .sidebar-foot:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 4px rgba(200,242,74,.1)}
 .app-main{min-width:0;padding:32px clamp(24px,4vw,62px) 64px}
-.app-header{align-items:center;margin:0 0 25px;padding-bottom:18px;border-bottom:1px solid rgba(6,17,14,.11)}
-.header-copy{min-width:0}.header-kicker{margin-bottom:5px;color:var(--muted);font:600 10px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase}
-.header-title{max-width:none;color:var(--ink);font:800 clamp(42px,6vw,72px)/.84 var(--display);letter-spacing:-.02em;text-transform:uppercase}
-.header-logo{display:none}
-.header-status{display:flex;align-items:center;gap:8px;color:var(--muted);font:600 10px/1 var(--mono);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
-.header-status:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--lime-deep);box-shadow:0 0 0 4px rgba(145,185,28,.13)}
+
+
+
+
+
+
 .home-screen{position:relative;isolation:isolate;overflow:hidden;min-height:min(620px,calc(100vh - 150px));margin:0;padding:clamp(32px,7vw,88px);border:0;border-radius:8px;background:var(--panel);color:var(--chalk);box-shadow:var(--shadow);display:flex!important;align-items:flex-end}
 .home-screen[style*="display: none"],.home-screen[style*="display:none"]{display:none!important}
 .home-screen:before{content:"PADEL";position:absolute;right:-.03em;top:-.08em;z-index:-1;color:rgba(200,242,74,.045);font:800 clamp(150px,27vw,390px)/.8 var(--display);letter-spacing:-.07em}
 .home-screen:after{content:"";position:absolute;z-index:-1;width:min(48vw,590px);aspect-ratio:1;border:1px solid rgba(200,242,74,.12);border-radius:50%;right:-14%;bottom:-45%;box-shadow:0 0 0 76px rgba(200,242,74,.025),0 0 0 152px rgba(200,242,74,.02)}
 .home-intro{max-width:720px}.home-eyebrow{margin-bottom:16px;color:var(--lime);font:600 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
 .home-screen h1{margin:0;color:var(--chalk);font:800 clamp(60px,10vw,122px)/.78 var(--display);letter-spacing:-.035em;text-transform:uppercase;text-wrap:balance}
-.home-screen p{max-width:590px;margin:25px 0 34px;color:var(--muted-dark);font-size:14px;line-height:1.7}
-.home-screen .home-actions{max-width:680px;grid-template-columns:1.25fr 1fr 1fr;gap:10px}
+
+.home-screen .home-actions{max-width:520px;margin-top:30px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
 .home-screen .home-actions button{margin:0;min-width:0}
 .tabs{top:0;margin:0 0 24px;padding:8px;background:rgba(245,245,237,.92);border:1px solid var(--line);border-radius:6px;backdrop-filter:blur(14px)}
 .tab-button{min-width:120px;min-height:44px;margin:0;padding:10px 16px;border:0;border-radius:3px;background:transparent;color:var(--muted);box-shadow:none;font:800 12px/1 var(--body);text-transform:uppercase;letter-spacing:.055em}
@@ -199,8 +195,8 @@ button:disabled{cursor:not-allowed;filter:saturate(.35)}
 #goHomeBar{margin:0 0 14px!important}#goHomeBar button{width:auto;margin:0;padding:10px 14px;background:transparent;color:var(--muted);border:1px solid var(--line)}
 #draftBar{min-height:46px;margin:0 0 18px!important;padding:9px 12px;border:1px solid var(--line);border-radius:4px;background:var(--surface)}
 #draftBar:before{content:"LIVE";color:var(--lime-deep);font:600 9px/1 var(--mono);letter-spacing:.1em}
-#draftStatus,#cloudStatus{font:600 10px/1.35 var(--mono)!important;color:var(--muted)!important}
-#saveDraftNowBtn,#editSettingsBtn{margin:0 0 0 auto!important;border:1px solid var(--line)!important;background:var(--surface-2)!important;color:var(--ink)!important}
+#draftStatus,#storageNote{font:600 10px/1.35 var(--mono)!important;color:var(--muted)!important}
+#saveDraftNowBtn{margin:0 0 0 auto!important;border:1px solid var(--line)!important;background:var(--surface-2)!important;color:var(--ink)!important}
 .settings-grid,.courts-grid,.teams-grid{gap:12px;margin-bottom:18px;padding:25px;border:1px solid var(--line);border-radius:8px;background:var(--surface);position:relative}
 .settings-grid{grid-template-columns:repeat(3,minmax(0,1fr));padding-top:58px}.settings-grid:before{content:"01  ·  Параметры турнира";position:absolute;left:25px;top:25px;color:var(--ink);font:700 23px/1 var(--display);text-transform:uppercase}.settings-grid:after{content:"Настройка";position:absolute;right:25px;top:28px;color:var(--lime-deep);font:600 9px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase}
 .courts-grid{padding-top:58px}.courts-grid:before{content:"02  ·  Корты";position:absolute;left:25px;top:25px;color:var(--ink);font:700 23px/1 var(--display);text-transform:uppercase}
@@ -210,42 +206,43 @@ input,select,textarea{width:100%;height:49px;margin:0;padding:0 14px;border:1px 
 textarea{height:auto;padding-block:12px}
 input:hover,select:hover,textarea:hover{border-color:#aab4aa}input:focus,select:focus,textarea:focus{outline:0;border-color:var(--lime-deep);background:var(--surface);box-shadow:0 0 0 3px rgba(145,185,28,.12)}
 input::placeholder,textarea::placeholder{color:#929d95;font-weight:600}select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 17px) 21px,calc(100% - 12px) 21px;background-size:5px 5px;background-repeat:no-repeat;padding-right:34px}
-.team-inputs{gap:8px}.player-badges{margin-top:7px;gap:5px;flex-wrap:wrap}.player-badge{border-color:var(--line);background:var(--surface-2);color:var(--muted);font:600 10px/1 var(--mono)}
+.team-inputs{gap:8px}
 button{min-height:50px;margin:12px 0;padding:0 22px;border:0;border-radius:2px;background:var(--lime);color:#0b1a10;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.055em;box-shadow:none;transition:transform .15s,filter .15s,background .15s}
 button:hover{filter:brightness(1.03);transform:translateY(-1px)}button:active{transform:translateY(0)}
 .secondary{background:var(--panel);color:var(--chalk)}.danger{background:transparent!important;color:var(--coral)!important;border:1px solid rgba(243,111,86,.55)!important}
 #startTournamentBtn{margin:2px 0 0;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));font-size:13px}
-.prestart-checklist{margin:12px 0;padding:18px 20px;border-left:3px solid var(--lime-deep);background:rgba(255,255,255,.45);color:var(--muted);font-size:12px;line-height:1.75}.prestart-checklist strong{color:var(--ink);font:700 19px/1.5 var(--display);text-transform:uppercase}.prestart-checklist .ok{color:var(--muted)}.prestart-checklist .ok:before{content:"✓ ";color:var(--lime-deep)}.prestart-checklist .miss{color:var(--coral)}
 .round-section{margin-top:28px}.round-heading{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:12px;padding-bottom:11px;border-bottom:1px solid var(--line)}
-.round-heading h2{margin:0;color:var(--ink);font:700 30px/1 var(--display);text-transform:uppercase}.round-heading span{color:var(--muted);font:600 9px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.round-heading h2{margin:0;color:var(--ink);font:700 30px/1 var(--display);text-transform:uppercase}.round-heading span{color:var(--muted);font:700 30px/1 var(--display);text-transform:uppercase}
 .round-matches{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.round-matches .resting{grid-column:1/-1}
 .match,.result-card{position:relative;overflow:hidden;margin:0;padding:22px;border:1px solid var(--line);border-radius:6px;background:var(--surface);box-shadow:none}
 .match:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--lime-deep)}
 .match .court{margin:0 0 12px;color:var(--lime-deep);font:600 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase}.match .teams{min-height:44px;margin:0 0 16px;color:var(--ink);font:700 clamp(19px,2vw,25px)/1.05 var(--display);text-transform:uppercase;text-wrap:balance}
-.score{position:relative;grid-template-columns:1fr 1fr;gap:9px}.score:after{content:":";position:absolute;left:50%;top:50%;z-index:2;transform:translate(-50%,-50%);color:var(--lime-deep);font:600 14px/1 var(--mono);pointer-events:none}.score input{height:64px;padding:0 12px;background:var(--panel);border-color:var(--line-dark);color:var(--chalk);font:600 28px/1 var(--mono);text-align:center;font-variant-numeric:tabular-nums}.score input:focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(200,242,74,.12)}
+.score{position:relative;grid-template-columns:1fr 1fr;gap:9px}.score:after{content:":";position:absolute;left:50%;top:50%;z-index:2;transform:translate(-50%,-50%);color:var(--lime-deep);font:600 14px/1 var(--mono);pointer-events:none}.score input{height:64px;padding:0 12px;background:var(--panel);border-color:var(--line-dark);color:var(--chalk);font:600 28px/1 var(--mono);text-align:center;font-variant-numeric:tabular-nums}.score input{caret-color:transparent}
+.score input:focus{border-color:var(--lime);background:#1f2f27;box-shadow:0 0 0 3px rgba(200,242,74,.22)}
 .resting{margin:0;padding:12px;border:1px dashed var(--line);color:var(--muted);font:600 10px/1.45 var(--mono);text-transform:uppercase}
 .button-row{gap:10px;margin:16px 0}.button-row button{min-width:170px;margin:0}
 #calculateStatus,#startStatus{color:var(--coral);font:600 10px/1.4 var(--mono)}
 #results>h2,#playoff-section>h2,#playoff-finals>h3,#tournament-table>h2{margin:34px 0 16px!important;color:var(--ink);font:700 clamp(30px,4vw,46px)/.95 var(--display);text-align:left!important;text-transform:uppercase}
-#results>h2:before,#playoff-section>h2:before{content:"Результаты";display:block;margin-bottom:8px;color:var(--lime-deep);font:600 9px/1 var(--mono);letter-spacing:.12em}
+
 .tourney-container{margin:0 0 18px;padding:0;border:1px solid var(--line);border-radius:7px;background:var(--surface);overflow:hidden}.tourney-scroll{overflow-x:auto}.tourney-table{min-width:660px}.tourney-table th,.tourney-table td{padding:16px 18px;border-bottom:1px solid var(--line);color:var(--ink);font:600 11px/1.3 var(--mono);font-variant-numeric:tabular-nums}.tourney-table th{color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase}.tourney-table td:nth-child(2){font-family:var(--body)}.tourney-table tbody tr:first-child{background:linear-gradient(90deg,rgba(200,242,74,.16),transparent 70%)}
+.ranking-note{margin:-8px 0 18px;color:var(--muted);font-size:12px}
 .delta-pos{color:var(--lime-deep)}.delta-neg{color:var(--coral)}.delta-zero{color:var(--muted)}
 .history-card{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;margin:0 0 10px;padding:21px 58px 21px 22px;border:1px solid var(--line);border-radius:3px;background:var(--surface);transition:transform .16s,border-color .16s}.history-card:after{content:"→";position:absolute;right:22px;color:var(--lime-deep);font:600 18px/1 var(--mono)}.history-card:hover{transform:translateY(-2px);border-color:var(--lime-deep);background:var(--surface)}.history-card-open{border-color:var(--lime-deep);box-shadow:inset 3px 0 var(--lime-deep)}
 .history-card-title{margin:0;color:var(--ink);font:700 26px/1 var(--display);text-transform:uppercase}.history-card-meta{margin-top:7px;color:var(--muted);font:600 10px/1.5 var(--mono);text-transform:uppercase}
 .history-detail{margin:-11px 0 16px;padding:24px;border:1px solid var(--line);border-top:0;border-radius:0 0 6px 6px;background:var(--surface-2);line-height:1.6}.history-detail>.history-card-title{font-size:35px}.history-detail .small{padding:5px 0;color:var(--muted);font-size:12px;border-bottom:1px solid rgba(100,113,105,.12)}
 .draft-modal-overlay{background:rgba(4,13,10,.72);backdrop-filter:blur(9px)}.draft-modal{max-width:480px;padding:30px;border:1px solid var(--line-dark);border-radius:7px;background:var(--panel);color:var(--chalk);box-shadow:0 28px 90px rgba(0,0,0,.45)}.draft-modal-title{font:700 34px/1 var(--display);text-transform:uppercase}.draft-modal-text{color:var(--muted-dark);font-size:13px}.draft-modal-actions button{min-width:150px}
-.autocomplete-menu{border-color:var(--line);border-radius:4px;background:var(--surface);box-shadow:var(--shadow)}.autocomplete-item{border-color:var(--line);color:var(--ink);font-size:13px}.autocomplete-item:hover,.autocomplete-item.active{background:rgba(200,242,74,.2);color:var(--ink)}.autocomplete-empty{color:var(--muted)}
+
 .mobile-nav{display:none}
 .error-border{border-color:var(--coral)!important;box-shadow:0 0 0 3px rgba(243,111,86,.12)!important}
 @media(max-width:1050px){.app-shell{grid-template-columns:84px minmax(0,1fr)}.app-sidebar{padding:24px 14px}.brand-word,.sidebar-session,.sidebar-nav button span:last-child,.sidebar-foot span{display:none}.brand-button,.sidebar-nav button,.sidebar-foot{justify-content:center}.sidebar-nav button{padding:0}.nav-index{width:auto}.settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){
-  body{padding:0}.app-shell{display:block;max-width:100%}.app-sidebar{display:none}.app-main{width:100%;max-width:100%;padding:20px 16px calc(96px + env(safe-area-inset-bottom))}.app-header{gap:12px;margin-bottom:18px;overflow:hidden}.header-copy{flex:1;min-width:0}.header-title{font-size:45px}.header-status{flex:0 0 auto;font-size:8px}.header-status span{display:none}
-  .tabs{top:8px;width:100%;max-width:100%;margin-bottom:16px;overflow:hidden}.tab-button{flex:1 1 0;min-width:0;font-size:10px}.home-screen{min-height:calc(100vh - 135px);padding:27px 21px}.home-screen h1{font-size:58px}.home-screen p{font-size:13px}.home-screen .home-actions{grid-template-columns:1fr}
+  body{padding:0}.app-shell{display:block;max-width:100%}.app-sidebar{display:none}.app-main{width:100%;max-width:100%;padding:20px 16px calc(96px + env(safe-area-inset-bottom))}
+  .tabs{top:8px;width:100%;max-width:100%;margin-bottom:16px;overflow:hidden}.tab-button{flex:1 1 0;min-width:0;font-size:10px}.home-screen{min-height:calc(100vh - 135px);padding:27px 21px}.home-screen h1{font-size:58px}.home-screen .home-actions{grid-template-columns:1fr}
   .settings-grid,.courts-grid,.teams-grid{grid-template-columns:1fr!important;padding:58px 18px 18px}.settings-grid:before,.courts-grid:before,.teams-grid:before{left:18px;top:22px;font-size:21px}.settings-grid:after{display:none}.team-inputs{grid-template-columns:1fr 1fr}
   #draftBar{flex-wrap:wrap}#draftBar #saveDraftNowBtn{width:100%!important;margin:4px 0 0!important}.round-matches{grid-template-columns:1fr}.match{padding:18px}.match .teams{min-height:auto;font-size:22px;white-space:normal;overflow:visible}.score input{height:58px}.button-row{display:grid}.button-row button{width:100%;min-width:0}.history-card{padding:18px 48px 18px 16px}.history-card-title{font-size:22px}.history-card:after{right:17px}.history-detail{padding:18px}
-  .mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:45;display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:7px 10px calc(7px + env(safe-area-inset-bottom));border-top:1px solid var(--line-dark);background:var(--panel)}.mobile-nav button{height:49px;min-height:49px;margin:0;padding:0;border:0;background:transparent;color:var(--muted-dark);font:600 8px/1 var(--mono);box-shadow:none}.mobile-nav button:hover,.mobile-nav button.active{transform:none;color:var(--lime)}
+  .mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:45;display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:7px 10px calc(7px + env(safe-area-inset-bottom));border-top:1px solid var(--line-dark);background:var(--panel)}.mobile-nav button{height:54px;min-height:54px;margin:0;padding:0;border:0;background:transparent;color:var(--muted-dark);font:600 8px/1 var(--mono);box-shadow:none}.mobile-nav button:hover,.mobile-nav button.active{transform:none;color:var(--lime)}
 }
-@media(max-width:430px){.header-title{font-size:40px}.header-status span{display:none}.team-inputs{grid-template-columns:1fr}.round-heading h2{font-size:27px}.score input{font-size:24px}.tourney-table{min-width:610px}}
+@media(max-width:430px){.team-inputs{grid-template-columns:1fr}.round-heading h2,.round-heading span{font-size:22px}.score input{font-size:24px}.tourney-table{min-width:610px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* Organic visual language */
@@ -254,22 +251,21 @@ body:before{opacity:.16;background-size:44px 44px}
 .app-sidebar{margin:14px 0 14px 14px;height:calc(100vh - 28px);padding:24px 18px;border:1px solid rgba(255,255,255,.08);border-radius:28px;background:rgba(24,36,31,.94);box-shadow:0 22px 60px rgba(22,36,29,.17);backdrop-filter:blur(26px)}
 .brand-button{gap:11px;padding:4px 6px}.brand-mark{width:42px;height:42px;flex-basis:42px;border:0;border-radius:14px;background:var(--lime);color:#263315;font-size:14px;letter-spacing:-.02em;box-shadow:inset 0 1px rgba(255,255,255,.55),0 8px 20px rgba(189,232,90,.12)}.brand-mark:before,.brand-mark:after{display:none}.brand-word{font-family:var(--display);font-size:21px;font-weight:750;letter-spacing:-.035em;text-transform:none}.brand-word span{color:var(--chalk)}
 .sidebar-session{margin-top:30px;padding:17px;border:0;border-radius:18px;background:rgba(255,255,255,.065)}.sidebar-kicker{font-size:11px;font-weight:650;letter-spacing:0;text-transform:none}.sidebar-title{font-size:15px}.sidebar-meta{font-size:12px;line-height:1.5}
-.sidebar-nav{gap:7px;margin-top:22px}.sidebar-nav button{min-height:48px;padding:0 14px;border:0;border-radius:15px;font-size:14px;letter-spacing:-.01em;text-transform:none}.sidebar-nav button:hover,.sidebar-nav button.active{border:0;background:rgba(255,255,255,.09)}.sidebar-nav button.active{color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}.nav-index{width:9px;height:9px;border-radius:50%;overflow:hidden;color:transparent;background:rgba(255,255,255,.24)}.sidebar-nav button.active .nav-index{background:var(--lime);box-shadow:0 0 0 4px rgba(189,232,90,.11)}
+.sidebar-nav{gap:7px;margin-top:22px}.sidebar-nav button{min-height:48px;padding:0 14px;border:0;border-radius:15px;font-size:15px;letter-spacing:-.01em;text-transform:none}.sidebar-nav button:hover,.sidebar-nav button.active{border:0;background:rgba(255,255,255,.09)}.sidebar-nav button.active{color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}.nav-index{width:9px;height:9px;border-radius:50%;overflow:hidden;color:transparent;background:rgba(255,255,255,.24)}.sidebar-nav button.active .nav-index{background:var(--lime);box-shadow:0 0 0 4px rgba(189,232,90,.11)}
 .sidebar-foot{font-size:12px}.sidebar-foot:before{background:#87d78b;box-shadow:0 0 0 4px rgba(135,215,139,.1)}
-.app-main{padding:32px clamp(28px,4vw,68px) 72px}.app-header{margin-bottom:25px;padding:4px 2px 21px;border-color:var(--line)}.header-kicker{margin-bottom:7px;font-size:12px;font-weight:550;letter-spacing:0;text-transform:none}.header-title{font-family:var(--display);font-size:clamp(38px,5vw,58px);font-weight:750;line-height:.95;letter-spacing:-.055em;text-transform:none}.header-status{font-size:11px;font-weight:550;letter-spacing:0;text-transform:none}.header-status:before{background:#76c77d}
-.home-screen{min-height:min(610px,calc(100vh - 150px));padding:clamp(34px,7vw,84px);border-radius:28px;background:linear-gradient(145deg,rgba(28,42,36,.97),rgba(18,31,25,.97));box-shadow:0 26px 80px rgba(24,38,31,.2);backdrop-filter:blur(30px)}.home-screen:before{content:"";right:-8%;top:-35%;width:min(55vw,650px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(189,232,90,.24),rgba(189,232,90,.02) 60%,transparent 61%);filter:blur(1px)}.home-screen:after{border-color:rgba(255,255,255,.08);box-shadow:0 0 0 80px rgba(255,255,255,.018),0 0 0 160px rgba(255,255,255,.012)}.home-eyebrow{font-size:13px;font-weight:650;letter-spacing:0;text-transform:none}.home-screen h1{font-family:var(--display);font-size:clamp(52px,8vw,96px);font-weight:720;line-height:.92;letter-spacing:-.065em;text-transform:none}.home-screen p{font-size:16px;line-height:1.65}.home-screen .home-actions{gap:12px}
+.app-main{padding:32px clamp(28px,4vw,68px) 72px}
+.home-screen{min-height:min(610px,calc(100vh - 150px));padding:clamp(34px,7vw,84px);border-radius:28px;background:linear-gradient(145deg,rgba(28,42,36,.97),rgba(18,31,25,.97));box-shadow:0 26px 80px rgba(24,38,31,.2);backdrop-filter:blur(30px)}.home-screen:before{content:"";right:-8%;top:-35%;width:min(55vw,650px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(189,232,90,.24),rgba(189,232,90,.02) 60%,transparent 61%);filter:blur(1px)}.home-screen:after{border-color:rgba(255,255,255,.08);box-shadow:0 0 0 80px rgba(255,255,255,.018),0 0 0 160px rgba(255,255,255,.012)}.home-eyebrow{font-size:13px;font-weight:650;letter-spacing:0;text-transform:none}.home-screen h1{font-family:var(--display);font-size:clamp(52px,8vw,96px);font-weight:720;line-height:.92;letter-spacing:-.065em;text-transform:none}.home-screen .home-actions{gap:12px}
 .tabs{padding:6px;border:1px solid rgba(33,48,41,.08);border-radius:18px;background:rgba(255,255,255,.62);box-shadow:0 8px 30px rgba(32,49,41,.05);backdrop-filter:blur(22px)}.tab-button{min-height:46px;border-radius:13px;font-size:14px;font-weight:650;letter-spacing:-.01em;text-transform:none}.tab-button.active{background:rgba(24,36,31,.95);box-shadow:0 6px 16px rgba(24,36,31,.13)}
-#goHomeBar button{border-radius:14px}#draftBar{min-height:54px;padding:10px 14px;border-radius:17px;background:rgba(255,255,255,.7);box-shadow:0 7px 25px rgba(32,49,41,.04);backdrop-filter:blur(18px)}#draftBar:before{content:"";width:8px;height:8px;border-radius:50%;background:#76c77d}#draftStatus,#cloudStatus{font-size:11px!important;font-weight:550!important;letter-spacing:0}#saveDraftNowBtn,#editSettingsBtn{border-radius:12px!important}
+#goHomeBar button{border-radius:14px}#draftBar{min-height:54px;padding:10px 14px;border-radius:17px;background:rgba(255,255,255,.7);box-shadow:0 7px 25px rgba(32,49,41,.04);backdrop-filter:blur(18px)}#draftBar:before{content:"";width:8px;height:8px;border-radius:50%;background:#76c77d}#draftStatus,#storageNote{font-size:11px!important;font-weight:550!important;letter-spacing:0}#saveDraftNowBtn{border-radius:12px!important;font-size:14px!important}
 .settings-grid,.courts-grid,.teams-grid{gap:15px;margin-bottom:16px;padding:72px 25px 25px;border:1px solid rgba(33,48,41,.08);border-radius:24px;background:rgba(255,255,255,.72);box-shadow:var(--shadow);backdrop-filter:blur(22px)}.settings-grid:before,.courts-grid:before,.teams-grid:before{left:25px;top:27px;font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:-.035em;text-transform:none}.settings-grid:before{content:"Параметры турнира"}.courts-grid:before{content:"Корты"}.teams-grid:before{content:"Участники"}.settings-grid:after{content:"Все детали можно изменить до старта";top:32px;font-size:11px;font-weight:550;letter-spacing:0;text-transform:none}
-.form-item label,.team>label{margin-bottom:9px;font-size:12px;font-weight:600;letter-spacing:-.005em;text-transform:none}input,select,textarea{height:52px;padding:0 15px;border-color:rgba(33,48,41,.1);border-radius:14px;background:rgba(246,248,245,.9);font-size:15px;font-weight:550}input:focus,select:focus,textarea:focus{border-color:rgba(120,157,32,.55);box-shadow:0 0 0 4px rgba(189,232,90,.18)}select{background-position:calc(100% - 19px) 23px,calc(100% - 14px) 23px}.player-badge{border-radius:999px}
-button{min-height:50px;border-radius:14px;background:var(--lime);font-size:14px;font-weight:680;letter-spacing:-.012em;text-transform:none;box-shadow:0 7px 18px rgba(78,103,25,.1)}.secondary{background:var(--panel);color:var(--chalk)}.danger{border-radius:14px!important}#startTournamentBtn{min-height:56px;border-radius:18px;clip-path:none;font-size:15px;box-shadow:0 10px 25px rgba(120,157,32,.16)}
-.prestart-checklist{padding:20px 22px;border:0;border-radius:20px;background:rgba(255,255,255,.6);font-size:13px}.prestart-checklist strong{font-family:var(--display);font-size:18px;text-transform:none}
-.round-section{margin-top:34px}.round-heading{margin-bottom:14px;padding:0 2px 12px}.round-heading h2{font-family:var(--display);font-size:29px;font-weight:700;letter-spacing:-.04em;text-transform:none}.round-heading span{font-size:11px;font-weight:550;letter-spacing:0;text-transform:none}.round-matches{gap:14px}.match,.result-card{padding:22px;border-color:rgba(33,48,41,.08);border-radius:22px;background:rgba(255,255,255,.78);box-shadow:0 12px 34px rgba(31,48,40,.06);backdrop-filter:blur(18px)}.match:before{left:18px;top:18px;bottom:auto;width:8px;height:8px;border-radius:50%;background:var(--lime-deep)}.match .court{margin:0 0 14px;padding-left:17px;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none}.match .teams{min-height:42px;font-family:var(--display);font-size:clamp(20px,2vw,25px);font-weight:680;line-height:1.15;letter-spacing:-.035em;text-transform:none}.score{gap:10px}.score input{height:68px;border-radius:17px;background:var(--panel);font-family:var(--display);font-size:29px;font-weight:650}.score:after{font-family:var(--body)}.resting{border:0;border-radius:14px;background:rgba(255,255,255,.5);font-size:11px;letter-spacing:0;text-transform:none}
-#results>h2,#playoff-section>h2,#playoff-finals>h3,#tournament-table>h2{font-family:var(--display);font-size:clamp(30px,4vw,42px);font-weight:720;letter-spacing:-.05em;text-transform:none}#results>h2:before,#playoff-section>h2:before{font-size:12px;font-weight:600;letter-spacing:0}.tourney-container{border-color:rgba(33,48,41,.08);border-radius:22px;background:rgba(255,255,255,.8);box-shadow:var(--shadow)}.tourney-table th,.tourney-table td{font-family:var(--body);font-size:13px;font-weight:550}.tourney-table th{font-size:11px;letter-spacing:0;text-transform:none}
-.history-card{padding:23px 60px 23px 23px;border-color:rgba(33,48,41,.08);border-radius:20px;background:rgba(255,255,255,.76);box-shadow:0 9px 28px rgba(31,48,40,.045);backdrop-filter:blur(18px)}.history-card-open{box-shadow:0 12px 35px rgba(31,48,40,.07),inset 0 0 0 1px rgba(120,157,32,.28)}.history-card-title{font-family:var(--display);font-size:25px;font-weight:690;letter-spacing:-.04em;text-transform:none}.history-card-meta{font-size:12px;font-weight:550;letter-spacing:0;text-transform:none}.history-detail{margin:-18px 10px 18px;padding:27px;border-color:rgba(33,48,41,.08);border-radius:0 0 22px 22px;background:rgba(239,243,238,.88)}.draft-modal{border-radius:24px}.draft-modal-title{font-family:var(--display);font-size:30px;font-weight:700;letter-spacing:-.04em;text-transform:none}.autocomplete-menu{border-radius:16px}
+.form-item label,.team>label{margin-bottom:9px;font-size:12px;font-weight:600;letter-spacing:-.005em;text-transform:none}input,select,textarea{height:52px;padding:0 15px;border-color:rgba(33,48,41,.1);border-radius:14px;background:rgba(246,248,245,.9);font-size:15px;font-weight:550}input:focus,select:focus,textarea:focus{border-color:rgba(120,157,32,.55);box-shadow:0 0 0 4px rgba(189,232,90,.18)}select{background-position:calc(100% - 19px) 23px,calc(100% - 14px) 23px}
+button{min-height:52px;border-radius:14px;background:var(--lime);font-size:16px;font-weight:680;letter-spacing:-.012em;text-transform:none;box-shadow:0 7px 18px rgba(78,103,25,.1)}.secondary{background:var(--panel);color:var(--chalk)}.danger{border-radius:14px!important}#startTournamentBtn{min-height:58px;border-radius:18px;clip-path:none;font-size:18px;box-shadow:0 10px 25px rgba(120,157,32,.16)}
+.round-section{margin-top:34px}.round-heading{margin-bottom:14px;padding:0 2px 12px}.round-heading h2,.round-heading span{font-family:var(--display);font-size:29px;font-weight:700;letter-spacing:-.04em;text-transform:none}.round-heading span{color:var(--muted);white-space:nowrap}.round-matches{gap:14px}.match,.result-card{padding:22px;border-color:rgba(33,48,41,.08);border-radius:22px;background:rgba(255,255,255,.78);box-shadow:0 12px 34px rgba(31,48,40,.06);backdrop-filter:blur(18px)}.match:before{left:18px;top:18px;bottom:auto;width:8px;height:8px;border-radius:50%;background:var(--lime-deep)}.match .court{margin:0 0 14px;padding-left:17px;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none}.match .teams:first-child{padding-left:17px}.match .teams{min-height:42px;font-family:var(--display);font-size:clamp(20px,2vw,25px);font-weight:680;line-height:1.15;letter-spacing:-.035em;text-transform:none}.score{gap:10px}.score input{height:68px;border-radius:17px;background:var(--panel);font-family:var(--display);font-size:29px;font-weight:650}.score:after{font-family:var(--body)}.resting{border:0;border-radius:14px;background:rgba(255,255,255,.5);font-size:11px;letter-spacing:0;text-transform:none}
+#results>h2,#playoff-section>h2,#playoff-finals>h3,#tournament-table>h2{font-family:var(--display);font-size:clamp(30px,4vw,42px);font-weight:720;letter-spacing:-.05em;text-transform:none}.tourney-container{border-color:rgba(33,48,41,.08);border-radius:22px;background:rgba(255,255,255,.8);box-shadow:var(--shadow)}.tourney-table th,.tourney-table td{font-family:var(--body);font-size:13px;font-weight:550}.tourney-table th{font-size:11px;letter-spacing:0;text-transform:none}
+.history-card{padding:23px 60px 23px 23px;border-color:rgba(33,48,41,.08);border-radius:20px;background:rgba(255,255,255,.76);box-shadow:0 9px 28px rgba(31,48,40,.045);backdrop-filter:blur(18px)}.history-card-open{box-shadow:0 12px 35px rgba(31,48,40,.07),inset 0 0 0 1px rgba(120,157,32,.28)}.history-card-title{font-family:var(--display);font-size:25px;font-weight:690;letter-spacing:-.04em;text-transform:none}.history-card-meta{font-size:12px;font-weight:550;letter-spacing:0;text-transform:none}.history-detail{margin:-18px 10px 18px;padding:27px;border-color:rgba(33,48,41,.08);border-radius:0 0 22px 22px;background:rgba(239,243,238,.88)}.draft-modal{border-radius:24px}.draft-modal-title{font-family:var(--display);font-size:30px;font-weight:700;letter-spacing:-.04em;text-transform:none}
 @media(max-width:1050px){.app-sidebar{margin:10px 0 10px 10px;height:calc(100vh - 20px);border-radius:24px}.brand-button{justify-content:center}.settings-grid:after{display:none}}
-@media(max-width:760px){.app-main{padding-top:16px}.app-header{padding-inline:3px}.header-title{font-size:40px}.home-screen{border-radius:24px}.home-screen h1{font-size:52px}.home-screen p{font-size:15px}.settings-grid,.courts-grid,.teams-grid{padding:67px 18px 19px;border-radius:21px}.settings-grid:before,.courts-grid:before,.teams-grid:before{top:24px;font-size:21px}.match{border-radius:20px}.mobile-nav{left:10px;right:10px;bottom:9px;border:1px solid rgba(255,255,255,.08);border-radius:20px;background:rgba(24,36,31,.92);box-shadow:0 14px 40px rgba(18,30,24,.24);backdrop-filter:blur(24px)}.mobile-nav button{border-radius:14px;font-family:var(--body);font-size:11px;font-weight:600;text-transform:none}.mobile-nav button.active{background:rgba(255,255,255,.08)}}
-@media(max-width:430px){.header-title{font-size:36px}.home-screen h1{font-size:46px}.home-screen br{display:none}.team-inputs{grid-template-columns:1fr}.score input{font-size:27px}}
+@media(max-width:760px){.app-main{padding-top:16px;padding-bottom:calc(104px + env(safe-area-inset-bottom))}.home-screen{border-radius:24px}.home-screen h1{font-size:52px}.settings-grid,.courts-grid,.teams-grid{padding:67px 18px 19px;border-radius:21px}.settings-grid:before,.courts-grid:before,.teams-grid:before{top:24px;font-size:21px}.match{border-radius:20px}.mobile-nav{left:10px;right:10px;bottom:9px;border:1px solid rgba(255,255,255,.08);border-radius:20px;background:rgba(24,36,31,.92);box-shadow:0 14px 40px rgba(18,30,24,.24);backdrop-filter:blur(24px)}.mobile-nav button{border-radius:14px;font-family:var(--body);font-size:14px;font-weight:650;text-transform:none}.mobile-nav button.active{background:rgba(255,255,255,.08)}}
+@media(max-width:430px){.home-screen h1{font-size:46px}.home-screen br{display:none}.team-inputs{grid-template-columns:1fr}.score input{font-size:27px}}
 </style>
 <link rel="manifest" href="manifest.json">
 
@@ -297,38 +293,19 @@ button{min-height:50px;border-radius:14px;background:var(--lime);font-size:14px;
   <div class="sidebar-foot"><span>Офлайн-режим готов</span></div>
 </aside>
 <main class="app-main">
-<header class="app-header">
-  <div class="header-copy">
-    <div class="header-kicker">Турниры без лишней суеты</div>
-    <div class="header-title" id="appHeader" onclick="showHomeScreen()" style="cursor:pointer">PadelFlow</div>
-  </div>
-  <div class="header-status"><span>Данные сохраняются автоматически</span></div>
-  <img src="icon-192.png" class="header-logo" alt="PadelFlow" onclick="showHomeScreen()" style="cursor:pointer">
-</header>
-
 <div id="homeScreen" class="home-screen" style="display:none;">
   <div class="home-intro">
-    <div class="home-eyebrow">Игра начинается здесь</div>
-    <h1>Ваш турнир.<br>Чёткий ритм.</h1>
-    <p>Создайте сетку, ведите счёт прямо у корта и сохраните полную историю игрового дня — даже без стабильного интернета.</p>
+    <h1>PadelFlow</h1>
     <div class="home-actions">
       <button onclick="startNewTournamentFromHome()">Начать турнир</button>
       <button id="continueDraftHomeBtn" class="secondary" onclick="continueDraftFromHome()" style="display:none">Продолжить турнир</button>
-      <button class="secondary" onclick="navigateHomeToTab('history')">История</button>
     </div>
   </div>
 </div>
 
-<div id="tabsBar" class="tabs">
-  <button class="tab-button active" data-tab="tournament" onclick="switchTab('tournament')">Турнир</button>
-  <button class="tab-button" data-tab="history" onclick="switchTab('history')">История</button>
-</div>
-<div id="goHomeBar" class="button-row" style="display:none;margin-bottom:12px;">
-  <button class="secondary" onclick="showHomeScreen()">На главную</button>
-</div>
 <div id="draftBar" style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
   <div id="draftStatus" class="small">Черновик не сохранен</div>
-  <div id="cloudStatus" class="small" style="color:#888;"></div>
+  <div id="storageNote" class="small">Хранится на этом устройстве</div>
   <button id="saveDraftNowBtn" class="secondary" style="width:auto;padding:8px 12px;font-size:14px;">Сохранить сейчас</button>
 </div>
 <div id="draftModalOverlay" class="draft-modal-overlay">
@@ -411,6 +388,13 @@ button{min-height:50px;border-radius:14px;background:var(--lime);font-size:14px;
     <input id="roundLimitCustom" type="number" min="1" placeholder="Свое число" value="32" style="display:none;margin-top:6px;" oninput="saveData()">
   </div>
   <div class="form-item">
+    <label>Места определяются</label>
+    <select id="rankingMode" onchange="onRankingModeChange(); saveData()">
+      <option value="delta" selected>По разнице очков</option>
+      <option value="wins">По количеству побед</option>
+    </select>
+  </div>
+  <div class="form-item">
     <label>Количество кортов</label>
     <select id="courtCount" onchange="onCourtCountChange(); saveData()">
       <option value="" selected disabled>Выберите количество кортов</option>
@@ -436,65 +420,55 @@ button{min-height:50px;border-radius:14px;background:var(--lime);font-size:14px;
   </div>
 </div>
 
-<datalist id="playersList"></datalist>
-<div id="playerAutocompleteMenu" class="autocomplete-menu"></div>
 
 <div class="teams-grid">
   <div class="team" id="team1">
     <label>Пара 1</label>
     <div class="team-inputs">
-      <input id="team1a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
-      <input id="team1b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team1a" value="" placeholder="Игрок 1" oninput="saveData()">
+      <input id="team1b" value="" placeholder="Игрок 2" oninput="saveData()">
     </div>
-    <div class="player-badges" id="team1badges"></div>
   </div>
   <div class="team" id="team2">
     <label>Пара 2</label>
     <div class="team-inputs">
-      <input id="team2a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
-      <input id="team2b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team2a" value="" placeholder="Игрок 1" oninput="saveData()">
+      <input id="team2b" value="" placeholder="Игрок 2" oninput="saveData()">
     </div>
-    <div class="player-badges" id="team2badges"></div>
   </div>
   <div class="team" id="team3">
     <label>Пара 3</label>
     <div class="team-inputs">
-      <input id="team3a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
-      <input id="team3b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team3a" value="" placeholder="Игрок 1" oninput="saveData()">
+      <input id="team3b" value="" placeholder="Игрок 2" oninput="saveData()">
     </div>
-    <div class="player-badges" id="team3badges"></div>
   </div>
   <div class="team" id="team4">
     <label>Пара 4</label>
     <div class="team-inputs">
-      <input id="team4a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
-      <input id="team4b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team4a" value="" placeholder="Игрок 1" oninput="saveData()">
+      <input id="team4b" value="" placeholder="Игрок 2" oninput="saveData()">
     </div>
-    <div class="player-badges" id="team4badges"></div>
   </div>
   <div class="team" id="team5" style="display:none;">
     <label>Пара 5</label>
     <div class="team-inputs">
-      <input id="team5a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
-      <input id="team5b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team5a" value="" placeholder="Игрок 1" oninput="saveData()">
+      <input id="team5b" value="" placeholder="Игрок 2" oninput="saveData()">
     </div>
-    <div class="player-badges" id="team5badges"></div>
   </div>
   <div class="team" id="team6" style="display:none;">
     <label>Пара 6</label>
     <div class="team-inputs">
-      <input id="team6a" value="" placeholder="Игрок 1" list="playersList" oninput="saveData(); renderTeamInputBadges()">
-      <input id="team6b" value="" placeholder="Игрок 2" list="playersList" oninput="saveData(); renderTeamInputBadges()">
+      <input id="team6a" value="" placeholder="Игрок 1" oninput="saveData()">
+      <input id="team6b" value="" placeholder="Игрок 2" oninput="saveData()">
     </div>
-    <div class="player-badges" id="team6badges"></div>
   </div>
 </div>
 
 <button id="startTournamentBtn" onclick="startTournament()">Начать турнир</button>
-<div id="preStartChecklist" class="prestart-checklist"></div>
 <div style="display:flex;gap:8px;align-items:center;">
   <div id="startStatus" class="small" style="margin-top:4px;">Заполните всех игроков</div>
-  <button id="editSettingsBtn" class="secondary" style="width:auto;padding:8px 12px;font-size:14px;display:none;margin-left:8px;">Изменить настройки</button>
 </div>
 
 <div id="matches"></div>
@@ -509,9 +483,6 @@ button{min-height:50px;border-radius:14px;background:var(--lime);font-size:14px;
 </div>
 
 <div id="tab-history" class="tab-content" style="display:none;">
-  <div class="button-row" style="margin-bottom:14px;">
-    <button class="secondary" onclick="showHomeScreen()">На главную</button>
-  </div>
   <div id="historyContainer"></div>
   <div id="historyDetail"></div>
 </div>
@@ -524,14 +495,7 @@ button{min-height:50px;border-radius:14px;background:var(--lime);font-size:14px;
 </div>
 
 <script>
-// Supabase инициализация
-const SUPABASE_URL = 'https://lnrkhhiusfkwigxmichp.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_C5yjnR5cd0W3I_GbeHKxeA_DBCj-KRn';
-let supabaseClient = null;
-if(window.supabase && typeof window.supabase.createClient === 'function'){
-  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-}
-
+// История живёт только в этом браузере: localStorage, без внешних сервисов.
 const HISTORY_KEY = 'padelFlowTournamentHistory';
 const DRAFT_KEY = 'padelFlowCurrentDraft';
 const LEGACY_DRAFT_KEY = 'padelAmericanoData';
@@ -540,9 +504,7 @@ let openedHistoryId = null;
 let tournamentStarted = false;
 let playoffStarted = false;
 let autoHistorySaveTimer = null;
-let cloudProgressTimer = null;
-let lastCloudProgressAt = 0;
-const CLOUD_PROGRESS_MIN_INTERVAL = 15000;
+let finalizingTournament = false;
 
 
 const roundTemplates = [
@@ -1100,6 +1062,38 @@ function setPlayoffLimitFromSnapshot(snapshot){
 
 
 
+const RANKING_MODES = ['delta','wins'];
+
+function getRankingMode(){
+  const value = document.getElementById('rankingMode')?.value || 'delta';
+  return RANKING_MODES.includes(value) ? value : 'delta';
+}
+
+function getRankingModeLabel(){
+  return getRankingMode() === 'wins' ? 'по количеству побед' : 'по разнице очков';
+}
+
+// Порядок мест. Первый критерий задаёт пользователь, остальные — постоянные,
+// чтобы одинаковые показатели не расставлялись случайно.
+function compareStandings(a, b){
+  if(getRankingMode() === 'wins'){
+    if(b.wins !== a.wins) return b.wins - a.wins;
+    if(b.delta !== a.delta) return b.delta - a.delta;
+    return b.scored - a.scored;
+  }
+  if(b.delta !== a.delta) return b.delta - a.delta;
+  if(b.scored !== a.scored) return b.scored - a.scored;
+  return b.wins - a.wins;
+}
+
+function onRankingModeChange(){
+  // Таблица уже на экране — пересобираем её под новый критерий.
+  const results = document.getElementById('results');
+  if(results && results.innerHTML.trim() && allGroupRoundsFilled()){
+    calculateResults();
+  }
+}
+
 function getRoundCount(){
   const el = document.getElementById('roundCount');
   const value = parseInt(el?.value || '', 10);
@@ -1287,21 +1281,8 @@ function onCourtCountChange(){
 
 let lastResultsText = "";
 let editingTournamentId = null;
-let editingCloudId = null;
 let roundsStats = [];
 let lastStats = null;
-const defaultPlayers = [
-  'Владимиров Никита',
-  'Жаткин Александр',
-  'Vitaliy M',
-  'Курятников Константин',
-  'Михаил Авагян',
-  'Сотников Александр',
-  'Боев Сергей',
-  'Гейер Станислав',
-  'Шагинуров Олег',
-  'Алена А'
-];
 
 function getCurrentDate(){
   const now = new Date();
@@ -1349,8 +1330,6 @@ function updateNavigationState(tab){
 
 function switchTab(tab){
   hideHomeScreen();
-  const tabsBar = document.getElementById('tabsBar');
-  if(tabsBar) tabsBar.style.display = 'flex';
   document.querySelectorAll('.tab-button').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab === tab));
   document.querySelectorAll('.tab-content').forEach(content=>{
     const show = content.id === `tab-${tab}`;
@@ -1359,8 +1338,6 @@ function switchTab(tab){
   });
   updateDraftVisibility(tab);
   updateNavigationState(tab);
-  const homeBar = document.getElementById('goHomeBar');
-  if(homeBar) homeBar.style.display = tab === 'tournament' ? 'block' : 'none';
   updateHeader(tab);
   if(tab === 'history') renderHistory();
 }
@@ -1384,88 +1361,11 @@ function findHistoryItem(id){
 }
 
 async function loadTournamentHistory(){
-  const localHistory = getLocalHistory();
-  if(!supabaseClient){
-    currentHistory = localHistory;
-    return localHistory;
-  }
-
-  try {
-    const { data, error } = await supabaseClient.from('tournaments').select('id, created_at, name, date, data').order('created_at', { ascending: false });
-    if(error) throw error;
-
-    const cloudHistory = Array.isArray(data) ? data.map(row => {
-      const item = row.data || {};
-      if(!item.id) item.id = String(row.id || Date.now());
-      return {
-        ...item,
-        _cloudId: row.id,
-        name: row.name || item.name || '',
-        date: row.date || item.date || '',
-        savedAt: item.savedAt || new Date(row.created_at).toISOString()
-      };
-    }) : [];
-
-    const knownIds = new Set(cloudHistory.map(item => String(item.id)));
-    const merged = [...cloudHistory];
-    localHistory.forEach(item => {
-      if(item.id && !knownIds.has(String(item.id))) merged.unshift(item);
-    });
-    currentHistory = merged;
-    return merged;
-  } catch(err){
-    currentHistory = localHistory;
-    return localHistory;
-  }
+  currentHistory = getLocalHistory();
+  return currentHistory;
 }
 
-async function saveTournamentToCloud(tournament, cloudId = null){
-  if(!supabaseClient){
-    return { ok: false, error: 'Supabase unavailable' };
-  }
-  try {
-    let response;
-    if(cloudId){
-      response = await supabaseClient
-        .from('tournaments')
-        .update({ name: tournament.name, date: tournament.date, data: tournament })
-        .eq('id', cloudId);
-    } else {
-      response = await supabaseClient
-        .from('tournaments')
-        .insert([{ name: tournament.name, date: tournament.date, data: tournament }])
-        .select('id')
-        .single();
-    }
-    const { data, error } = response;
-    if(error) return { ok: false, error };
-    return { ok: true, cloudId: cloudId || data?.id || null };
-  } catch(err){
-    return { ok: false, error: err };
-  }
-}
 
-async function syncLocalToCloud(){
-  const localHistory = getLocalHistory();
-  if(!supabaseClient || !navigator.onLine || !localHistory.length){
-    return { synced: 0 };
-  }
-
-  try {
-    const { data, error } = await supabaseClient.from('tournaments').select('data');
-    if(error) throw error;
-    const remoteIds = new Set((Array.isArray(data) ? data : []).map(row => String(row.data?.id)).filter(Boolean));
-    const toSync = localHistory.filter(item => item.id && !remoteIds.has(String(item.id)));
-    if(!toSync.length) return { synced: 0 };
-    const inserts = toSync.map(item => ({ name: item.name, date: item.date, data: item }));
-    const { error: insertError } = await supabaseClient.from('tournaments').insert(inserts);
-    if(insertError) throw insertError;
-    return { synced: inserts.length };
-  } catch(err){
-    console.warn('syncLocalToCloud error', err);
-    return { synced: 0, error: err };
-  }
-}
 
 
 function getBadgedPlayer(name){
@@ -1476,19 +1376,6 @@ function getBadgedTeam(team){
   return String(team || '');
 }
 
-function renderTeamInputBadges(){
-  for(let idx = 1; idx <= 6; idx++){
-    const a = `team${idx}a`;
-    const b = `team${idx}b`;
-    const target = `team${idx}badges`;
-    const nameA = normalizePlayerName(document.getElementById(a)?.value);
-    const nameB = normalizePlayerName(document.getElementById(b)?.value);
-    const badges = [nameA,nameB].filter(Boolean)
-      .map(name=>`<span class="player-badge">${escapeHtml(name)}</span>`).join('');
-    const targetEl = document.getElementById(target);
-    if(targetEl) targetEl.innerHTML = badges;
-  }
-}
 
 function parseHistoryDateValue(value){
   const raw = String(value || '').trim();
@@ -1513,17 +1400,21 @@ function getHistorySortTime(item){
   return parseHistoryDateValue(item?.date) || parseHistoryDateValue(item?.savedAt) || parseHistoryDateValue(item?._createdAt) || 0;
 }
 
-function sortHistoryOldToNew(list){
+// Сверху самый свежий турнир. При одинаковой дате решает время сохранения.
+function sortHistoryNewestFirst(list){
   return [...list].sort((a,b)=>{
     const timeA = getHistorySortTime(a);
     const timeB = getHistorySortTime(b);
-    if(timeA !== timeB) return timeA - timeB;
-    return String(a?.name || '').localeCompare(String(b?.name || ''), 'ru');
+    if(timeA !== timeB) return timeB - timeA;
+    const savedA = parseHistoryDateValue(a?.savedAt);
+    const savedB = parseHistoryDateValue(b?.savedAt);
+    if(savedA !== savedB) return savedB - savedA;
+    return String(b?.name || '').localeCompare(String(a?.name || ''), 'ru');
   });
 }
 
 async function renderHistory(){
-  const saved = sortHistoryOldToNew(await loadTournamentHistory());
+  const saved = sortHistoryNewestFirst(await loadTournamentHistory());
   const container = document.getElementById('historyContainer');
   const detail = document.getElementById('historyDetail');
   if(!container || !detail) return;
@@ -1539,7 +1430,7 @@ async function renderHistory(){
     return `
       <div class="history-card ${isOpen ? 'history-card-open' : ''}" onclick="toggleHistoryDetail('${item.id}')">
         <div class="history-card-title">${escapeHtml(item.name)}</div>
-        <div class="history-card-meta">${escapeHtml(item.date)}${item.status === 'in_progress' ? ' · Не завершен' : ''}</div>
+        <div class="history-card-meta">${escapeHtml(item.date)}${isHistoryFinished(item) ? '' : ' · Не завершен'}</div>
       </div>
       ${isOpen ? buildHistoryDetailHtml(item) : ''}
     `;
@@ -1560,6 +1451,17 @@ function toggleHistoryDetail(id){
   renderHistory();
 }
 
+
+function isHistoryFinished(item){
+  if(item?.status === 'completed') return true;
+  const rounds = getRoundsForHistory(item);
+  const scores = item?.editData?.scores;
+  if(!rounds.length || !scores) return false;
+  return rounds.every((round, r)=>round.every((m, i)=>
+    scores[`a-${r}-${i}`] !== '' && scores[`a-${r}-${i}`] !== undefined &&
+    scores[`b-${r}-${i}`] !== '' && scores[`b-${r}-${i}`] !== undefined
+  ));
+}
 
 function getHistoryFormat(item){
   const value = item?.format || item?.editData?.format || 'pairs';
@@ -1709,16 +1611,8 @@ function copyHistoryReport(id){
 
 async function deleteHistoryTournament(id){
   if(!confirm('Удалить турнир?')) return;
-  const item = findHistoryItem(id);
   const filteredLocal = getLocalHistory().filter(t=>t.id !== id);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(filteredLocal));
-  if(item && item._cloudId && supabaseClient){
-    try {
-      await supabaseClient.from('tournaments').delete().eq('id', item._cloudId);
-    } catch(e){
-      console.warn('Cloud delete failed', e);
-    }
-  }
   currentHistory = currentHistory.filter(t => t.id !== id);
   renderHistory();
   const detail = document.getElementById('historyDetail');
@@ -1837,41 +1731,10 @@ function escapeHtml(value){
     .replaceAll("'","&#039;");
 }
 
-function getAllPlayers(){
-  let players = [];
-  try { players = JSON.parse(localStorage.getItem('playersList') || '[]'); } catch(e){ players = []; }
-  if(!Array.isArray(players)) players = [];
-  players = players.concat(defaultPlayers);
-
-  getHistoryDataSync().forEach(tournament=>{
-    (tournament.playerStats || []).forEach(p=>{
-      if(p && p.name) players.push(p.name);
-    });
-    (tournament.teams || []).forEach(team=>{
-      String(team || '').split(' · ').forEach(name=>players.push(name));
-    });
-  });
-
-  // Strict deduplication: normalize and compare case-insensitively, but keep original case of first occurrence
-  const seen = new Set();
-  const clean = [];
-  players.forEach(p=>{
-    const name = normalizePlayerName(p);
-    if(name){
-      const key = name.toLowerCase().trim();
-      if(!seen.has(key)){
-        seen.add(key);
-        clean.push(name);
-      }
-    }
-  });
-  clean.sort((a,b)=>a.localeCompare(b,'ru'));
-  return clean;
-}
 
 function cleanupOldLocalStorage(){
   // Remove old/obsolete localStorage keys to prevent clutter
-  const keysToRemove = ['padelAmericanoData', 'padelFlowDraft', 'tempTournament', 'padelFlowRatingSortMode'];
+  const keysToRemove = ['padelAmericanoData', 'padelFlowDraft', 'tempTournament', 'padelFlowRatingSortMode', 'playersList'];
   keysToRemove.forEach(key=>{
     if(localStorage.getItem(key)){
       localStorage.removeItem(key);
@@ -1887,109 +1750,10 @@ function getPlayerInputs(){
   return ids.map(id=>document.getElementById(id)).filter(Boolean);
 }
 
-function hidePlayerAutocomplete(){
-  const menu = document.getElementById('playerAutocompleteMenu');
-  if(menu){
-    menu.style.display = 'none';
-    menu.innerHTML = '';
-    menu.dataset.target = '';
-  }
-}
 
-function showPlayerAutocomplete(input){
-  const menu = document.getElementById('playerAutocompleteMenu');
-  if(!menu || !input) return;
 
-  const query = normalizePlayerName(input.value).toLowerCase();
-  const players = getAllPlayers();
-  const matches = players
-    .filter(name => !query || name.toLowerCase().includes(query))
-    .slice(0, 12);
 
-  const rect = input.getBoundingClientRect();
-  menu.style.left = `${rect.left}px`;
-  menu.style.top = `${rect.bottom + 4}px`;
-  menu.style.width = `${rect.width}px`;
-  menu.dataset.target = input.id;
 
-  if(!matches.length){
-    menu.innerHTML = `<div class="autocomplete-empty">Игрок не найден — имя сохранится после сохранения турнира</div>`;
-  } else {
-    menu.innerHTML = matches.map(name =>
-      `<div class="autocomplete-item" data-name="${escapeHtml(name)}">${escapeHtml(name)}</div>`
-    ).join('');
-  }
-
-  menu.style.display = 'block';
-
-  menu.querySelectorAll('.autocomplete-item').forEach(item=>{
-    item.addEventListener('mousedown', function(e){
-      e.preventDefault();
-      const target = document.getElementById(menu.dataset.target);
-      if(target){
-        target.value = this.dataset.name || this.textContent;
-        saveData();
-        renderTeamInputBadges();
-      }
-      hidePlayerAutocomplete();
-    });
-  });
-}
-
-function setupPlayerAutocomplete(){
-  const inputs = getPlayerInputs();
-
-  inputs.forEach(input=>{
-    input.setAttribute('list','playersList');
-
-    input.addEventListener('focus', ()=>showPlayerAutocomplete(input));
-    input.addEventListener('input', ()=>{
-      saveData();
-      renderTeamInputBadges();
-      showPlayerAutocomplete(input);
-    });
-    input.addEventListener('blur', ()=>{
-      setTimeout(()=>{
-        savePlayersFromFields();
-        hidePlayerAutocomplete();
-      }, 120);
-    });
-  });
-
-  window.addEventListener('resize', hidePlayerAutocomplete);
-  window.addEventListener('scroll', hidePlayerAutocomplete, true);
-}
-
-function loadPlayersList(){
-  try {
-    const clean = getAllPlayers();
-    localStorage.setItem('playersList', JSON.stringify(clean));
-
-    const list = document.getElementById('playersList');
-    if(list){
-      list.innerHTML = clean.map(p=>`<option value="${escapeHtml(p)}">`).join('');
-    }
-  } catch(e){
-    console.warn('loadPlayersList error:', e);
-  }
-}
-
-function savePlayersFromFields(){
-  let players = [];
-  try { players = JSON.parse(localStorage.getItem('playersList') || '[]'); } catch(e){ players = []; }
-  const normalizedExisting = players.map(p=>normalizePlayerKey(p));
-  getPlayerInputs().forEach(el=>{
-    const name = stripPlayerBadge(el ? el.value : '');
-    if(!name) return;
-    const normalized = normalizePlayerKey(name);
-    if(normalized && !normalizedExisting.includes(normalized)){
-      players.push(name);
-      normalizedExisting.push(normalized);
-    }
-  });
-  localStorage.setItem('playersList', JSON.stringify(players));
-  loadPlayersList();
-}
 
 function autoFill(r,i,side){
   const a = document.getElementById(`a-${r}-${i}`);
@@ -2031,11 +1795,13 @@ function generateMatches(){
     let html = "";
 
     rounds.forEach((round,r)=>{
-      html += `<section class="round-section"><div class="round-heading"><h2>Раунд ${r+1}</h2><span>${round.length} ${pluralGames(round.length)} · до ${limit}</span></div><div class="round-matches">`;
+      // Справа от номера раунда — корт. Если кортов несколько, перечисляем их.
+      const roundCourts = [...new Set(round.map(m=>getCourtName(m[2])))];
+      html += `<section class="round-section"><div class="round-heading"><h2>Раунд ${r+1}</h2><span>${escapeHtml(roundCourts.join(' · '))}</span></div><div class="round-matches">`;
       round.forEach((m,i)=>{
         html += `
       <div class="match">
-        <div class="court">${escapeHtml(getCourtName(m[2]))}</div>
+        ${round.length > 1 ? `<div class="court">${escapeHtml(getCourtName(m[2]))}</div>` : ''}
         <div class="teams">${escapeHtml(getMatchSideLabel(m[0]))} vs ${escapeHtml(getMatchSideLabel(m[1]))}</div>
         <div class="score">
           <input type="number" id="a-${r}-${i}" placeholder="0" min="0" max="${limit}" oninput="autoFill(${r},${i},'a')">
@@ -2146,11 +1912,7 @@ function computeGroupStats(){
 
   Object.keys(stats).forEach(t=>stats[t].delta = stats[t].scored - stats[t].conceded);
 
-  const sorted = Object.entries(stats).sort((a,b)=>{
-    if(b[1].delta !== a[1].delta) return b[1].delta - a[1].delta;
-    if(b[1].scored !== a[1].scored) return b[1].scored - a[1].scored;
-    return b[1].wins - a[1].wins;
-  });
+  const sorted = Object.entries(stats).sort((a,b)=>compareStandings(a[1], b[1]));
 
   return {teams, stats, sorted};
 }
@@ -2228,6 +1990,7 @@ html += `
     </table>
   </div>
 </div>
+<div class="ranking-note">Места ${escapeHtml(getRankingModeLabel())}</div>
 `;
 
   if(allGroupRoundsFilled()){
@@ -2236,8 +1999,7 @@ html += `
     html += `
     <div id="group-action-buttons" class="button-row">
       ${canPlayoff ? `<button class="secondary" onclick="startPlayoff()">Играть плей-офф</button>` : ``}
-      <button class="secondary" onclick="finishWithoutPlayoff()">${individual ? 'Завершить турнир' : 'Завершить без плей-офф'}</button>
-      <button class="secondary" onclick="saveTournament()">Сохранить турнир</button>
+      <button onclick="finishWithoutPlayoff()">${canPlayoff ? 'Завершить без плей-офф' : 'Завершить турнир'}</button>
     </div>
     <div id="playoff-section"></div>
     `;
@@ -2250,9 +2012,10 @@ html += `
 
 
 function finishWithoutPlayoff(){
-  const question = isIndividual()
-    ? 'Завершить турнир? Результаты будут сохранены в историю.'
-    : 'Завершить турнир без плей-офф? Результаты группового этапа будут сохранены в историю.';
+  const canPlayoff = !isIndividual() && [4,6].includes(getPairCount());
+  const question = canPlayoff
+    ? 'Завершить турнир без плей-офф? Результаты будут сохранены в историю.'
+    : 'Завершить турнир? Результаты будут сохранены в историю.';
   if(!confirm(question)) return;
   playoffStarted = false;
   document.querySelectorAll('input[id^="playoff-a-"], input[id^="playoff-b-"]').forEach(input=>{
@@ -2770,7 +2533,6 @@ function saveData(){
   try {
     // clear previous validation highlights when saving
     clearErrorBorders();
-    updatePreStartChecklist();
 
     const tn = document.getElementById('tournamentName');
     const td = document.getElementById('tournamentDate');
@@ -2799,10 +2561,10 @@ function saveData(){
       name: tn?.value || 'Американо',
       date: td?.value || '',
       format: getTournamentFormat(),
+      rankingMode: getRankingMode(),
       playerCount: document.getElementById('playerCount')?.value || '',
       individualCircleCount: document.getElementById('individualCircleCount')?.value || '',
       tournamentId: editingTournamentId || '',
-      cloudId: editingCloudId || '',
       pairCount: pc?.value || '',
       courtCount: cc?.value || '',
       roundLimit: getRoundLimit(),
@@ -2853,7 +2615,7 @@ function saveData(){
 
     const draft = {
       snapshot: data,
-      activeTab: document.querySelector('.tab-button.active')?.dataset.tab || 'tournament',
+      activeTab: document.querySelector('.tab-content.active')?.id?.replace('tab-','') || 'tournament',
       savedAt: new Date().toISOString()
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -2870,7 +2632,6 @@ function saveData(){
 function startFreshTournament(){
   removeDraft();
   editingTournamentId = null;
-  editingCloudId = null;
   const ids = ['tournamentName','tournamentDate','court1','court2','court3','team1a','team1b','team2a','team2b','team3a','team3b','team4a','team4b','team5a','team5b','team6a','team6b'];
   ids.forEach(id=>{
     const el = document.getElementById(id);
@@ -2878,6 +2639,8 @@ function startFreshTournament(){
   });
   const fmt = document.getElementById('tournamentFormat');
   if(fmt) fmt.value = '';
+  const rnk = document.getElementById('rankingMode');
+  if(rnk) rnk.value = 'delta';
   const plc = document.getElementById('playerCount');
   if(plc) plc.value = '';
   const icc = document.getElementById('individualCircleCount');
@@ -2977,10 +2740,6 @@ function updateHomeScreenContinueButton(){
 function showHomeScreen(){
   const home = document.getElementById('homeScreen');
   if(home) home.style.display = 'block';
-  const tabsBar = document.getElementById('tabsBar');
-  if(tabsBar) tabsBar.style.display = 'none';
-  const homeBar = document.getElementById('goHomeBar');
-  if(homeBar) homeBar.style.display = 'none';
   const draftBar = document.getElementById('draftBar');
   if(draftBar) draftBar.style.display = 'none';
   document.querySelectorAll('.tab-content').forEach(content=>{
@@ -2996,18 +2755,11 @@ function showHomeScreen(){
 function hideHomeScreen(){
   const home = document.getElementById('homeScreen');
   if(home) home.style.display = 'none';
-  const homeBar = document.getElementById('goHomeBar');
-  if(homeBar){
-    const activeTab = document.querySelector('.tab-button.active')?.dataset.tab || 'tournament';
-    homeBar.style.display = activeTab === 'tournament' ? 'block' : 'none';
-  }
 }
 
 function showTournamentTab(){
   hideHomeScreen();
   switchTab('tournament');
-  const homeBar = document.getElementById('goHomeBar');
-  if(homeBar) homeBar.style.display = 'block';
 }
 
 function startNewTournamentFromHome(){
@@ -3075,7 +2827,6 @@ function restoreDraft(draft){
 
   // Возвращаем идентичность турнира ДО первого автосейва, иначе он заведет дубль в истории.
   editingTournamentId = snapshot.tournamentId || null;
-  editingCloudId = snapshot.cloudId || null;
 
   const fieldMap = {
     tournamentName: snapshot.name || '',
@@ -3105,6 +2856,8 @@ function restoreDraft(draft){
   // Формат восстанавливаем первым: от него зависят и поля, и расписание.
   const formatEl = document.getElementById('tournamentFormat');
   if(formatEl) formatEl.value = snapshot.format === 'individual' ? 'individual' : 'pairs';
+  const rankingEl = document.getElementById('rankingMode');
+  if(rankingEl) rankingEl.value = RANKING_MODES.includes(snapshot.rankingMode) ? snapshot.rankingMode : 'delta';
   const playerCountEl = document.getElementById('playerCount');
   if(playerCountEl) playerCountEl.value = snapshot.playerCount ? String(snapshot.playerCount) : '';
   const individualCircleCountEl = document.getElementById('individualCircleCount');
@@ -3141,7 +2894,6 @@ function restoreDraft(draft){
   updateCourtFields();
   onRoundLimitChange();
   refreshRounds();
-  renderTeamInputBadges();
 
   setTournamentStarted(Boolean(snapshot.tournamentStarted));
   playoffStarted = Boolean(snapshot.playoffStarted);
@@ -3219,8 +2971,6 @@ function setTournamentLocked(locked){
     const el = document.getElementById(id);
     if(el) el.disabled = tournamentLocked;
   });
-  const btn = document.getElementById('editSettingsBtn');
-  if(btn) btn.style.display = tournamentLocked ? 'inline-block' : 'none';
 }
 
 function clearErrorBorders(){
@@ -3267,45 +3017,6 @@ function highlightEmptyScores(){
   if(status) status.textContent = missing.length ? 'Заполнены не все результаты' : '';
 }
 
-function updatePreStartChecklist(){
-  const el = document.getElementById('preStartChecklist');
-  if(!el) return;
-  const format = getTournamentFormat();
-  const individual = isIndividual();
-  const roundLimit = getRoundLimit();
-  const courtCount = getCourtCount();
-  const playersFilled = getNameBlockCount() ? playersAreFilled() : false;
-  const duplicates = hasDuplicatePlayers();
-
-  const sizeCount = individual ? getPlayerCount() : getPairCount();
-  const lengthCount = individual ? getIndividualCircleCount() : getRoundCount();
-
-  const checks = [
-    {ok: !!format, text: format ? (individual ? 'индивидуальный' : 'парный') : 'выберите формат турнира'},
-    {ok: !!sizeCount, text: sizeCount
-      ? (individual ? `${sizeCount} игроков` : `${sizeCount} пары`)
-      : (individual ? 'выберите количество игроков' : 'выберите количество пар')},
-    {ok: !!lengthCount, text: lengthCount ? `${lengthCount} круга` : 'выберите количество кругов'},
-    {ok: !!roundLimit, text: roundLimit ? `до ${roundLimit}` : 'выберите лимит очков'},
-    {ok: !!courtCount, text: courtCount ? `${courtCount} корта` : 'выберите количество кортов'},
-    {ok: playersFilled && !duplicates, text: !playersFilled
-      ? 'заполните всех игроков'
-      : (duplicates ? 'игроки не должны повторяться' : 'все игроки заполнены')}
-  ];
-
-  const plan = getIndividualPlan();
-  if(plan){
-    const matchesText = plan.minMatches === plan.maxMatches
-      ? `${plan.minMatches}`
-      : `${plan.minMatches}–${plan.maxMatches}`;
-    const restText = plan.resting > 0 ? `, отдыхают по ${plan.resting} за раунд` : '';
-    checks.push({ok: true, text: `${plan.rounds} раундов, каждый сыграет ${matchesText} матчей${restText}`});
-  }
-
-  const allOk = checks.every(c=>c.ok);
-  el.innerHTML = `<strong>Проверьте перед стартом:</strong><br>` + checks.map(c=>`<div class="${c.ok? 'ok':'miss'}">— ${c.text}</div>`).join('');
-  el.style.color = allOk ? '#9ca3af' : '';
-}
 
 function hasDuplicatePlayers(){
   if(!isIndividual()) return false;
@@ -3643,6 +3354,8 @@ function getPersonalStats(){
 
 
 function canAutoSaveTournamentProgress(){
+  // Турнир финализируется — отложенные автосейвы не должны вернуть статус "не завершен".
+  if(finalizingTournament) return false;
   if(!tournamentStarted || !getRoundLimit() || !getCourtCount()) return false;
   return isIndividual()
     ? Boolean(getPlayerCount() && getIndividualCircleCount())
@@ -3661,66 +3374,8 @@ function hasAnyScoreEntered(){
   return any;
 }
 
-function updateCloudStatus(state){
-  const el = document.getElementById('cloudStatus');
-  if(!el) return;
-  if(!supabaseClient){
-    el.textContent = '· облако недоступно';
-    el.style.color = '#888';
-    return;
-  }
-  if(state === 'ok'){
-    const dt = new Date();
-    el.textContent = `· в облаке: ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
-    el.style.color = '#9ca3af';
-  } else if(state === 'error'){
-    el.textContent = '· облако недоступно, сохранено локально';
-    el.style.color = '#ef4444';
-  } else {
-    el.textContent = '';
-  }
-}
 
-function scheduleCloudProgressSave(){
-  if(!supabaseClient) return;
-  window.clearTimeout(cloudProgressTimer);
-  const since = Date.now() - lastCloudProgressAt;
-  const delay = since >= CLOUD_PROGRESS_MIN_INTERVAL ? 1500 : (CLOUD_PROGRESS_MIN_INTERVAL - since);
-  cloudProgressTimer = window.setTimeout(()=>{ pushProgressToCloud(); }, delay);
-}
 
-async function pushProgressToCloud(){
-  if(!supabaseClient) return;
-  if(typeof navigator !== 'undefined' && navigator.onLine === false) return;
-  if(!canAutoSaveTournamentProgress() || !hasAnyScoreEntered()) return;
-  if(!editingTournamentId) return;
-
-  const entry = getLocalHistory().find(item => String(item.id) === String(editingTournamentId));
-  if(!entry) return;
-
-  lastCloudProgressAt = Date.now();
-  try {
-    const result = await saveTournamentToCloud(entry, editingCloudId || entry._cloudId || null);
-    if(result.ok){
-      if(result.cloudId){
-        editingCloudId = result.cloudId;
-        const saved = getLocalHistory();
-        const index = saved.findIndex(item => String(item.id) === String(entry.id));
-        if(index >= 0){
-          saved[index]._cloudId = result.cloudId;
-          localStorage.setItem(HISTORY_KEY, JSON.stringify(saved));
-        }
-      }
-      updateCloudStatus('ok');
-    } else {
-      console.warn('pushProgressToCloud failed', result.error);
-      updateCloudStatus('error');
-    }
-  } catch(e){
-    console.warn('pushProgressToCloud error:', e);
-    updateCloudStatus('error');
-  }
-}
 
 function autoSaveTournamentProgress(){
   if(!canAutoSaveTournamentProgress()) return;
@@ -3744,12 +3399,10 @@ function upsertTournamentProgressToHistory(status='in_progress'){
 
   const entry = buildTournamentHistoryEntry(status);
   entry.id = editingTournamentId;
-  if(editingCloudId) entry._cloudId = editingCloudId;
 
   let saved = getLocalHistory();
   const index = saved.findIndex(item => String(item.id) === String(entry.id));
   if(index >= 0){
-    entry._cloudId = saved[index]._cloudId || entry._cloudId;
     saved[index] = {...saved[index], ...entry};
   } else {
     saved.push(entry);
@@ -3780,10 +3433,10 @@ function getCurrentTournamentSnapshot(){
     name: document.getElementById('tournamentName')?.value || '',
     date: document.getElementById('tournamentDate')?.value || '',
     format: getTournamentFormat(),
+    rankingMode: getRankingMode(),
     playerCount: document.getElementById('playerCount')?.value || '',
     individualCircleCount: document.getElementById('individualCircleCount')?.value || '',
     tournamentId: editingTournamentId || '',
-    cloudId: editingCloudId || '',
     pairCount: document.getElementById('pairCount')?.value || String(DEFAULT_PAIR_COUNT),
     courtCount: document.getElementById('courtCount')?.value || String(DEFAULT_COURT_COUNT),
     roundLimit: getRoundLimit(),
@@ -3831,7 +3484,6 @@ function editHistoryTournament(id){
 
   const data = item.editData;
   editingTournamentId = item.id;
-  editingCloudId = item._cloudId || null;
 
   const snapshot = {
     ...item,
@@ -3858,6 +3510,8 @@ function editHistoryTournament(id){
 
   const formatEl = document.getElementById('tournamentFormat');
   if(formatEl) formatEl.value = getHistoryFormat(item);
+  const rankingEl = document.getElementById('rankingMode');
+  if(rankingEl) rankingEl.value = RANKING_MODES.includes(snapshot.rankingMode) ? snapshot.rankingMode : 'delta';
   const playerCountEl = document.getElementById('playerCount');
   if(playerCountEl) playerCountEl.value = snapshot.playerCount ? String(snapshot.playerCount) : '';
   const individualCircleCountEl = document.getElementById('individualCircleCount');
@@ -3909,7 +3563,6 @@ function editHistoryTournament(id){
     tryRenderTournamentTable();
   }
 
-  renderTeamInputBadges();
   saveData();
   loadScores();
   updateHeader('tournament');
@@ -3927,6 +3580,7 @@ function buildTournamentHistoryEntry(status='completed'){
     name: getTournamentNameValue(),
     date: getTournamentDateDisplay(),
     format: getTournamentFormat() || 'pairs',
+    rankingMode: getRankingMode(),
     playerCount: getPlayerCount(),
     pairCount: getPairCount(),
     courtCount: getCourtCount(),
@@ -3949,19 +3603,15 @@ function buildTournamentHistoryEntry(status='completed'){
 }
 
 async function saveTournament(){
-  savePlayersFromFields();
+  finalizingTournament = true;
+  window.clearTimeout(autoHistorySaveTimer);
   const entry = buildTournamentHistoryEntry();
   let saved = getLocalHistory();
 
-  if(editingTournamentId){
-    entry._cloudId = editingCloudId || entry._cloudId;
-  }
-
-  // Prevent duplicate entries: update by tournament id first, then fall back to matching snapshot.
+  // Не плодим дубли: сначала ищем по id турнира, потом по совпадению снимка данных.
   let updated = false;
   const existingIndexById = saved.findIndex(item => String(item.id) === String(entry.id));
   if(existingIndexById >= 0){
-    entry._cloudId = saved[existingIndexById]._cloudId || entry._cloudId;
     saved[existingIndexById] = entry;
     updated = true;
   }
@@ -3973,7 +3623,6 @@ async function saveTournament(){
         const itemKey = JSON.stringify(saved[i].editData || {});
         if(itemKey === currentKey){
           entry.id = saved[i].id || entry.id;
-          entry._cloudId = saved[i]._cloudId || entry._cloudId;
           saved[i] = entry;
           updated = true;
           break;
@@ -3993,31 +3642,15 @@ async function saveTournament(){
   currentHistory = [entry, ...currentHistory.filter(item => item.id !== entry.id)];
   removeDraft();
 
-  // Show completion card if all playoff places are filled
-  const cloudResult = await saveTournamentToCloud(entry, editingCloudId || entry._cloudId);
-  if(cloudResult.ok && cloudResult.cloudId){
-    // Запоминаем id облачной строки, иначе повторное сохранение создаст дубль турнира.
-    entry._cloudId = cloudResult.cloudId;
-    const persisted = getLocalHistory();
-    const persistedIndex = persisted.findIndex(item => String(item.id) === String(entry.id));
-    if(persistedIndex >= 0){
-      persisted[persistedIndex]._cloudId = cloudResult.cloudId;
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(persisted));
-    }
-    currentHistory = [entry, ...currentHistory.filter(item => String(item.id) !== String(entry.id))];
-  }
-  if(cloudResult.ok){
-    if(updated || editingTournamentId) alert('Готово! Турнир обновлен');
-    else alert('Готово! Турнир сохранен');
-  } else {
-    console.warn('Supabase save failed', cloudResult.error);
-    alert('Турнир сохранен локально. Облако временно недоступно.');
-  }
-
+  const savedId = entry.id;
   editingTournamentId = null;
-  editingCloudId = null;
-  renderHistory();
   startFreshTournament();
+  finalizingTournament = false;
+
+  // Сразу показываем сохранённый турнир — раскрытым, без лишних подтверждений.
+  openedHistoryId = savedId;
+  switchTab('history');
+  window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
 function clearTournament(){
@@ -4032,15 +3665,11 @@ async function initApp(){
   
   refreshRounds();
   await loadTournamentHistory();
-  loadPlayersList();
   loadDraftPrompt();
   updateFormatFields();
-  setupPlayerAutocomplete();
-  renderTeamInputBadges();
   hidePostResultButtons();
   updateStartTournamentState();
   updateCalculateResultsState();
-  updatePreStartChecklist();
 
   const saveDraftNow = document.getElementById('saveDraftNowBtn');
   if(saveDraftNow){
@@ -4052,31 +3681,6 @@ async function initApp(){
     });
   }
 
-  const editBtn = document.getElementById('editSettingsBtn');
-  if(editBtn){
-    editBtn.addEventListener('click', ()=>{
-      if(!confirm('Изменение настроек пересоздаст расписание и может удалить введенные счета. Продолжить?')) return;
-      // unlock and regenerate schedule, clear scores
-      setTournamentLocked(false);
-      // clear all score inputs
-      rounds.forEach((round,r)=>{
-        round.forEach((m,i)=>{
-          const a = document.getElementById(`a-${r}-${i}`);
-          const b = document.getElementById(`b-${r}-${i}`);
-          if(a) a.value = '';
-          if(b) b.value = '';
-        });
-      });
-      ['playoff-a-sf1','playoff-b-sf1','playoff-a-sf2','playoff-b-sf2','playoff-a-final','playoff-b-final','playoff-a-3rd','playoff-b-3rd'].forEach(id=>{
-        const el = document.getElementById(id);
-        if(el) el.value = '';
-      });
-      generateMatches();
-      saveData();
-      updatePreStartChecklist();
-      alert('Настройки разблокированы. Расписание пересоздано, счета очищены.');
-    });
-  }
 
   // Телефон блокируется или приложение уходит в фон — фиксируем состояние немедленно.
   document.addEventListener('visibilitychange', ()=>{
@@ -4097,7 +3701,6 @@ async function initApp(){
     try { saveData(); } catch(e){ console.warn('pagehide save error:', e); }
   });
 
-  updateCloudStatus('');
 }
 
 function registerServiceWorker(){
