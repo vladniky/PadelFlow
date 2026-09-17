@@ -301,15 +301,34 @@ function check(name, cond, extra){
   check('ключ playersList не остаётся в хранилище',
         (await page.evaluate(()=>localStorage.getItem('playersList'))) === null);
 
-  console.log('\n== 8h. Заголовок раунда показывает корт ==');
-  const headingSpan = await page.locator('#matches .round-heading span').first().innerText();
-  check('справа от "Раунд 1" — корт', headingSpan.includes('Корт'), headingSpan);
-  check('старого "N игр · до X" нет', !headingSpan.includes('до '), headingSpan);
-  const headSizes = await page.evaluate(()=>{
-    const h = document.querySelector('.round-heading h2'), s = document.querySelector('.round-heading span');
-    return {h: getComputedStyle(h).fontSize, s: getComputedStyle(s).fontSize};
+  console.log('\n== 8h. Раунд и корт живут в карточке ==');
+  check('отдельной шапки раунда больше нет', (await page.locator('.round-heading').count()) === 0);
+  const cardCourt = await page.locator('#matches .match .court').first().innerText();
+  check('в карточке есть номер раунда', /Раунд\s*1/.test(cardCourt), cardCourt);
+  check('в карточке есть корт', /Корт/.test(cardCourt), cardCourt);
+  check('подпись у каждой карточки',
+        (await page.locator('#matches .match .court').count()) === (await page.locator('#matches .match').count()));
+
+  console.log('\n== 8i. Ввод счёта: автопереход и остров ==');
+  const firstA = await page.locator('#matches input[id^="a-"]').first().getAttribute('id');
+  const secondA = await page.locator('#matches input[id^="a-"]').nth(1).getAttribute('id');
+  await page.focus('#' + firstA);
+  check('во время ввода остров уезжает',
+        await page.evaluate(()=>document.body.classList.contains('score-typing')));
+  await page.waitForTimeout(350);   // у острова анимация ухода
+  const navHidden = await page.evaluate(()=>{
+    const n = document.querySelector('.mobile-nav');
+    return n ? getComputedStyle(n).opacity : '1';
   });
-  check('шрифт корта как у "Раунд 1"', headSizes.h === headSizes.s, JSON.stringify(headSizes));
+  check('остров невидим при вводе', parseFloat(navHidden) < 0.5, navHidden);
+  await page.fill('#' + firstA, '30');   // лимит 32, дописать нечего -> прыжок
+  await page.waitForTimeout(400);
+  const focused = await page.evaluate(()=>document.activeElement && document.activeElement.id);
+  check('после ввода фокус на следующей игре', focused === secondA, 'фокус на ' + focused);
+  await page.evaluate(()=>document.activeElement.blur());
+  await page.waitForTimeout(300);
+  check('после ввода остров возвращается',
+        !(await page.evaluate(()=>document.body.classList.contains('score-typing'))));
 
   console.log('\n== 9. Одна кнопка завершения и История ==');
   check('кнопки "Сохранить турнир" рядом с завершением нет',
@@ -394,7 +413,8 @@ function check(name, cond, extra){
   const soloMatches = await page.locator('#matches .match').count();
   check('1 круг на 8 игроков / 2 корта = 7 раундов = 14 матчей', soloMatches === 14, 'получено ' + soloMatches);
   const firstCard = await page.locator('#matches .match').first().innerText();
-  check('в карточке двое против двоих', (firstCard.match(/ · /g) || []).length === 2, firstCard.replace(/\n/g,' | '));
+  const firstTeams = await page.locator('#matches .match .teams').first().innerText();
+  check('в карточке двое против двоих', (firstTeams.match(/ · /g) || []).length === 2, firstTeams);
 
   // каждый игрок ровно 5 матчей, партнёры не повторяются
   const rotation = await page.evaluate(()=>{
@@ -434,7 +454,8 @@ function check(name, cond, extra){
         (resultsText.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu)||[]).join(''));
   check('колонка называется "Игрок"', resultsText.includes('Игрок'));
   check('нет кнопки плей-офф', (await page.locator('button:has-text("Играть плей-офф")').count()) === 0);
-  check('есть кнопка "Завершить турнир"', (await page.locator('button:has-text("Завершить турнир")').count()) === 1);
+  check('есть кнопка "Завершить турнир"',
+        (await page.locator('#group-action-buttons button:has-text("Завершить турнир")').count()) === 1);
   const sumScored = await page.evaluate(()=>{
     const d = computeGroupStats();
     return d.sorted.reduce((acc,x)=>acc+x[1].scored,0);
@@ -513,8 +534,8 @@ function check(name, cond, extra){
         (await page.locator('#matches .match').count()) === 14);
   const restLines = await page.locator('#matches .resting').count();
   check('в каждом раунде показано кто отдыхает', restLines === 14, 'получено ' + restLines);
-  check('при одном матче корт не дублируется в карточке',
-        (await page.locator('#matches .match .court').count()) === 0);
+  const soloCourt = await page.locator('#matches .match .court').first().innerText();
+  check('в карточке и раунд, и корт', /Раунд\s*1/.test(soloCourt) && /Корт/.test(soloCourt), soloCourt);
   const firstRest = await page.locator('#matches .resting').first().innerText();
   check('отдыхают ровно четверо', firstRest.replace('Отдыхают: ','').split(',').length === 4, firstRest);
 
