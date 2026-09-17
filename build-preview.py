@@ -62,9 +62,9 @@ else:
 
 # --- плашка песочницы, в тех же цветах что и приложение ---
 banner = '''<style>
-.preview-note{background:#1c2410;border:1px solid #3d5416;border-radius:14px;padding:12px 14px;
-  margin-bottom:18px;color:#cfe6a3;font-size:14px;line-height:1.5}
-.preview-note b{color:#b7ff2a}
+.preview-note{background:#06214a;border:1px solid #14407f;border-radius:14px;padding:12px 14px;
+  margin-bottom:18px;color:#c6d0dd;font-size:14px;line-height:1.5}
+.preview-note b{color:#d0ff41}
 </style>
 <div class="preview-note">
   <b>Превью для проверки.</b> Результаты сохраняются только в этом окне и не попадают

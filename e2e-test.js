@@ -245,6 +245,44 @@ function check(name, cond, extra){
         !homeText.includes('Чёткий ритм') && !homeText.includes('Игра начинается здесь'), homeText.replace(/\n/g,' | '));
   check('про офлайн в описании не обещаем', !homeText.includes('интернет'));
   check('описания на главной нет', (await page.locator('#homeScreen p').count()) === 0);
+  check('на главной нарисован корт', (await page.locator('#homeScreen svg.home-court').count()) === 1);
+  const palette = await page.evaluate(()=>{
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim().toLowerCase();
+    return {blue:v('--elite-blue'), volt:v('--volt-lime'), silver:v('--silver-cloud'),
+            accent:v('--lime'), field:getComputedStyle(document.getElementById('homeScreen')).backgroundImage};
+  });
+  check('палитра объявлена токенами',
+        palette.blue === '#0250b0' && palette.volt === '#d0ff41' && palette.silver === '#c6d0dd',
+        JSON.stringify(palette));
+  check('акцент — volt lime', palette.accent === '#d0ff41', palette.accent);
+  check('поле корта синее', /rgb\(2, 80, 176\)/.test(palette.field), palette.field.slice(0,90));
+  const greens = await page.evaluate(()=>{
+    // старые зелёные акценты не должны нигде остаться
+    const bad = ['rgb(183, 255, 42)','rgb(189, 232, 90)','rgb(120, 157, 32)','rgb(118, 199, 125)'];
+    const hits = [];
+    document.querySelectorAll('*').forEach(el=>{
+      const s = getComputedStyle(el);
+      [s.color, s.backgroundColor, s.borderTopColor].forEach(c=>{ if(bad.includes(c)) hits.push(el.tagName+':'+c); });
+    });
+    return hits.slice(0,5);
+  });
+  check('старой зелёной гаммы не осталось', greens.length === 0, JSON.stringify(greens));
+  const court = await page.evaluate(()=>{
+    const svg = document.querySelector('.home-court');
+    if(!svg) return null;
+    const r = svg.getBoundingClientRect();
+    const lines = svg.querySelectorAll('.court-lines line').length;
+    const net = svg.querySelector('.court-net');
+    // корт не должен быть перекрыт кнопками
+    const btn = document.querySelector('#homeScreen .home-actions button').getBoundingClientRect();
+    return {h:Math.round(r.height), w:Math.round(r.width), lines, hasNet:!!net,
+            overlapsButton: r.bottom > btn.top};
+  });
+  check('разметка корта: 3 линии + сетка', court && court.lines === 3 && court.hasNet, JSON.stringify(court));
+  check('пропорция корта 1:2 как в реальности',
+        court && Math.abs(court.h / court.w - 2) < 0.06, JSON.stringify(court));
+  check('кнопки не перекрывают корт', court && !court.overlapsButton, JSON.stringify(court));
   await page.click('#continueDraftHomeBtn');
   await page.waitForTimeout(800);
 
