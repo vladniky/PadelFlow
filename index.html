@@ -223,8 +223,8 @@ button{min-height:50px;margin:12px 0;padding:0 22px;border:0;border-radius:2px;b
 button:hover{filter:brightness(1.03);transform:translateY(-1px)}button:active{transform:translateY(0)}
 .secondary{background:var(--panel);color:var(--chalk)}.danger{background:transparent!important;color:var(--coral)!important;border:1px solid rgba(255,106,90,.55)!important}
 #startTournamentBtn{margin:2px 0 0;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));font-size:13px}
-.round-section{margin-top:28px}.round-heading{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:12px;padding-bottom:11px;border-bottom:1px solid var(--line)}
-.round-heading h2{margin:0;color:var(--ink);font:700 30px/1 var(--display);text-transform:uppercase}.round-heading span{color:var(--muted);font:700 30px/1 var(--display);text-transform:uppercase}
+.round-section{margin-top:28px}
+
 .round-matches{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.round-matches .resting{grid-column:1/-1}
 .match,.result-card{position:relative;overflow:hidden;margin:0;padding:22px;border:1px solid var(--line);border-radius:6px;background:var(--surface);box-shadow:none}
 .match:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--lime-deep)}
@@ -232,7 +232,7 @@ button:hover{filter:brightness(1.03);transform:translateY(-1px)}button:active{tr
 .score{position:relative;grid-template-columns:1fr 1fr;gap:9px}.score:after{content:":";position:absolute;left:50%;top:50%;z-index:2;transform:translate(-50%,-50%);color:var(--lime-deep);font:600 14px/1 var(--mono);pointer-events:none}.score input{height:64px;padding:0 12px;background:var(--panel);border-color:var(--line-dark);color:var(--chalk);font:600 28px/1 var(--mono);text-align:center;font-variant-numeric:tabular-nums}.score input{caret-color:transparent}
 .score input:focus{border-color:var(--lime);background:#0a2a57;box-shadow:0 0 0 3px rgba(208,255,65,.30)}
 .resting{margin:0;padding:12px;border:1px dashed var(--line);color:var(--muted);font:600 10px/1.45 var(--mono);text-transform:uppercase}
-.button-row{gap:10px;margin:16px 0}.button-row button{min-width:170px;margin:0}
+.button-row{gap:10px;margin:16px 0}.button-row button{min-width:0;margin:0;white-space:normal;padding-inline:16px}
 #calculateStatus,#startStatus{color:var(--coral);font:600 10px/1.4 var(--mono)}
 #results>h2,#playoff-section>h2,#playoff-finals>h3,#tournament-table>h2{margin:34px 0 16px!important;color:var(--ink);font:700 clamp(30px,4vw,46px)/.95 var(--display);text-align:left!important;text-transform:uppercase}
 
@@ -246,15 +246,20 @@ button:hover{filter:brightness(1.03);transform:translateY(-1px)}button:active{tr
 
 .mobile-nav{display:none}
 .error-border{border-color:var(--coral)!important;box-shadow:0 0 0 3px rgba(255,106,90,.12)!important}
+input[type="date"]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;text-align:left}
+input[type="date"]::-webkit-date-and-time-value{margin:0;text-align:left;line-height:normal}
+input[type="date"]::-webkit-datetime-edit{padding:0;line-height:normal;overflow:hidden}
+input[type="date"]::-webkit-calendar-picker-indicator{margin:0;opacity:.55}
 @media(max-width:1050px){.app-shell{grid-template-columns:84px minmax(0,1fr)}.app-sidebar{padding:24px 14px}.brand-word,.sidebar-session,.sidebar-nav button span:last-child,.sidebar-foot span{display:none}.brand-button,.sidebar-nav button,.sidebar-foot{justify-content:center}.sidebar-nav button{padding:0}.nav-index{width:auto}.settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){
   body{padding:0}.app-shell{display:block;max-width:100%}.app-sidebar{display:none}.app-main{width:100%;max-width:100%;padding:20px 16px calc(96px + env(safe-area-inset-bottom))}
   .tabs{top:8px;width:100%;max-width:100%;margin-bottom:16px;overflow:hidden}.tab-button{flex:1 1 0;min-width:0;font-size:10px}.home-screen{min-height:calc(100vh - 135px);padding:27px 21px}.home-screen h1{font-size:58px}.home-screen .home-actions{grid-template-columns:1fr}
   .settings-grid,.courts-grid,.teams-grid{grid-template-columns:1fr!important;padding:58px 18px 18px}.settings-grid:before,.courts-grid:before,.teams-grid:before{left:18px;top:22px;font-size:21px}.settings-grid:after{display:none}.team-inputs{grid-template-columns:1fr 1fr}
   #draftBar{flex-wrap:wrap}#draftBar #saveDraftNowBtn{width:100%!important;margin:4px 0 0!important}.round-matches{grid-template-columns:1fr}.match{padding:18px}.match .teams{min-height:auto;font-size:22px;white-space:normal;overflow:visible}.score input{height:58px}.button-row{display:grid}.button-row button{width:100%;min-width:0}.history-card{padding:18px 48px 18px 16px}.history-card-title{font-size:22px}.history-card:after{right:17px}.history-detail{padding:18px}
-  .mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:45;display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:7px 10px calc(7px + env(safe-area-inset-bottom));border-top:1px solid var(--line-dark);background:var(--panel)}.mobile-nav button{height:54px;min-height:54px;margin:0;padding:0;border:0;background:transparent;color:var(--muted-dark);font:600 8px/1 var(--mono);box-shadow:none}.mobile-nav button:hover,.mobile-nav button.active{transform:none;color:var(--lime)}
+  body.score-typing .mobile-nav{transform:translateY(150%);opacity:0;pointer-events:none}
+  .mobile-nav{transition:transform .18s ease,opacity .18s ease;position:fixed;left:0;right:0;bottom:0;z-index:45;display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:7px 10px calc(7px + env(safe-area-inset-bottom));border-top:1px solid var(--line-dark);background:var(--panel)}.mobile-nav button{height:54px;min-height:54px;margin:0;padding:0;border:0;background:transparent;color:var(--muted-dark);font:600 8px/1 var(--mono);box-shadow:none}.mobile-nav button:hover,.mobile-nav button.active{transform:none;color:var(--lime)}
 }
-@media(max-width:430px){.team-inputs{grid-template-columns:1fr}.round-heading h2,.round-heading span{font-size:22px}.score input{font-size:24px}.tourney-table{min-width:610px}}
+@media(max-width:430px){.team-inputs{grid-template-columns:1fr}.score input{font-size:24px}.tourney-table{min-width:610px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* Organic visual language */
@@ -272,7 +277,7 @@ body:before{opacity:.16;background-size:44px 44px}
 .settings-grid,.courts-grid,.teams-grid{gap:15px;margin-bottom:16px;padding:72px 25px 25px;border:1px solid rgba(2,45,100,.08);border-radius:24px;background:rgba(255,255,255,.72);box-shadow:var(--shadow);backdrop-filter:blur(22px)}.settings-grid:before,.courts-grid:before,.teams-grid:before{left:25px;top:27px;font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:-.035em;text-transform:none}.settings-grid:before{content:"Параметры турнира"}.courts-grid:before{content:"Корты"}.teams-grid:before{content:"Участники"}.settings-grid:after{content:"Все детали можно изменить до старта";top:32px;font-size:11px;font-weight:550;letter-spacing:0;text-transform:none}
 .form-item label,.team>label{margin-bottom:9px;font-size:12px;font-weight:600;letter-spacing:-.005em;text-transform:none}input,select,textarea{height:52px;padding:0 15px;border-color:rgba(2,45,100,.1);border-radius:14px;background:rgba(244,247,252,.9);font-size:15px;font-weight:550}input:focus,select:focus,textarea:focus{border-color:rgba(2,80,176,.55);box-shadow:0 0 0 4px rgba(208,255,65,.18)}select{background-position:calc(100% - 19px) 23px,calc(100% - 14px) 23px}
 button{min-height:52px;border-radius:14px;background:var(--lime);font-size:16px;font-weight:680;letter-spacing:-.012em;text-transform:none;box-shadow:0 7px 18px rgba(2,80,176,.1)}.secondary{background:var(--panel);color:var(--chalk)}.danger{border-radius:14px!important}#startTournamentBtn{min-height:58px;border-radius:18px;clip-path:none;font-size:18px;box-shadow:0 10px 25px rgba(2,80,176,.16)}
-.round-section{margin-top:34px}.round-heading{margin-bottom:14px;padding:0 2px 12px}.round-heading h2,.round-heading span{font-family:var(--display);font-size:29px;font-weight:700;letter-spacing:-.04em;text-transform:none}.round-heading span{color:var(--muted);white-space:nowrap}.round-matches{gap:14px}.match,.result-card{padding:22px;border-color:rgba(2,45,100,.08);border-radius:22px;background:rgba(255,255,255,.78);box-shadow:0 12px 34px rgba(6,30,70,.06);backdrop-filter:blur(18px)}.match:before{left:18px;top:18px;bottom:auto;width:8px;height:8px;border-radius:50%;background:var(--lime-deep)}.match .court{margin:0 0 14px;padding-left:17px;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none}.match .teams:first-child{padding-left:17px}.match .teams{min-height:42px;font-family:var(--display);font-size:clamp(20px,2vw,25px);font-weight:680;line-height:1.15;letter-spacing:-.035em;text-transform:none}.score{gap:10px}.score input{height:68px;border-radius:17px;background:var(--panel);font-family:var(--display);font-size:29px;font-weight:650}.score:after{font-family:var(--body)}.resting{border:0;border-radius:14px;background:rgba(255,255,255,.5);font-size:11px;letter-spacing:0;text-transform:none}
+.round-section{margin-top:34px}.round-matches{gap:14px}.match,.result-card{padding:22px;border-color:rgba(2,45,100,.08);border-radius:22px;background:rgba(255,255,255,.78);box-shadow:0 12px 34px rgba(6,30,70,.06);backdrop-filter:blur(18px)}.match:before{left:18px;top:18px;bottom:auto;width:8px;height:8px;border-radius:50%;background:var(--lime-deep)}.match .court{margin:0 0 14px;padding-left:17px;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none}.match .teams:first-child{padding-left:17px}.match .teams{min-height:42px;font-family:var(--display);font-size:clamp(20px,2vw,25px);font-weight:680;line-height:1.15;letter-spacing:-.035em;text-transform:none}.score{gap:10px}.score input{height:68px;border-radius:17px;background:var(--panel);font-family:var(--display);font-size:29px;font-weight:650}.score:after{font-family:var(--body)}.resting{border:0;border-radius:14px;background:rgba(255,255,255,.5);font-size:11px;letter-spacing:0;text-transform:none}
 #results>h2,#playoff-section>h2,#playoff-finals>h3,#tournament-table>h2{font-family:var(--display);font-size:clamp(30px,4vw,42px);font-weight:720;letter-spacing:-.05em;text-transform:none}.tourney-container{border-color:rgba(2,45,100,.08);border-radius:22px;background:rgba(255,255,255,.8);box-shadow:var(--shadow)}.tourney-table th,.tourney-table td{font-family:var(--body);font-size:13px;font-weight:550}.tourney-table th{font-size:11px;letter-spacing:0;text-transform:none}
 .history-card{padding:23px 60px 23px 23px;border-color:rgba(2,45,100,.08);border-radius:20px;background:rgba(255,255,255,.76);box-shadow:0 9px 28px rgba(6,30,70,.045);backdrop-filter:blur(18px)}.history-card-open{box-shadow:0 12px 35px rgba(6,30,70,.07),inset 0 0 0 1px rgba(2,80,176,.28)}.history-card-title{font-family:var(--display);font-size:25px;font-weight:690;letter-spacing:-.04em;text-transform:none}.history-card-meta{font-size:12px;font-weight:550;letter-spacing:0;text-transform:none}.history-detail{margin:-18px 10px 18px;padding:27px;border-color:rgba(2,45,100,.08);border-radius:0 0 22px 22px;background:rgba(233,238,246,.88)}.draft-modal{border-radius:24px}.draft-modal-title{font-family:var(--display);font-size:30px;font-weight:700;letter-spacing:-.04em;text-transform:none}
 @media(max-width:1050px){.app-sidebar{margin:10px 0 10px 10px;height:calc(100vh - 20px);border-radius:24px}.brand-button{justify-content:center}.settings-grid:after{display:none}}
@@ -498,10 +503,9 @@ button{min-height:52px;border-radius:14px;background:var(--lime);font-size:16px;
 
 <div id="results"></div>
 
-<div id="post-results-buttons" class="button-row" style="display:none;">
+<div id="post-results-buttons" class="button-row" hidden>
+  <button onclick="saveTournament()">Завершить турнир</button>
   <button class="secondary" onclick="shareResults()">Поделиться результатом</button>
-  <button class="secondary" onclick="saveTournament()">Сохранить турнир</button>
-  <button class="secondary" onclick="clearTournament()">Новый турнир / очистить</button>
 </div>
 </div>
 
@@ -1778,6 +1782,50 @@ function getPlayerInputs(){
 
 
 
+// Поля счёта по порядку: вводим только левое, правое досчитывается само.
+function primaryScoreInputs(){
+  return Array.from(document.querySelectorAll('#matches input[id^="a-"], #results input[id^="playoff-a-"]'));
+}
+
+let advanceTimer = null;
+
+// Переходим к следующей игре, когда дописать цифру уже некуда.
+function advanceToNextScore(input, limit){
+  window.clearTimeout(advanceTimer);
+  const raw = String(input.value || '');
+  const value = parseInt(raw, 10);
+  if(!Number.isFinite(value) || value < 0 || value > limit) return;
+
+  const jump = ()=>{
+    const list = primaryScoreInputs();
+    const next = list[list.indexOf(input) + 1];
+    if(next){
+      next.focus();
+      if(typeof next.select === 'function') next.select();
+    } else {
+      input.blur();
+    }
+  };
+
+  const unambiguous = value * 10 > limit || raw.length >= String(limit).length;
+  if(unambiguous) jump();
+  else advanceTimer = window.setTimeout(jump, 900);   // 0, 1, 2... — ждём, вдруг допишет
+}
+
+function setupScoreTypingMode(){
+  // Пока вводим счёт, нижний остров уезжает вниз и не закрывает карточку.
+  const isScore = el => el && el.matches && el.matches('.score input');
+  document.addEventListener('focusin', e=>{
+    if(isScore(e.target)) document.body.classList.add('score-typing');
+  });
+  document.addEventListener('focusout', e=>{
+    if(!isScore(e.target)) return;
+    window.setTimeout(()=>{
+      if(!isScore(document.activeElement)) document.body.classList.remove('score-typing');
+    }, 60);
+  });
+}
+
 function autoFill(r,i,side){
   const a = document.getElementById(`a-${r}-${i}`);
   const b = document.getElementById(`b-${r}-${i}`);
@@ -1791,6 +1839,7 @@ function autoFill(r,i,side){
   if(side === "b" && !isNaN(bv) && bv >= 0 && bv <= limit) a.value = limit - bv;
 
   saveData();
+  if(side === "a") advanceToNextScore(a, limit);
 }
 
 function autoFillPlayoff(side,id){
@@ -1808,6 +1857,7 @@ function autoFillPlayoff(side,id){
   saveData();
   tryRenderFinals();
   tryRenderTournamentTable();
+  if(side === "a") advanceToNextScore(a, limit);
 }
 
 function generateMatches(){
@@ -1818,13 +1868,12 @@ function generateMatches(){
     let html = "";
 
     rounds.forEach((round,r)=>{
-      // Справа от номера раунда — корт. Если кортов несколько, перечисляем их.
-      const roundCourts = [...new Set(round.map(m=>getCourtName(m[2])))];
-      html += `<section class="round-section"><div class="round-heading"><h2>Раунд ${r+1}</h2><span>${escapeHtml(roundCourts.join(' · '))}</span></div><div class="round-matches">`;
+      // Отдельной шапки у раунда нет: номер раунда и корт живут в самой карточке.
+      html += `<section class="round-section"><div class="round-matches">`;
       round.forEach((m,i)=>{
         html += `
       <div class="match">
-        ${round.length > 1 ? `<div class="court">${escapeHtml(getCourtName(m[2]))}</div>` : ''}
+        <div class="court">Раунд ${r+1} · ${escapeHtml(getCourtName(m[2]))}</div>
         <div class="teams">${escapeHtml(getMatchSideLabel(m[0]))} vs ${escapeHtml(getMatchSideLabel(m[1]))}</div>
         <div class="score">
           <input type="number" id="a-${r}-${i}" placeholder="0" min="0" max="${limit}" oninput="autoFill(${r},${i},'a')">
@@ -1882,12 +1931,12 @@ function startTournament(){
 
 function showPostResultButtons(){
   const el = document.getElementById('post-results-buttons');
-  if(el) el.style.display = 'flex';
+  if(el) el.hidden = false;
 }
 
 function hidePostResultButtons(){
   const el = document.getElementById('post-results-buttons');
-  if(el) el.style.display = 'none';
+  if(el) el.hidden = true;
 }
 
 function computeGroupStats(){
@@ -2786,6 +2835,10 @@ function showTournamentTab(){
 }
 
 function startNewTournamentFromHome(){
+  const draft = getRawDraft();
+  if(draft?.snapshot?.tournamentStarted){
+    if(!confirm('Сейчас идет незавершенный турнир. Начать новый? Незаконченный турнир останется в Истории.')) return;
+  }
   startFreshTournament();
   showTournamentTab();
   updateHomeScreenContinueButton();
@@ -3676,11 +3729,6 @@ async function saveTournament(){
   window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
-function clearTournament(){
-  if(confirm('Все несохраненные данные будут потеряны. Продолжить?')){
-    startFreshTournament();
-  }
-}
 
 async function initApp(){
   // Clean up old/obsolete localStorage entries
@@ -3690,6 +3738,7 @@ async function initApp(){
   await loadTournamentHistory();
   loadDraftPrompt();
   updateFormatFields();
+  setupScoreTypingMode();
   hidePostResultButtons();
   updateStartTournamentState();
   updateCalculateResultsState();
