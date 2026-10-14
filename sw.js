@@ -1,6 +1,6 @@
 // PadelFlow service worker — офлайн на корте.
 // При изменении index.html поднимайте версию, чтобы у всех подтянулась новая сборка.
-const CACHE = 'padelflow-v15';
+const CACHE = 'padelflow-v16';
 const SHELL = [
   './',
   './index.html',
