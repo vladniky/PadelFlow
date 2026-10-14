@@ -283,6 +283,13 @@ button{min-height:52px;border-radius:14px;background:var(--lime);font-size:16px;
 @media(max-width:1050px){.app-sidebar{margin:10px 0 10px 10px;height:calc(100vh - 20px);border-radius:24px}.brand-button{justify-content:center}.settings-grid:after{display:none}}
 @media(max-width:760px){.app-main{padding-top:16px;padding-bottom:calc(104px + env(safe-area-inset-bottom))}.home-screen{border-radius:24px}.home-screen h1{font-size:52px}.settings-grid,.courts-grid,.teams-grid{padding:67px 18px 19px;border-radius:21px}.settings-grid:before,.courts-grid:before,.teams-grid:before{top:24px;font-size:21px}.match{border-radius:20px}.mobile-nav{left:10px;right:10px;bottom:9px;border:1px solid rgba(255,255,255,.08);border-radius:20px;background:rgba(6,33,74,.92);box-shadow:0 14px 40px rgba(4,24,56,.24);backdrop-filter:blur(24px)}.mobile-nav button{border-radius:14px;font-family:var(--body);font-size:14px;font-weight:650;text-transform:none}.mobile-nav button.active{background:rgba(255,255,255,.08)}}
 @media(max-width:430px){.home-screen h1{font-size:46px}.home-screen br{display:none}.team-inputs{grid-template-columns:1fr}.score input{font-size:27px}}
+/* Резервная копия истории */
+.history-backup{margin:0 0 18px;padding:18px 20px;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.76);box-shadow:0 9px 28px rgba(6,30,70,.045)}
+.history-backup strong{display:block;font-size:16px;color:var(--ink);margin-bottom:4px}
+.history-backup .small{display:block;color:var(--muted)!important;font-size:13px;line-height:1.45}
+.history-backup-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.history-backup-actions button{margin:0}
+@media(max-width:430px){.history-backup-actions{grid-template-columns:1fr}}
 </style>
 <link rel="manifest" href="manifest.json">
 
@@ -510,6 +517,16 @@ button{min-height:52px;border-radius:14px;background:var(--lime);font-size:16px;
 </div>
 
 <div id="tab-history" class="tab-content" style="display:none;">
+  <div id="historyBackup" class="history-backup">
+    <strong>Резервная копия</strong>
+    <span class="small">История хранится только на этом устройстве. Сохраните копию в Telegram, почту или «Файлы».</span>
+    <span class="small" id="historyBackupNote"></span>
+    <div class="history-backup-actions">
+      <button type="button" onclick="exportHistory()">Сохранить копию</button>
+      <button type="button" class="secondary" onclick="document.getElementById('historyImportInput').click()">Восстановить из файла</button>
+    </div>
+    <input type="file" id="historyImportInput" accept=".json,application/json" hidden onchange="importHistoryFile(this)">
+  </div>
   <div id="historyContainer"></div>
   <div id="historyDetail"></div>
 </div>
@@ -550,7 +567,7 @@ function safeSetItem(key, value){
     if(note) note.textContent = 'Не удалось сохранить на устройстве';
     if(!storageWarningShown){
       storageWarningShown = true;
-      alert('Не удалось сохранить данные на устройстве: память браузера заполнена или запись запрещена (например, приватный режим). Не закрывайте приложение — освободите память и повторите действие.');
+      alert('Не удалось сохранить данные на устройстве: память браузера заполнена или запись запрещена (например, приватный режим). Не закрывайте приложение — освободите память и повторите действие. Историю можно сохранить файлом: вкладка «История» → «Сохранить копию».');
     }
     return false;
   }
@@ -1534,6 +1551,111 @@ async function loadTournamentHistory(){
   return currentHistory;
 }
 
+// ---------- Резервная копия истории (файл .json) ----------
+const LAST_BACKUP_KEY = 'padelFlowLastBackupAt';
+// id попадает в onclick-атрибуты карточек, поэтому из файла принимаем только «безопасные»
+// (приложение само создаёт id из цифр Date.now()).
+const SAFE_HISTORY_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+function updateBackupNote(){
+  const el = document.getElementById('historyBackupNote');
+  if(!el) return;
+  let last = null;
+  try { last = localStorage.getItem(LAST_BACKUP_KEY); } catch(e){/* ignore */}
+  const dt = last ? new Date(last) : null;
+  el.textContent = dt && !Number.isNaN(dt.getTime())
+    ? `Последняя копия: ${dt.toLocaleDateString('ru-RU')}`
+    : 'Копию ещё не сохраняли';
+}
+
+function markBackupDone(){
+  try { localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString()); } catch(e){/* ignore */}
+  updateBackupNote();
+}
+
+function downloadFile(file){
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 10000);
+}
+
+async function exportHistory(){
+  const list = getLocalHistory();
+  if(!list.length){
+    alert('История пока пуста — сохранять нечего.');
+    return;
+  }
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const payload = { app: 'PadelFlow', version: 1, exportedAt: d.toISOString(), tournaments: list };
+  const file = new File([JSON.stringify(payload)], `padelflow-history-${stamp}.json`, { type: 'application/json' });
+
+  // На телефоне — системное меню «Поделиться» (Telegram, почта, «Файлы»), на компьютере — обычное скачивание.
+  const isTouch = Boolean(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  if(isTouch && navigator.canShare && navigator.canShare({ files: [file] })){
+    try {
+      await navigator.share({ files: [file], title: 'PadelFlow — история турниров' });
+      markBackupDone();
+      return;
+    } catch(e){
+      if(e && e.name === 'AbortError') return; // пользователь закрыл меню
+      console.warn('share failed, downloading instead:', e);
+    }
+  }
+  downloadFile(file);
+  markBackupDone();
+}
+
+function importHistoryFile(input){
+  const file = input.files && input.files[0];
+  input.value = ''; // чтобы тот же файл можно было выбрать ещё раз
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>applyHistoryImport(String(reader.result || ''));
+  reader.onerror = ()=>alert('Не удалось прочитать файл.');
+  reader.readAsText(file);
+}
+
+// Турниры из файла добавляются к текущим: ничего не стирается и не перезаписывается,
+// турниры, которые уже есть (тот же id), пропускаются.
+function applyHistoryImport(text){
+  let data = null;
+  try { data = JSON.parse(text); } catch(e){/* не JSON */}
+  const incoming = Array.isArray(data)
+    ? data
+    : (data && data.app === 'PadelFlow' && Array.isArray(data.tournaments) ? data.tournaments : null);
+  if(!incoming){
+    alert('Это не файл копии PadelFlow. Выберите файл вида padelflow-history-….json');
+    return null;
+  }
+
+  const saved = getLocalHistory();
+  const known = new Set(saved.map(item => String(item.id)));
+  let added = 0, existed = 0, broken = 0;
+  incoming.forEach(item=>{
+    const id = item && typeof item === 'object' && !Array.isArray(item) ? String(item.id ?? '') : '';
+    if(!SAFE_HISTORY_ID.test(id)){ broken++; return; }
+    if(known.has(id)){ existed++; return; }
+    known.add(id);
+    saved.push({ ...item, id });
+    added++;
+  });
+
+  if(added && !safeSetItem(HISTORY_KEY, JSON.stringify(saved))) return null;
+  currentHistory = saved;
+  renderHistory();
+
+  let msg = `Готово. Добавлено турниров: ${added}, уже было: ${existed}.`;
+  if(broken) msg += ` Пропущено повреждённых записей: ${broken}.`;
+  alert(msg);
+  return { added, existed, broken };
+}
+
 
 
 
@@ -1583,6 +1705,7 @@ function sortHistoryNewestFirst(list){
 }
 
 async function renderHistory(){
+  updateBackupNote();
   const saved = sortHistoryNewestFirst(await loadTournamentHistory());
   const container = document.getElementById('historyContainer');
   const detail = document.getElementById('historyDetail');
@@ -1705,7 +1828,7 @@ function buildHistoryMatchesHtml(item){
 
 function buildHistoryGroupStatsHtml(item){
   return (item.groupStandings || []).map(s=>
-    `<div class="small">${s.place}. ${escapeHtml(getBadgedTeam(s.team))} — ${s.wins}-${s.losses}-${s.draws} • ${s.scored}-${s.conceded} • ${s.delta>0?'+':''}${s.delta}</div>`
+    `<div class="small">${escapeHtml(s.place)}. ${escapeHtml(getBadgedTeam(s.team))} — ${escapeHtml(s.wins)}-${escapeHtml(s.losses)}-${escapeHtml(s.draws)} • ${escapeHtml(s.scored)}-${escapeHtml(s.conceded)} • ${s.delta>0?'+':''}${escapeHtml(s.delta)}</div>`
   ).join('');
 }
 
