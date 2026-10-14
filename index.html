@@ -834,6 +834,7 @@ const INDIVIDUAL_ROTATIONS = {
 
 const INDIVIDUAL_PLAYER_OPTIONS = [4,8,12];
 const INDIVIDUAL_CIRCLE_OPTIONS = [1,2,3];
+const MAX_CIRCLE_COUNT = 3;
 
 function getTournamentFormat(){
   const value = document.getElementById('tournamentFormat')?.value || '';
@@ -913,6 +914,86 @@ function getMaxCourtsForFormat(){
   if(!isIndividual()) return 3;
   const players = getPlayerCount();
   return players ? players / 4 : 3;
+}
+
+// Сколько раундов даст выбранное число кругов — считаем, ничего не меняя в DOM,
+// чтобы спросить подтверждение до правки расписания.
+function projectedRoundCount(circles){
+  const safeCircles = Number(circles) || 0;
+  if(!safeCircles) return 0;
+  if(isIndividual()){
+    const players = getPlayerCount();
+    const courts = getCourtCount();
+    if(!players || !courts) return 0;
+    const needed = Math.ceil(getIndividualCircleGames(players, safeCircles) * players / (courts * 4));
+    const table = INDIVIDUAL_ROTATIONS[players]?.[courts];
+    return table ? Math.min(needed, table.length) : 0;
+  }
+  return buildRoundsByCount(getPairCount(), safeCircles, getCourtCount()).length;
+}
+
+function getCurrentCircleCount(){
+  return isIndividual() ? getIndividualCircleCount() : getRoundCount();
+}
+
+// Турнир часто продолжают: на корте осталось время. Расписание префикс-стабильно
+// (круги дописываются в конец), поэтому уже введенные счета остаются на своих
+// a-{r}-{i} / b-{r}-{i} и не теряются.
+function canExtendTournament(){
+  if(!tournamentStarted || playoffStarted) return false;
+  const current = getCurrentCircleCount();
+  if(!current || current >= MAX_CIRCLE_COUNT) return false;
+  return projectedRoundCount(current + 1) > projectedRoundCount(current);
+}
+
+function collectGroupScores(){
+  const map = {};
+  document.querySelectorAll('#matches input[id^="a-"], #matches input[id^="b-"]').forEach(el=>{
+    if(el.value !== '') map[el.id] = el.value;
+  });
+  return map;
+}
+
+function addTournamentCircle(){
+  if(!tournamentStarted) return;
+  if(playoffStarted){
+    alert('Плей-офф уже начался, круг добавить нельзя.');
+    return;
+  }
+  const current = getCurrentCircleCount();
+  const next = current + 1;
+  if(!current || next > MAX_CIRCLE_COUNT){
+    alert('Больше кругов добавить нельзя.');
+    return;
+  }
+  const before = projectedRoundCount(current);
+  const after = projectedRoundCount(next);
+  if(after <= before){
+    alert('Больше кругов добавить нельзя.');
+    return;
+  }
+  if(!confirm(`Добавить круг? Раундов станет ${after} вместо ${before}. Введенные счета сохранятся.`)) return;
+
+  const saved = collectGroupScores();
+  const select = document.getElementById(isIndividual() ? 'individualCircleCount' : 'roundCount');
+  if(!select) return;
+  select.value = String(next);
+
+  const results = document.getElementById('results');
+  if(results) results.innerHTML = '';
+  hidePostResultButtons();
+  generateMatches();
+
+  // generateMatches поднимает счета из черновика; DOM свежее, поэтому
+  // перекрываем его снимком, снятым прямо перед перестройкой.
+  Object.entries(saved).forEach(([id,value])=>{
+    const el = document.getElementById(id);
+    if(el) el.value = value;
+  });
+
+  updateIndividualCircleOptions();
+  updateCalculateResultsState();
+  saveData();
 }
 
 function buildIndividualRounds(playerCount, roundCount, courtCount){
@@ -1888,7 +1969,10 @@ function generateMatches(){
       html += `</div></section>`;
     });
 
-    html += `<div class="button-row"><button id="calculateResultsBtn" onclick="calculateResults()" disabled>Посчитать результаты</button></div><div id="calculateStatus" class="small" style="margin-top:8px;"></div>`;
+    const extendBtn = canExtendTournament()
+      ? `<button type="button" class="secondary" id="addCircleBtn" onclick="addTournamentCircle()">Добавить круг</button>`
+      : '';
+    html += `<div class="button-row"><button id="calculateResultsBtn" onclick="calculateResults()" disabled>Посчитать результаты</button>${extendBtn}</div><div id="calculateStatus" class="small" style="margin-top:8px;"></div>`;
 
     const matchesContainer = document.getElementById('matches');
     if(matchesContainer){
@@ -2861,6 +2945,9 @@ function navigateHomeToTab(tab){
 
 function setTournamentStarted(value){
   tournamentStarted = Boolean(value);
+  // Настройки заперты ровно пока идет турнир. Иначе после первого турнира
+  // селекты оставались бы disabled навсегда и новый турнир не заполнить.
+  setTournamentLocked(tournamentStarted);
 }
 
 function showDraftModal(){
