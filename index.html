@@ -288,7 +288,7 @@ button{min-height:52px;border-radius:14px;background:var(--lime);font-size:16px;
 
 <meta name="theme-color" content="#06214a">
 
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 </head>
 <body>
 <div class="app-shell">
@@ -530,6 +530,67 @@ let currentHistory = [];
 let openedHistoryId = null;
 let tournamentStarted = false;
 let playoffStarted = false;
+
+// Запись в память устройства. Если места нет или браузер запрещает запись
+// (например, приватный режим), приложение не падает, а предупреждает один раз.
+let storageWriteFailed = false;
+let storageWarningShown = false;
+function safeSetItem(key, value){
+  const note = document.getElementById('storageNote');
+  try {
+    localStorage.setItem(key, value);
+    if(storageWriteFailed){
+      storageWriteFailed = false;
+      if(note) note.textContent = 'Хранится на этом устройстве';
+    }
+    return true;
+  } catch(e){
+    console.warn('localStorage write failed:', key, e);
+    storageWriteFailed = true;
+    if(note) note.textContent = 'Не удалось сохранить на устройстве';
+    if(!storageWarningShown){
+      storageWarningShown = true;
+      alert('Не удалось сохранить данные на устройстве: память браузера заполнена или запись запрещена (например, приватный режим). Не закрывайте приложение — освободите память и повторите действие.');
+    }
+    return false;
+  }
+}
+
+// Просим браузер не стирать данные приложения при нехватке места.
+function requestPersistentStorage(){
+  try {
+    if(!navigator.storage || !navigator.storage.persist) return;
+    navigator.storage.persisted()
+      .then(already => already || navigator.storage.persist())
+      .catch(()=>{});
+  } catch(e){/* ignore */}
+}
+
+// Экран не гаснет, пока идёт турнир: между розыгрышами не нужно разблокировать телефон.
+// Система сама снимает блокировку, когда приложение уходит в фон, — при возврате берём снова.
+let wakeLock = null;
+let wakeLockPending = false;
+async function updateWakeLock(){
+  if(!('wakeLock' in navigator)) return;
+  const want = tournamentStarted && document.visibilityState === 'visible';
+  try {
+    if(want && !wakeLock && !wakeLockPending){
+      wakeLockPending = true;
+      const lock = await navigator.wakeLock.request('screen');
+      wakeLockPending = false;
+      if(!tournamentStarted){ lock.release().catch(()=>{}); return; }
+      wakeLock = lock;
+      wakeLock.addEventListener('release', ()=>{ if(wakeLock === lock) wakeLock = null; });
+    } else if(!want && wakeLock){
+      const lock = wakeLock;
+      wakeLock = null;
+      await lock.release();
+    }
+  } catch(e){
+    wakeLockPending = false;
+    console.warn('wakeLock:', e);
+  }
+}
 let autoHistorySaveTimer = null;
 let finalizingTournament = false;
 
@@ -1720,7 +1781,7 @@ function copyHistoryReport(id){
 async function deleteHistoryTournament(id){
   if(!confirm('Удалить турнир?')) return;
   const filteredLocal = getLocalHistory().filter(t=>t.id !== id);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(filteredLocal));
+  if(!safeSetItem(HISTORY_KEY, JSON.stringify(filteredLocal))) return;
   currentHistory = currentHistory.filter(t => t.id !== id);
   renderHistory();
   const detail = document.getElementById('historyDetail');
@@ -2001,6 +2062,7 @@ function startTournament(){
     return;
   }
   setTournamentStarted(true);
+  requestPersistentStorage();
   refreshRounds();
   hidePostResultButtons();
   const results = document.getElementById('results');
@@ -2774,7 +2836,7 @@ function saveData(){
       activeTab: document.querySelector('.tab-content.active')?.id?.replace('tab-','') || 'tournament',
       savedAt: new Date().toISOString()
     };
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    safeSetItem(DRAFT_KEY, JSON.stringify(draft));
     localStorage.removeItem(LEGACY_DRAFT_KEY);
     updateDraftStatus();
     updateStartTournamentState();
@@ -2948,6 +3010,7 @@ function setTournamentStarted(value){
   // Настройки заперты ровно пока идет турнир. Иначе после первого турнира
   // селекты оставались бы disabled навсегда и новый турнир не заполнить.
   setTournamentLocked(tournamentStarted);
+  updateWakeLock();
 }
 
 function showDraftModal(){
@@ -3571,7 +3634,7 @@ function upsertTournamentProgressToHistory(status='in_progress'){
     saved.push(entry);
   }
 
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(saved));
+  if(!safeSetItem(HISTORY_KEY, JSON.stringify(saved))) return null;
   currentHistory = [entry, ...currentHistory.filter(item => String(item.id) !== String(entry.id))];
   updateHomeScreenContinueButton();
   return entry;
@@ -3801,7 +3864,11 @@ async function saveTournament(){
     saved.push(entry);
   }
 
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(saved));
+  // Не удалось записать — турнир не закрываем и черновик не трогаем, чтобы ничего не потерять.
+  if(!safeSetItem(HISTORY_KEY, JSON.stringify(saved))){
+    finalizingTournament = false;
+    return;
+  }
   currentHistory = [entry, ...currentHistory.filter(item => item.id !== entry.id)];
   removeDraft();
 
@@ -3848,11 +3915,12 @@ async function initApp(){
         saveData();
         if(canAutoSaveTournamentProgress()){
           upsertTournamentProgressToHistory('in_progress');
-          pushProgressToCloud();
         }
       } catch(e){
         console.warn('visibilitychange save error:', e);
       }
+    } else {
+      updateWakeLock();
     }
   });
 
