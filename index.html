@@ -283,12 +283,26 @@ button{min-height:52px;border-radius:14px;background:var(--lime);font-size:16px;
 @media(max-width:1050px){.app-sidebar{margin:10px 0 10px 10px;height:calc(100vh - 20px);border-radius:24px}.brand-button{justify-content:center}.settings-grid:after{display:none}}
 @media(max-width:760px){.app-main{padding-top:16px;padding-bottom:calc(104px + env(safe-area-inset-bottom))}.home-screen{border-radius:24px}.home-screen h1{font-size:52px}.settings-grid,.courts-grid,.teams-grid{padding:67px 18px 19px;border-radius:21px}.settings-grid:before,.courts-grid:before,.teams-grid:before{top:24px;font-size:21px}.match{border-radius:20px}.mobile-nav{left:10px;right:10px;bottom:9px;border:1px solid rgba(255,255,255,.08);border-radius:20px;background:rgba(6,33,74,.92);box-shadow:0 14px 40px rgba(4,24,56,.24);backdrop-filter:blur(24px)}.mobile-nav button{border-radius:14px;font-family:var(--body);font-size:14px;font-weight:650;text-transform:none}.mobile-nav button.active{background:rgba(255,255,255,.08)}}
 @media(max-width:430px){.home-screen h1{font-size:46px}.home-screen br{display:none}.team-inputs{grid-template-columns:1fr}.score input{font-size:27px}}
+/* Резервная копия истории */
+.history-backup{margin:0 0 18px;padding:18px 20px;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.76);box-shadow:0 9px 28px rgba(6,30,70,.045)}
+.history-backup strong{display:block;font-size:16px;color:var(--ink);margin-bottom:4px}
+.history-backup .small{display:block;color:var(--muted)!important;font-size:13px;line-height:1.45}
+.history-backup-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.history-backup-actions button{margin:0}
+@media(max-width:430px){.history-backup-actions{grid-template-columns:1fr}}
+/* Подсказка «Установите на телефон» на главном экране */
+.install-hint{position:relative;max-width:460px;margin:16px auto 0;padding:16px 44px 16px 18px;border:1px solid rgba(255,255,255,.18);border-radius:18px;background:rgba(255,255,255,.1);color:#f4f8ff;text-align:left;backdrop-filter:blur(12px)}
+.install-hint strong{display:block;font-size:15px;margin-bottom:4px}
+.install-hint span{display:block;font-size:13.5px;line-height:1.45;color:rgba(244,248,255,.82)}
+.install-hint span b{color:#f4f8ff}
+.install-hint #installHintBtn{margin:12px 0 0;min-height:44px}
+.install-hint .install-hint-close{position:absolute;top:8px;right:8px;width:32px;min-height:32px;height:32px;margin:0;padding:0;border-radius:50%;background:transparent;color:rgba(244,248,255,.7);font-size:22px;font-weight:400;line-height:1;text-transform:none;letter-spacing:0}
 </style>
 <link rel="manifest" href="manifest.json">
 
 <meta name="theme-color" content="#06214a">
 
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 </head>
 <body>
 <div class="app-shell">
@@ -327,6 +341,12 @@ button{min-height:52px;border-radius:14px;background:var(--lime);font-size:16px;
     <div class="home-actions">
       <button onclick="startNewTournamentFromHome()">Начать турнир</button>
       <button id="continueDraftHomeBtn" class="secondary" onclick="continueDraftFromHome()" style="display:none">Продолжить турнир</button>
+    </div>
+    <div id="installHint" class="install-hint" style="display:none">
+      <button type="button" class="install-hint-close" onclick="closeInstallHint()" aria-label="Закрыть подсказку">×</button>
+      <strong>Установите на телефон</strong>
+      <span id="installHintText"></span>
+      <button type="button" id="installHintBtn" onclick="installApp()" style="display:none">Установить</button>
     </div>
   </div>
 </div>
@@ -510,6 +530,16 @@ button{min-height:52px;border-radius:14px;background:var(--lime);font-size:16px;
 </div>
 
 <div id="tab-history" class="tab-content" style="display:none;">
+  <div id="historyBackup" class="history-backup">
+    <strong>Резервная копия</strong>
+    <span class="small">История хранится только на этом устройстве. Сохраните копию в Telegram, почту или «Файлы».</span>
+    <span class="small" id="historyBackupNote"></span>
+    <div class="history-backup-actions">
+      <button type="button" onclick="exportHistory()">Сохранить копию</button>
+      <button type="button" class="secondary" onclick="document.getElementById('historyImportInput').click()">Восстановить из файла</button>
+    </div>
+    <input type="file" id="historyImportInput" accept=".json,application/json" hidden onchange="importHistoryFile(this)">
+  </div>
   <div id="historyContainer"></div>
   <div id="historyDetail"></div>
 </div>
@@ -530,6 +560,67 @@ let currentHistory = [];
 let openedHistoryId = null;
 let tournamentStarted = false;
 let playoffStarted = false;
+
+// Запись в память устройства. Если места нет или браузер запрещает запись
+// (например, приватный режим), приложение не падает, а предупреждает один раз.
+let storageWriteFailed = false;
+let storageWarningShown = false;
+function safeSetItem(key, value){
+  const note = document.getElementById('storageNote');
+  try {
+    localStorage.setItem(key, value);
+    if(storageWriteFailed){
+      storageWriteFailed = false;
+      if(note) note.textContent = 'Хранится на этом устройстве';
+    }
+    return true;
+  } catch(e){
+    console.warn('localStorage write failed:', key, e);
+    storageWriteFailed = true;
+    if(note) note.textContent = 'Не удалось сохранить на устройстве';
+    if(!storageWarningShown){
+      storageWarningShown = true;
+      alert('Не удалось сохранить данные на устройстве: память браузера заполнена или запись запрещена (например, приватный режим). Не закрывайте приложение — освободите память и повторите действие. Историю можно сохранить файлом: вкладка «История» → «Сохранить копию».');
+    }
+    return false;
+  }
+}
+
+// Просим браузер не стирать данные приложения при нехватке места.
+function requestPersistentStorage(){
+  try {
+    if(!navigator.storage || !navigator.storage.persist) return;
+    navigator.storage.persisted()
+      .then(already => already || navigator.storage.persist())
+      .catch(()=>{});
+  } catch(e){/* ignore */}
+}
+
+// Экран не гаснет, пока идёт турнир: между розыгрышами не нужно разблокировать телефон.
+// Система сама снимает блокировку, когда приложение уходит в фон, — при возврате берём снова.
+let wakeLock = null;
+let wakeLockPending = false;
+async function updateWakeLock(){
+  if(!('wakeLock' in navigator)) return;
+  const want = tournamentStarted && document.visibilityState === 'visible';
+  try {
+    if(want && !wakeLock && !wakeLockPending){
+      wakeLockPending = true;
+      const lock = await navigator.wakeLock.request('screen');
+      wakeLockPending = false;
+      if(!tournamentStarted){ lock.release().catch(()=>{}); return; }
+      wakeLock = lock;
+      wakeLock.addEventListener('release', ()=>{ if(wakeLock === lock) wakeLock = null; });
+    } else if(!want && wakeLock){
+      const lock = wakeLock;
+      wakeLock = null;
+      await lock.release();
+    }
+  } catch(e){
+    wakeLockPending = false;
+    console.warn('wakeLock:', e);
+  }
+}
 let autoHistorySaveTimer = null;
 let finalizingTournament = false;
 
@@ -1473,6 +1564,111 @@ async function loadTournamentHistory(){
   return currentHistory;
 }
 
+// ---------- Резервная копия истории (файл .json) ----------
+const LAST_BACKUP_KEY = 'padelFlowLastBackupAt';
+// id попадает в onclick-атрибуты карточек, поэтому из файла принимаем только «безопасные»
+// (приложение само создаёт id из цифр Date.now()).
+const SAFE_HISTORY_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+function updateBackupNote(){
+  const el = document.getElementById('historyBackupNote');
+  if(!el) return;
+  let last = null;
+  try { last = localStorage.getItem(LAST_BACKUP_KEY); } catch(e){/* ignore */}
+  const dt = last ? new Date(last) : null;
+  el.textContent = dt && !Number.isNaN(dt.getTime())
+    ? `Последняя копия: ${dt.toLocaleDateString('ru-RU')}`
+    : 'Копию ещё не сохраняли';
+}
+
+function markBackupDone(){
+  try { localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString()); } catch(e){/* ignore */}
+  updateBackupNote();
+}
+
+function downloadFile(file){
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 10000);
+}
+
+async function exportHistory(){
+  const list = getLocalHistory();
+  if(!list.length){
+    alert('История пока пуста — сохранять нечего.');
+    return;
+  }
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const payload = { app: 'PadelFlow', version: 1, exportedAt: d.toISOString(), tournaments: list };
+  const file = new File([JSON.stringify(payload)], `padelflow-history-${stamp}.json`, { type: 'application/json' });
+
+  // На телефоне — системное меню «Поделиться» (Telegram, почта, «Файлы»), на компьютере — обычное скачивание.
+  const isTouch = Boolean(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  if(isTouch && navigator.canShare && navigator.canShare({ files: [file] })){
+    try {
+      await navigator.share({ files: [file], title: 'PadelFlow — история турниров' });
+      markBackupDone();
+      return;
+    } catch(e){
+      if(e && e.name === 'AbortError') return; // пользователь закрыл меню
+      console.warn('share failed, downloading instead:', e);
+    }
+  }
+  downloadFile(file);
+  markBackupDone();
+}
+
+function importHistoryFile(input){
+  const file = input.files && input.files[0];
+  input.value = ''; // чтобы тот же файл можно было выбрать ещё раз
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>applyHistoryImport(String(reader.result || ''));
+  reader.onerror = ()=>alert('Не удалось прочитать файл.');
+  reader.readAsText(file);
+}
+
+// Турниры из файла добавляются к текущим: ничего не стирается и не перезаписывается,
+// турниры, которые уже есть (тот же id), пропускаются.
+function applyHistoryImport(text){
+  let data = null;
+  try { data = JSON.parse(text); } catch(e){/* не JSON */}
+  const incoming = Array.isArray(data)
+    ? data
+    : (data && data.app === 'PadelFlow' && Array.isArray(data.tournaments) ? data.tournaments : null);
+  if(!incoming){
+    alert('Это не файл копии PadelFlow. Выберите файл вида padelflow-history-….json');
+    return null;
+  }
+
+  const saved = getLocalHistory();
+  const known = new Set(saved.map(item => String(item.id)));
+  let added = 0, existed = 0, broken = 0;
+  incoming.forEach(item=>{
+    const id = item && typeof item === 'object' && !Array.isArray(item) ? String(item.id ?? '') : '';
+    if(!SAFE_HISTORY_ID.test(id)){ broken++; return; }
+    if(known.has(id)){ existed++; return; }
+    known.add(id);
+    saved.push({ ...item, id });
+    added++;
+  });
+
+  if(added && !safeSetItem(HISTORY_KEY, JSON.stringify(saved))) return null;
+  currentHistory = saved;
+  renderHistory();
+
+  let msg = `Готово. Добавлено турниров: ${added}, уже было: ${existed}.`;
+  if(broken) msg += ` Пропущено повреждённых записей: ${broken}.`;
+  alert(msg);
+  return { added, existed, broken };
+}
+
 
 
 
@@ -1522,6 +1718,7 @@ function sortHistoryNewestFirst(list){
 }
 
 async function renderHistory(){
+  updateBackupNote();
   const saved = sortHistoryNewestFirst(await loadTournamentHistory());
   const container = document.getElementById('historyContainer');
   const detail = document.getElementById('historyDetail');
@@ -1644,7 +1841,7 @@ function buildHistoryMatchesHtml(item){
 
 function buildHistoryGroupStatsHtml(item){
   return (item.groupStandings || []).map(s=>
-    `<div class="small">${s.place}. ${escapeHtml(getBadgedTeam(s.team))} — ${s.wins}-${s.losses}-${s.draws} • ${s.scored}-${s.conceded} • ${s.delta>0?'+':''}${s.delta}</div>`
+    `<div class="small">${escapeHtml(s.place)}. ${escapeHtml(getBadgedTeam(s.team))} — ${escapeHtml(s.wins)}-${escapeHtml(s.losses)}-${escapeHtml(s.draws)} • ${escapeHtml(s.scored)}-${escapeHtml(s.conceded)} • ${s.delta>0?'+':''}${escapeHtml(s.delta)}</div>`
   ).join('');
 }
 
@@ -1720,7 +1917,7 @@ function copyHistoryReport(id){
 async function deleteHistoryTournament(id){
   if(!confirm('Удалить турнир?')) return;
   const filteredLocal = getLocalHistory().filter(t=>t.id !== id);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(filteredLocal));
+  if(!safeSetItem(HISTORY_KEY, JSON.stringify(filteredLocal))) return;
   currentHistory = currentHistory.filter(t => t.id !== id);
   renderHistory();
   const detail = document.getElementById('historyDetail');
@@ -2001,6 +2198,7 @@ function startTournament(){
     return;
   }
   setTournamentStarted(true);
+  requestPersistentStorage();
   refreshRounds();
   hidePostResultButtons();
   const results = document.getElementById('results');
@@ -2774,7 +2972,7 @@ function saveData(){
       activeTab: document.querySelector('.tab-content.active')?.id?.replace('tab-','') || 'tournament',
       savedAt: new Date().toISOString()
     };
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    safeSetItem(DRAFT_KEY, JSON.stringify(draft));
     localStorage.removeItem(LEGACY_DRAFT_KEY);
     updateDraftStatus();
     updateStartTournamentState();
@@ -2948,6 +3146,7 @@ function setTournamentStarted(value){
   // Настройки заперты ровно пока идет турнир. Иначе после первого турнира
   // селекты оставались бы disabled навсегда и новый турнир не заполнить.
   setTournamentLocked(tournamentStarted);
+  updateWakeLock();
 }
 
 function showDraftModal(){
@@ -3571,7 +3770,7 @@ function upsertTournamentProgressToHistory(status='in_progress'){
     saved.push(entry);
   }
 
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(saved));
+  if(!safeSetItem(HISTORY_KEY, JSON.stringify(saved))) return null;
   currentHistory = [entry, ...currentHistory.filter(item => String(item.id) !== String(entry.id))];
   updateHomeScreenContinueButton();
   return entry;
@@ -3801,7 +4000,11 @@ async function saveTournament(){
     saved.push(entry);
   }
 
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(saved));
+  // Не удалось записать — турнир не закрываем и черновик не трогаем, чтобы ничего не потерять.
+  if(!safeSetItem(HISTORY_KEY, JSON.stringify(saved))){
+    finalizingTournament = false;
+    return;
+  }
   currentHistory = [entry, ...currentHistory.filter(item => item.id !== entry.id)];
   removeDraft();
 
@@ -3829,6 +4032,7 @@ async function initApp(){
   hidePostResultButtons();
   updateStartTournamentState();
   updateCalculateResultsState();
+  renderInstallHint();
 
   const saveDraftNow = document.getElementById('saveDraftNowBtn');
   if(saveDraftNow){
@@ -3848,11 +4052,12 @@ async function initApp(){
         saveData();
         if(canAutoSaveTournamentProgress()){
           upsertTournamentProgressToHistory('in_progress');
-          pushProgressToCloud();
         }
       } catch(e){
         console.warn('visibilitychange save error:', e);
       }
+    } else {
+      updateWakeLock();
     }
   });
 
@@ -3861,6 +4066,81 @@ async function initApp(){
   });
 
 }
+
+// ---------- Подсказка «Установите на телефон» ----------
+// Android/Chrome присылают событие beforeinstallprompt — показываем кнопку «Установить».
+// На iPhone такого события нет — показываем короткую инструкцию через «Поделиться».
+const INSTALL_HINT_KEY = 'padelFlowInstallHintClosed';
+let deferredInstallPrompt = null;
+
+function isStandaloneApp(){
+  return Boolean(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+}
+
+function getIosInstallMode(){
+  const ua = navigator.userAgent || '';
+  const isIos = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if(!isIos) return null;
+  return /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser/.test(ua) ? 'safari' : 'other';
+}
+
+function renderInstallHint(){
+  const box = document.getElementById('installHint');
+  const text = document.getElementById('installHintText');
+  const btn = document.getElementById('installHintBtn');
+  if(!box || !text || !btn) return;
+  let closed = false;
+  try { closed = localStorage.getItem(INSTALL_HINT_KEY) === '1'; } catch(e){/* ignore */}
+  const ios = getIosInstallMode();
+  // Подсказка — про телефон: на компьютере Chrome/Edge тоже предлагают установку, но там она не нужна.
+  const isTouch = Boolean(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  const canPrompt = Boolean(deferredInstallPrompt) && isTouch;
+  if(closed || isStandaloneApp() || (!canPrompt && !ios)){
+    box.style.display = 'none';
+    return;
+  }
+  if(canPrompt){
+    text.textContent = 'PadelFlow откроется с экрана телефона как обычное приложение и будет работать без интернета.';
+    btn.style.display = '';
+  } else if(ios === 'safari'){
+    text.innerHTML = 'Нажмите <b>«Поделиться»</b> внизу экрана → <b>«На&nbsp;экран&nbsp;„Домой“»</b>. Открыли из Telegram — сначала «Открыть в Safari».';
+    btn.style.display = 'none';
+  } else {
+    text.innerHTML = 'Откройте эту страницу в <b>Safari</b> → <b>«Поделиться»</b> → <b>«На&nbsp;экран&nbsp;„Домой“»</b>.';
+    btn.style.display = 'none';
+  }
+  box.style.display = '';
+}
+
+function closeInstallHint(){
+  try { localStorage.setItem(INSTALL_HINT_KEY, '1'); } catch(e){/* ignore */}
+  renderInstallHint();
+}
+
+async function installApp(){
+  const promptEvent = deferredInstallPrompt;
+  if(!promptEvent) return;
+  deferredInstallPrompt = null; // событие одноразовое
+  try {
+    promptEvent.prompt();
+    const choice = await promptEvent.userChoice;
+    if(choice && choice.outcome === 'accepted') closeInstallHint();
+    else renderInstallHint();
+  } catch(e){
+    console.warn('install prompt:', e);
+    renderInstallHint();
+  }
+}
+
+window.addEventListener('beforeinstallprompt', event=>{
+  event.preventDefault(); // вместо системной плашки — наша подсказка
+  deferredInstallPrompt = event;
+  renderInstallHint();
+});
+window.addEventListener('appinstalled', ()=>{
+  deferredInstallPrompt = null;
+  closeInstallHint();
+});
 
 function registerServiceWorker(){
   if(!('serviceWorker' in navigator)) return;

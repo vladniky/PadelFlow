@@ -49,8 +49,9 @@ async function enterAllScores(page){
 }
 
 (async ()=>{
+  // Свой Chromium можно указать через PW_CHROMIUM_PATH; иначе — браузер, установленный Playwright.
   const browser = await chromium.launch({
-    executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+    executablePath: process.env.PW_CHROMIUM_PATH || undefined,
     args: ['--no-sandbox']
   });
   const page = await browser.newPage({ viewport: {width:390, height:844} });

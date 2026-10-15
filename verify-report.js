@@ -3,9 +3,13 @@ const vm = require('vm');
 const html = fs.readFileSync('index.html', 'utf8');
 const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/);
 if(!scriptMatch) throw new Error('No script tag found');
-const script = scriptMatch[1];
+// Тест проверяет только построение отчётов: запуск приложения (SW + initApp) в упрощённой
+// модели страницы не нужен и падает на отсутствующих DOM-API — отрезаем его.
+const BOOT_CALLS = /registerServiceWorker\(\);\s*initApp\(\);\s*$/;
+if(!BOOT_CALLS.test(scriptMatch[1])) throw new Error('Boot calls not found at the end of the script — update verify-report.js');
+const script = scriptMatch[1].replace(BOOT_CALLS, '');
 const sandbox = {
-  window: {},
+  window: { addEventListener(){} },
   document: { _elems: {}, getElementById(id){ return this._elems[id] || null; }, createElement(){ return {}; } },
   localStorage: { data: {}, getItem(k){ return this.data[k] || null; }, setItem(k,v){ this.data[k]=String(v); }, removeItem(k){ delete this.data[k]; } },
   navigator: { share: undefined },
